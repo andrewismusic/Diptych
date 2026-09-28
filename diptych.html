@@ -1,0 +1,3061 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diptych: morph synth, step 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8E6F3; --surface:#F5F4FB; --ink:#1B1733; --muted:#5F5979; --line:#C9C4DD;
+  --a:#2F5BFF; --b:#E3308F; --key:#FCFBFF; --keyb:#221D3A;
+  --mix:0%; --mc:color-mix(in oklch, var(--a), var(--b) var(--mix));
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131124; --surface:#1D1A33; --ink:#ECEAF7; --muted:#9A94B6; --line:#363152;
+    --a:#5C83FF; --b:#FF55A8; --key:#DCD8EC; --keyb:#0C0A18; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131124; --surface:#1D1A33; --ink:#ECEAF7; --muted:#9A94B6; --line:#363152;
+  --a:#5C83FF; --b:#FF55A8; --key:#DCD8EC; --keyb:#0C0A18; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Barlow Semi Condensed","Arial Narrow",system-ui,-apple-system,sans-serif;
+  font-size:16px;line-height:1.35;font-variant-numeric:tabular-nums;
+  -webkit-tap-highlight-color:transparent;
+}
+button,select{
+  font:inherit;font-weight:500;font-size:.92rem;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:6px 10px;cursor:pointer;min-height:34px;
+}
+button:hover,select:hover{border-color:var(--muted)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button:disabled{opacity:.45;cursor:default}
+#audioBtn.attn{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.wrap{max-width:780px;margin:0 auto;padding:0 12px}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
+.seg button:last-child{border-radius:0 6px 6px 0}
+
+/* ---------- top: title + morph ---------- */
+.top{background:var(--bg);border-bottom:1px solid var(--line)}
+.titlebar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 2px}
+h1{font-size:1.2rem;font-weight:600;margin:0}
+h1 span{font-weight:400;color:var(--muted)}
+.morph{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:2px 0 0}
+.kb .letter{font-size:1.6rem}
+.letter{font-size:2rem;font-weight:600;line-height:1;width:1.1ch;text-align:center}
+.letter.a{color:var(--a)} .letter.b{color:var(--b)}
+.morph-slider{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;margin:0;cursor:pointer}
+.morph-slider:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:8px}
+.morph-slider::-webkit-slider-runnable-track{
+  height:10px;border-radius:5px;
+  background:linear-gradient(90deg,var(--a),var(--b));
+  background:linear-gradient(to right in oklch,var(--a),var(--b));
+}
+.morph-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:30px;height:30px;margin-top:-10px;border-radius:50%;
+  background:var(--mc);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line),0 1px 3px rgba(0,0,0,.35);
+}
+.morph-slider::-moz-range-track{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--a),var(--b))}
+.morph-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--mc);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
+.morphfoot{display:flex;justify-content:flex-start;align-items:center;gap:8px;padding:6px 0 10px;flex-wrap:wrap}
+.readout{color:var(--muted);font-size:.95rem}
+.readout b{color:var(--ink);font-weight:600}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ---------- groups + knobs ---------- */
+.patchbar{flex:1 1 100%;display:flex;flex-direction:column;gap:6px;padding:12px 0 0}
+.rrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.rlbl{color:var(--muted);font-size:.92rem;min-width:10.4em}
+.rrow #undo{margin-left:auto}
+.patchbar .ra{color:var(--a)} .patchbar .rb{color:var(--b)}
+main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
+.group{flex:1 1 100%;padding:12px 0 6px}
+.group h2{margin:0 0 6px;font-size:.95rem;font-weight:600;color:var(--muted)}
+.knobs{display:flex;flex-wrap:wrap;gap:6px 2px;max-width:calc(4 * 88px + 6px)}
+.kn{width:88px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.kname{font-weight:600;font-size:.92rem;white-space:nowrap}
+.kwrap{position:relative}
+.kwrap .icons{position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);z-index:1;display:flex;gap:0}
+.lock{border:0;background:none;padding:0;min-height:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);opacity:.45;border-radius:4px;flex:0 0 auto}
+.lock:hover{opacity:.8}
+.lock[hidden]{display:none}
+.lock[aria-pressed="true"]{background:none;color:var(--ink);opacity:1;border:0}
+.group h2 .lock{vertical-align:middle;margin-left:2px}
+.fxh{display:flex;align-items:center;gap:4px}
+.fxh .fxsw{margin-left:6px}
+.lock.sectool{opacity:.8}
+.lock.sectool.da{color:var(--a)} .lock.sectool.db{color:var(--b)}
+.seclocked .knobs{opacity:.75}
+.fxsw{min-height:26px;padding:2px 10px;font-size:.8rem;border-radius:13px}
+.fxsw[aria-pressed="false"]{color:var(--muted)}
+.fxoff .knobs,.fxoff .blendrow{opacity:.4}
+.viz{width:100%;max-width:calc(4 * 88px + 6px);height:88px;display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:2px 0 8px}
+.knob{width:72px;height:72px;touch-action:none;cursor:grab;position:relative;margin:2px 0}
+.knob.dragging{cursor:grabbing}
+.knob svg{width:100%;height:100%;display:block;overflow:visible}
+.knob svg *{pointer-events:none}
+.knob .bg{stroke:var(--line)}
+.knob .arcA,.knob .arcB{stroke:var(--mc)}
+.knob .cap{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.knob .glyph{stroke:var(--muted);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.knob .gdot{fill:var(--ink)}
+.knob .h{stroke:var(--surface);stroke-width:2}
+.knob .hA .h{fill:var(--a)} .knob .hB .h{fill:var(--b)}
+.knob .now{fill:var(--ink);stroke:var(--surface);stroke-width:1.5}
+.knob .ring{fill:none;stroke:var(--ink);stroke-width:1.5;opacity:0}
+.knob g:focus{outline:none}
+.knob g:focus-visible .ring,.knob g.active .ring{opacity:1}
+.knob .ctr .ring{stroke-dasharray:2 2}
+.kval{font-size:.9rem;min-height:1.3em;white-space:nowrap}
+.kval.a{color:var(--a);font-weight:600} .kval.b{color:var(--b);font-weight:600}
+.kab{font-size:.76rem;display:flex;flex-wrap:wrap;column-gap:5px;justify-content:center;line-height:1.2}
+.kab .a{color:var(--a)} .kab .b{color:var(--b)}
+
+/* ---------- wavetable panel ---------- */
+.wt{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.wtcard{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:8px;background:var(--surface);border:1px solid var(--line);text-align:left;min-width:0;min-height:0;font-weight:400}
+.wtcard.a{border-color:color-mix(in srgb,var(--a) 55%,var(--line))}
+.wtcard.b{border-color:color-mix(in srgb,var(--b) 55%,var(--line))}
+.wtcard canvas{width:100%;height:56px;display:block}
+.wtlabel{display:flex;justify-content:space-between;gap:4px;font-size:.82rem;min-width:0}
+.wtlabel .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.wtlabel .ac{font-weight:600;white-space:nowrap}
+.wtcard.a .ac{color:var(--a)} .wtcard.b .ac{color:var(--b)}
+.wtknobs{display:grid;grid-template-columns:1fr 1fr 1fr;justify-items:center;margin-top:6px}
+.wtknobs .kn{width:100%}
+.kab .muted{color:var(--muted)}
+.knob.kl-A .arcA{stroke:var(--a)} .knob.kl-B .arcA{stroke:var(--b)} .knob.kl-L .arcA{stroke:var(--muted)}
+.knob.kl-B .hA .h{fill:var(--b)} .knob.kl-L .hA .h{fill:var(--ink)}
+.blendrow{display:flex;align-items:center;gap:8px 18px;margin-top:8px;flex-wrap:wrap;font-size:.92rem;color:var(--muted)}
+.opt{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+
+.foot{max-width:780px;margin:0 auto;padding:18px 12px 24px;color:var(--muted);font-size:.9rem}
+.foot p{margin:0 0 8px;max-width:62ch}
+
+/* ---------- wavetable editor ---------- */
+.ed{position:fixed;left:0;right:0;top:0;bottom:var(--kbh,0px);z-index:20;background:var(--bg);overflow-y:auto;
+    padding-top:env(safe-area-inset-top,0px);display:none;border-bottom:1px solid var(--line)}
+.ed.open{display:block}
+.ed{--side:var(--a)} .ed.b{--side:var(--b)}
+.edwrap{max-width:780px;margin:0 auto;padding:10px 12px 14px;display:flex;flex-direction:column;gap:10px}
+.edhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.edhead h2{margin:0;font-size:1.2rem;font-weight:600;color:var(--side);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.edrow label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.92rem}
+.edrow .count{color:var(--muted);font-size:.9rem;margin-left:auto}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 4px}
+.strip canvas{width:60px;height:38px;flex:0 0 auto;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;touch-action:manipulation}
+.strip canvas.sel{outline:2px solid var(--side);outline-offset:1px}
+#edCanvas{width:100%;height:210px;display:block;touch-action:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:crosshair}
+.ednote{margin:0;color:var(--muted);font-size:.88rem}
+
+/* ---------- keyboard ---------- */
+.kb{position:sticky;bottom:0;z-index:25;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.kbbar{display:flex;align-items:center;gap:6px;padding:8px 0}
+.kbbar .oct{min-width:3.2ch;text-align:center;font-weight:600}
+.ctl{display:inline-flex;align-items:center;gap:6px}
+.ctl[hidden]{display:none}
+.bpm{display:inline-flex;align-items:center;gap:4px;font-size:.9rem;color:var(--muted);touch-action:none;cursor:ns-resize;padding:0 2px;border-radius:6px;user-select:none;-webkit-user-select:none;white-space:nowrap}
+.bpm svg{display:block}
+.bpmtxt{display:inline-block;width:4.8em;white-space:nowrap}
+#bpmVal{display:inline-block;width:1.9em;text-align:right;font-variant-numeric:tabular-nums}
+.monobtn{min-width:3.8em}
+.playbtn{min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+.playbtn.playing{background:var(--mc);border-color:var(--mc);color:#fff;animation:breathe 1.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{filter:brightness(.72) saturate(.9);box-shadow:0 0 0 0 color-mix(in srgb,var(--mc) 70%,transparent)}50%{filter:brightness(1.45) saturate(1.2);box-shadow:0 0 0 7px color-mix(in srgb,var(--mc) 0%,transparent)}}
+.bpm:focus-visible{outline:2px solid var(--ink)} .bpm b{color:var(--ink);font-weight:600}
+.panes{overflow:hidden;margin-bottom:10px}
+.slide{display:flex;width:200%;transition:transform .28s ease}
+.slide.seq{transform:translateX(-50%)}
+.pane{width:50%;flex:0 0 50%;overflow:hidden}
+.seqpane{height:136px;display:flex;gap:6px;align-items:flex-start}
+.seqpane .knobs{flex:0 0 auto}
+.vseg{flex-direction:column;align-self:center;margin-left:-4px}
+.vseg button{margin:0;margin-top:-1px;border-radius:0;min-width:4.2em}
+.vseg button:first-child{border-radius:6px 6px 0 0;margin-top:0}
+.vseg button:last-child{border-radius:0 0 6px 6px}
+.seqright{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.seqctl{display:flex;gap:6px;justify-content:flex-end}
+.lanes{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:repeat(3,26px);gap:4px 6px;align-items:center}
+.lanes canvas{width:100%;height:26px;display:block;background:var(--surface);border:1px solid var(--line);border-radius:6px;min-width:0}
+.ln{font-size:.85rem;font-weight:600;color:var(--muted);text-align:right}
+.ln.a{color:var(--a)} .ln.b{color:var(--b)}
+#roll{width:100%;display:block;touch-action:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+#sqDens{width:110px;accent-color:var(--side)}
+#velCv{width:100%;height:56px;display:block;touch-action:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:ns-resize}
+.edrow .lbl{color:var(--muted);font-size:.92rem}
+.sqset{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:8px}
+.sqside{border-color:color-mix(in srgb,var(--side) 55%,var(--line))}
+.sqtag{font-weight:600}
+#rfSync{width:100px;accent-color:var(--side)}
+.edrow[hidden]{display:none}
+.edhead .spacer{flex:1}
+@media (prefers-reduced-motion:reduce){ .slide{transition:none} .playbtn.playing{animation:none} }
+.kbbar .spacer{flex:1}
+.keys{position:relative;height:136px;display:flex;touch-action:none;user-select:none;-webkit-user-select:none}
+.white{flex:1;background:var(--key);border:1px solid var(--line);border-radius:0 0 6px 6px;margin-right:-1px;position:relative}
+.white span{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.75rem;color:#6B7483}
+.black{position:absolute;top:0;height:62%;width:7.5%;background:var(--keyb);border-radius:0 0 4px 4px;z-index:2}
+.white.on{background:color-mix(in srgb,var(--ink) 20%,var(--key))}
+.black.on{background:var(--muted)}
+@media (min-width:640px){
+  .seqpane{height:148px} .lanes{grid-template-rows:repeat(3,30px)} .lanes canvas{height:30px} .keys{height:148px}
+  .group{flex:0 1 auto} .group.wide{flex:1 1 100%}
+  .kn{width:98px} .knob{width:82px;height:82px}
+  .knobs,.viz{max-width:calc(4 * 98px + 6px)}
+  .seqpane .kn{width:88px} .seqpane .knob{width:72px;height:72px}
+  .wtcard canvas{height:72px} #edCanvas{height:260px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="titlebar">
+      <h1>Diptych <span>morph synth</span></h1>
+      <button id="audioBtn" class="attn" type="button">Tap to start audio</button>
+    </div>
+    <div class="morphfoot">
+      <div class="btns">
+        <button type="button" id="copyAB">Copy A to B</button>
+        <button type="button" id="copyBA">Copy B to A</button>
+        <button type="button" id="swap">Swap</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="groups">
+  <div class="patchbar">
+    <div class="rrow"><span class="rlbl">Randomize sound</span>
+      <button type="button" id="rndA" class="ra">A</button>
+      <button type="button" id="rndLinked">Linked</button>
+      <button type="button" id="rndAll">All</button>
+      <button type="button" id="rndB" class="rb">B</button>
+    </div>
+    <div class="rrow"><span class="rlbl">Randomize sequence</span>
+      <button type="button" id="rsA" class="ra">A</button>
+      <button type="button" id="rsBoth">Both</button>
+      <button type="button" id="rsB" class="rb">B</button>
+      <button type="button" id="undo" disabled>Undo</button>
+    </div>
+  </div>
+  <section class="group wide" data-group="Wavetables">
+    <h2>Wavetables</h2>
+    <div class="wt">
+      <button class="wtcard a" id="wtA" type="button" aria-label="Edit wavetable A">
+        <canvas id="cvA"></canvas>
+        <span class="wtlabel"><span class="nm" id="nmA"></span><span class="ac">Edit A</span></span>
+      </button>
+      <div class="wtcard">
+        <canvas id="cvH"></canvas>
+        <span class="wtlabel"><span class="nm">What you hear</span></span>
+      </div>
+      <button class="wtcard b" id="wtB" type="button" aria-label="Edit wavetable B">
+        <canvas id="cvB"></canvas>
+        <span class="wtlabel"><span class="nm" id="nmB"></span><span class="ac">Edit B</span></span>
+      </button>
+    </div>
+    <div class="wtknobs" id="wtKnobs"></div>
+  </section>
+</main>
+
+<div class="foot">
+  <p>Each ring has two handles: blue sets the A value and pink sets the B value. Drag a handle up or down. The dark dot shows the value you hear right now. Drag the center of a knob to bend its morph curve. Double-tap a handle or the center to reset it.</p>
+  <p>Position A and Position B pick where each wavetable is read. They belong to one side only and the morph never moves them. The Wave knob sets how much of B's shape is in the sound and morphs like any other knob, so its center curve controls how the shape changes across the sweep. The blend keeps each harmonic at full strength, so the sound stays full halfway between two shapes.</p>
+  <p>Unison fades extra voices in and spreads them further apart as you turn it up. The center voice always plays.</p>
+  <p>Effects run in a fixed order: Drive, Formant filter, Modulation, Delay, Reverb, Lo-fi, then OTT. Each is always running, and a setting of 0% means off, so effects can fade in or out across the morph. The On/Off switch by each effect's name turns it off for both sides without touching its settings. Drive keeps the same loudness as you turn it up, so it changes tone rather than volume; Shape goes from warm through a firmer edge to wavefolding. Formant Vowel sweeps A–E–I–O–U. Modulation Type goes from chorus at 0% to flanger at 50% to phaser at 100%. Delay runs every time division at once: Cut switches which one you hear, Spill switches which one receives new sound and lets the others' echoes ring out. Lo-fi adds wow and flutter, Character (tape drive, a low bump and high rolloff), Dropouts (brief dips that never go fully silent), Codec (the hollow, swirly sound of a low-bitrate MP3), and Noise, which goes from dark tape hiss to bright hiss to vinyl crackle. OTT squashes three bands toward a steady level: Downward pulls loud parts down, Upward lifts quiet parts and tails, and Depth sets how much of both. The split and gain knobs set where the bands divide and how loud each one is.</p>
+  <p>Vibrato fades in over Fade in after each note. Rate fade is in Hz: the wobble starts that much faster (positive) or slower (negative) than Vib rate and settles to it over Rate settle.</p>
+  <p>Tap Seq at the bottom to swap the keyboard for the sequencer. Each side has its own pattern, rate and scale; tap Edit there to change them. The Pattern knob morphs from A's pattern to B's. Notes both patterns start at the same moment blend; notes only one side has drop in or out at fixed points, so the same Pattern value always plays the same sequence. Walk moves differing pitches through the scale notes in between; Swap jumps straight from A's note to B's.</p>
+  <p>Each launch starts from a fresh random patch and random sequences; tap Undo to get back what you had last time.</p>
+  <p>The dice by a section's name randomize just that section, anywhere in each knob's full range and without the usual shaping rules: blue for side A, pink for side B, and the plain one for both sides including linked knobs; the padlock next to it locks the whole section, on top of the knobs' own locks. Mono (on the keyboard bar) lets only one note sound at a time.</p>
+  <p>Under each knob are a padlock and a chain. Unlinking brings back the values each side had before you linked. Locked parameters are skipped by randomize. Linked parameters don't morph: A and B share one value and the knob sets it directly.</p>
+  <p>With a computer keyboard, keys A to K play notes and Z / X change octave.</p>
+  <p id="engineInfo">Audio engine starts on your first tap.</p>
+  <button type="button" id="resetAll">Reset patch</button>
+</div>
+
+<div class="ed" id="ed" role="dialog" aria-modal="false" aria-labelledby="edTitle">
+  <div class="edwrap">
+    <div class="edhead">
+      <h2 id="edTitle">Wavetable A</h2>
+      <button type="button" id="edDone">Done</button>
+    </div>
+    <div class="edrow">
+      <label>Start from <select id="edPreset"></select></label>
+      <button type="button" id="edLoad">Load file</button>
+      <input type="file" id="edFile" accept="audio/*,.wav" hidden>
+    </div>
+    <div class="strip" id="edStrip" role="listbox" aria-label="Frames"></div>
+    <div class="edrow">
+      <button type="button" id="edAdd">Add frame</button>
+      <button type="button" id="edDel">Delete frame</button>
+      <span class="count" id="edCount"></span>
+    </div>
+    <div class="edrow">
+      <div class="seg" role="group" aria-label="Drawing tool">
+        <button type="button" data-tool="draw">Draw</button>
+        <button type="button" data-tool="line">Line</button>
+        <button type="button" data-tool="harm">Harmonics</button>
+      </div>
+    </div>
+    <canvas id="edCanvas" aria-label="Waveform drawing area"></canvas>
+    <div class="edrow">
+      <button type="button" id="edSmooth">Smooth</button>
+      <button type="button" id="edNorm">Normalize</button>
+      <button type="button" id="edInv">Invert</button>
+      <button type="button" id="edClear">Reset to sine</button>
+    </div>
+    <p class="ednote" id="edNote"></p>
+  </div>
+</div>
+
+<div class="ed" id="sq" role="dialog" aria-modal="false" aria-labelledby="sqTitle">
+  <div class="edwrap">
+    <div class="edhead">
+      <h2 id="sqTitle">Sequences</h2>
+      <span class="spacer"></span>
+      <button type="button" id="sqDone">Done</button>
+    </div>
+    <div class="sqset sqglobal">
+      <div class="edrow">
+        <span class="lbl sqtag">Both sides</span>
+        <label>Scale <select id="sqRoot"></select></label><select id="sqScale" aria-label="Scale type"></select>
+      </div>
+    </div>
+    <div class="edrow"><span class="seg" role="group" aria-label="Side"><button type="button" id="sqA">Side A</button><button type="button" id="sqB">Side B</button></span></div>
+    <div class="sqset sqside">
+      <div class="edrow">
+        <label>Rate <select id="sqRate"></select></label>
+        <span class="opt"><span class="lbl">Steps</span><button type="button" id="sqLenDn" aria-label="Fewer steps">−</button><b id="sqLen">16</b><button type="button" id="sqLenUp" aria-label="More steps">+</button></span>
+      </div>
+      <div class="edrow">
+        <span class="opt"><span class="lbl">Density</span><input type="range" id="sqDens" min="0" max="100" value="100" aria-label="Density"><b id="sqDensVal">100%</b></span>
+        <span class="opt"><span class="lbl">Shift</span><button type="button" id="sqLeft" aria-label="Shift pattern one step earlier">←</button><button type="button" id="sqRight" aria-label="Shift pattern one step later">→</button></span>
+      </div>
+      <div class="edrow">
+        <span class="lbl">Generator</span>
+        <span class="seg" role="group" aria-label="Generator"><button type="button" id="gnArp">Arp</button><button type="button" id="gnRiff">Riff</button></span>
+        <button type="button" id="sqGen">Generate</button>
+      </div>
+      <div class="edrow" id="arpRow">
+        <select id="sqChord" aria-label="Chord"></select>
+        <select id="sqMode" aria-label="Arp order"></select>
+        <select id="sqOct" aria-label="Octaves"><option value="1">1 oct</option><option value="2" selected>2 oct</option><option value="3">3 oct</option></select>
+      </div>
+      <div class="edrow" id="riffRow" hidden>
+        <select id="rfStyle" aria-label="Riff style"><option>Motif</option><option>Pedal</option><option>Cells</option></select>
+        <select id="rfOct" aria-label="Range"><option value="1">1 oct</option><option value="2" selected>2 oct</option></select>
+        <span class="opt"><span class="lbl">Syncopation</span><input type="range" id="rfSync" min="0" max="100" value="50" aria-label="Syncopation"></span>
+      </div>
+      <div class="edrow">
+        <span class="lbl">Random</span>
+        <button type="button" id="rzNotes">Notes</button>
+        <button type="button" id="rzVel">Velocity</button>
+        <button type="button" id="rzRate">Rate</button>
+        <button type="button" id="rzArp">Generator</button>
+        <button type="button" id="rzAll">All</button>
+      </div>
+    </div>
+    <canvas id="roll" aria-label="Piano roll: tap to add or remove notes, drag a note sideways to change its length"></canvas>
+    <canvas id="velCv" aria-label="Velocity: drag to set how hard each step plays"></canvas>
+    <div class="edrow">
+      <button type="button" id="sqClear">Clear</button>
+      <button type="button" id="sqOther">Copy to B</button>
+    </div>
+    <p class="ednote">Scale is shared by both sides; everything in the lower box belongs to the side you pick. Steps are always sixteenths; the rate places notes over them, and a note that runs past the end is cut short. Mixed gives every note its own length. Density thins notes out in an even but irregular order and brings the same ones back as you raise it. The Riff generator builds motifs with answers, pedal-tone riffs, or grouped rhythmic cells, with Syncopation pushing notes off the beat. Notes never overlap: a long note stops where the next one starts. Tap an empty cell to add a note, or drag across to paint several. Tap a note to remove it, or drag it sideways to change its length. Random Notes writes a new melody in the scale, Velocity re-rolls how hard notes play, Rate picks a new rate, Generator picks new generator settings and generates, and All does all of these plus density.</p>
+  </div>
+</div>
+
+<div class="kb" id="kb">
+  <div class="wrap">
+    <div class="morph">
+      <span class="letter a" aria-hidden="true">A</span>
+      <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">
+      <span class="letter b" aria-hidden="true">B</span>
+    </div>
+    <div class="kbbar">
+      <span class="seg" role="group" aria-label="Bottom panel">
+        <button type="button" id="pmKeys" aria-pressed="true">Keys</button><button type="button" id="pmSeq" aria-pressed="false">Seq</button>
+      </span>
+      <span class="spacer"></span>
+      <span class="ctl" id="kctl">
+        <button type="button" id="octDown" aria-label="Octave down">−</button>
+        <span class="oct" id="octLabel">C3</span>
+        <button type="button" id="octUp" aria-label="Octave up">+</button>
+        <button type="button" id="monoBtn" class="monobtn"></button>
+        <button type="button" id="latch" aria-pressed="false">Latch</button>
+      </span>
+      <span class="ctl" id="sctl" hidden>
+        <button type="button" id="monoBtn2" class="monobtn"></button>
+        <button type="button" id="play" class="playbtn" aria-label="Play"></button>
+        <span class="bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120">
+          <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
+            <circle cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="75 200" transform="rotate(135 20 20)" fill="none" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
+            <circle id="bpmArc" cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="0 200" transform="rotate(135 20 20)" fill="none" stroke="var(--mc)" stroke-width="4" stroke-linecap="round"/>
+            <line id="bpmPtr" x1="20" y1="20" x2="20" y2="9" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+          <span class="bpmtxt"><b id="bpmVal">120</b> bpm</span>
+        </span>
+      </span>
+    </div>
+    <div class="panes">
+      <div class="slide" id="slide">
+        <div class="pane" id="keysPane"><div class="keys" id="keys"></div></div>
+        <div class="pane seqpane" id="seqPane" inert>
+          <div class="knobs" id="seqKnob"></div>
+          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" id="pmWalk">Walk</button><button type="button" id="pmSwap">Swap</button></div>
+          <div class="seqright">
+            <div class="lanes">
+              <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
+              <span class="ln">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
+              <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
+            </div>
+            <div class="seqctl">
+              <button type="button" id="seqEdit">Edit sequences</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   DSP ENGINE
+   Runs in an AudioWorklet when possible, otherwise on the main thread.
+   Parameters arrive normalized and resolve every 16 samples as
+   lerp(A, B, bend(morph, curve)). The oscillator reads band-limited
+   tables rebuilt (at most every 512 samples, with a crossfade) from
+   table A and table B at the current Position, blended by the morph.
+   ===================================================================== */
+class MorphEngine {
+  constructor(sr, defs) {
+    this.sr = sr; this.defs = defs;
+    const n = defs.length;
+    this.A = new Float32Array(n); this.B = new Float32Array(n); this.C = new Float32Array(n);
+    this.cur = new Float32Array(n); this.val = new Float32Array(n);
+    this.morph = 0; this.mSm = 0; this.first = true; this.clock = 0; this.lastPitch = -1;
+    this.I = {}; defs.forEach((d, i) => { this.I[d.id] = i; });
+    // wavetables: spectra per keyframe, one table per side
+    this.tables = { A: null, B: null }; this.spectral = true; this.tabVer = 0;
+    // band-limited banks, level k holds harmonics 1..(512 >> k); double-buffered for crossfades
+    this.bankCur = []; this.bankPrev = []; this.scr = [];
+    for (let k = 0; k < 10; k++) {
+      const N = Math.max(64, 4 * (512 >> k));
+      this.bankCur.push(new Float32Array(N + 1)); this.bankPrev.push(new Float32Array(N + 1));
+      this.scr.push([new Float32Array(N), new Float32Array(N)]);
+    }
+    const sp = () => [new Float32Array(513), new Float32Array(513)];
+    this.fa = sp(); this.fb = sp(); this.fr = sp();
+    this.bankReady = false; this.xf = 1; this.xfInc = 0; this.since = 1e9; this.lastKey = '';
+    this.voices = [];
+    for (let v = 0; v < 8; v++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0,
+      aSt:0, aLv:0, fSt:0, fLv:0, ph:new Float64Array(7), l1:0, l2:0, r1:0, r2:0, vAge:0, vPh:0 });
+    this.fxInit();
+    this.uL = new Float32Array(7); this.uR = new Float32Array(7); this.uOff = new Float32Array(7);
+    this.uDt = new Float32Array(7); this.uLev = new Int32Array(7); this.uJ = new Int32Array(7);
+    // sequencer
+    this.seq = null; this.playing = false; this.bpm = 120; this.walk = true;
+    this.spos = 0; this.ei = 0; this.stick = 0; this.offs = []; this.reports = []; this.repCount = 0;
+    this.mono = false; this.stack = [];
+  }
+
+  /* ---------- shared maths (also used by the UI) ---------- */
+  static denorm(d, x) {
+    if (d.curve === 'log') return d.min * Math.pow(d.max / d.min, x);
+    if (d.curve === 'pow2') return d.min + (d.max - d.min) * x * x;
+    let v = d.min + (d.max - d.min) * x;
+    if (d.curve === 'int') v = Math.round(v);
+    return v;
+  }
+  // Morph curve per parameter. c = 0 is even, c > 0 moves early, c < 0 moves late.
+  static bend(m, c) { return c === 0 ? m : Math.pow(m, Math.pow(6, -c)); }
+  static fft(re, im, inv) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const a = 2 * Math.PI / len * (inv ? 1 : -1), wr = Math.cos(a), wi = Math.sin(a), h = len >> 1;
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let j = 0; j < h; j++) {
+          const p = i + j, q = p + h;
+          const xr = re[q] * cr - im[q] * ci, xi = re[q] * ci + im[q] * cr;
+          re[q] = re[p] - xr; im[q] = im[p] - xi; re[p] += xr; im[p] += xi;
+          const t = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = t;
+        }
+      }
+    }
+  }
+  // 2048-sample frame -> complex amplitudes of harmonics 1..512 (a unit sine gives magnitude 1)
+  static analyze(frame) {
+    const N = 2048, re = new Float64Array(N), im = new Float64Array(N);
+    for (let i = 0; i < N; i++) re[i] = frame[i];
+    MorphEngine.fft(re, im, false);
+    const oR = new Float32Array(513), oI = new Float32Array(513);
+    for (let h = 1; h <= 512; h++) { oR[h] = re[h] * 2 / N; oI[h] = im[h] * 2 / N; }
+    return { re: oR, im: oI };
+  }
+  // Blend two spectra. Direct = straight crossfade of the waveforms: always smooth, but it can
+  // thin out when the two waves work against each other. Spectral = the same crossfade, with each
+  // harmonic's loudness then restored to the blended loudness of A and B. Its phase comes from the
+  // direct crossfade, so it never flips; the boost is capped so harmonics that truly cancel still dip.
+  static interp(aR, aI, bR, bI, t, spectral, oR, oI) {
+    for (let h = 1; h <= 512; h++) {
+      const dr = aR[h] + (bR[h] - aR[h]) * t, di = aI[h] + (bI[h] - aI[h]) * t;
+      if (!spectral) { oR[h] = dr; oI[h] = di; continue; }
+      const dl = Math.hypot(dr, di);
+      if (dl < 1e-9) { oR[h] = 0; oI[h] = 0; continue; }
+      const ma = Math.hypot(aR[h], aI[h]), mb = Math.hypot(bR[h], bI[h]);
+      const g = Math.min((ma + (mb - ma) * t) / dl, 3);
+      oR[h] = dr * g; oI[h] = di * g;
+    }
+  }
+  static frameAt(tab, p, spectral, oR, oI) {
+    const k = tab.k;
+    if (k === 1) { oR.set(tab.re[0]); oI.set(tab.im[0]); return; }
+    const f = Math.max(0, Math.min(1, p)) * (k - 1);
+    let i = Math.floor(f); if (i > k - 2) i = k - 2;
+    MorphEngine.interp(tab.re[i], tab.im[i], tab.re[i + 1], tab.im[i + 1], f - i, spectral, oR, oI);
+  }
+  static synth(re, im, maxH, N, out, sR, sI) {
+    sR.fill(0); sI.fill(0);
+    const H = Math.min(maxH, N / 2 - 1);
+    for (let h = 1; h <= H; h++) { sR[h] = re[h]; sI[h] = im[h]; }
+    MorphEngine.fft(sR, sI, true);
+    for (let i = 0; i < N; i++) out[i] = sR[i];
+  }
+
+  /* ---------- messages ---------- */
+  handle(m) {
+    switch (m.type) {
+      case 'state': this.A.set(m.A); this.B.set(m.B); if (m.C) this.C.set(m.C); this.morph = m.morph; break;
+      case 'param': (m.side === 'A' ? this.A : this.B)[m.i] = m.v; break;
+      case 'curve': this.C[m.i] = m.v; break;
+      case 'morph': this.morph = m.v; break;
+      case 'table': this.tables[m.side] = { k: m.re.length, re: m.re, im: m.im }; this.tabVer++; break;
+      case 'blend': this.spectral = !!m.v; this.tabVer++; break;
+      case 'seq':
+        this.seq = m.seq;
+        if (this.seq) {
+          this.spos %= this.seq.loop;
+          this.ei = this.seq.events.findIndex(ev => ev.tick >= this.spos);
+          if (this.ei < 0) this.ei = this.seq.events.length;
+        }
+        break;
+      case 'seqPlay':
+        if (m.on) { this.playing = true; this.spos = 0; this.ei = 0; this.stick = 0; this.repCount = 64; }
+        else { this.playing = false; this.offs.forEach(o => this.noteOff(o.note)); this.offs = []; }
+        break;
+      case 'bpm': this.bpm = m.v; break;
+      case 'walk': this.walk = !!m.v; break;
+      case 'dlmode': this.dlSpill = !!m.v; break;
+      case 'bypass': this.byT[m.i] = m.on ? 1 : 0; break;
+      case 'on': this.noteOn(m.note, m.vel); break;
+      case 'off': this.noteOff(m.note); break;
+      case 'panic': this.stack = []; this.voices.forEach(v => { if (v.active) { v.aSt = 3; v.fSt = 3; } }); break;
+      case 'mono': this.mono = !!m.v; this.stack = []; if (this.mono) this.voices.forEach((v, k) => { if (k && v.active) { v.aSt = 3; v.fSt = 3; } }); break;
+    }
+  }
+  noteOn(note, vel) {
+    if (this.mono) {   // one voice, last note wins; releasing it falls back to a key still held
+      this.stack = this.stack.filter(n => n !== note); this.stack.push(note);
+      for (let k = 1; k < 8; k++) if (this.voices[k].active) { this.voices[k].aSt = 3; this.voices[k].fSt = 3; }
+      const v = this.voices[0];
+      if (!v.active) {
+        v.aLv = 0; v.fLv = 0; v.l1 = v.l2 = v.r1 = v.r2 = 0;
+        for (let j = 0; j < 7; j++) v.ph[j] = Math.random();
+        v.pitch = this.val[this.I.glide] > 0.0005 && this.lastPitch >= 0 ? this.lastPitch : note;
+      }
+      v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.vAge = 0; v.vPh = 0; this.lastPitch = note;
+      return;
+    }
+    let v = this.voices.find(x => x.active && x.note === note);
+    if (!v) v = this.voices.find(x => !x.active);
+    if (!v) v = this.voices.reduce((a, b) => (a.age < b.age ? a : b));
+    if (!v.active) {
+      v.aLv = 0; v.fLv = 0; v.l1 = v.l2 = v.r1 = v.r2 = 0;
+      for (let j = 0; j < 7; j++) v.ph[j] = Math.random();
+      const glide = this.val[this.I.glide];
+      v.pitch = glide > 0.0005 && this.lastPitch >= 0 ? this.lastPitch : note;
+    }
+    v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.age = this.clock++;
+    v.vAge = 0; v.vPh = 0;   // vibrato fades in again from each new note
+    this.lastPitch = note;
+  }
+  /* ---------- sequencer ----------
+     Events are the union of both patterns' note starts on a shared tick grid
+     (48 ticks per quarter). Each event is evaluated against the Pattern value
+     when it plays; see seqEval. Nothing here is random. */
+  static seqAllowed(sc, pc, mm) {
+    if (sc.shared[pc]) return true;
+    const c = sc.change[pc];
+    return !!c && (c.add ? mm >= c.thr : mm < c.thr);
+  }
+  static seqQuant(sc, p, mm) {
+    const r = Math.round(p), up = p >= r;
+    for (let d = 0; d <= 6; d++) {
+      const c1 = up ? r + d : r - d, c2 = up ? r - d : r + d;
+      if (MorphEngine.seqAllowed(sc, ((c1 % 12) + 12) % 12, mm)) return c1;
+      if (d && MorphEngine.seqAllowed(sc, ((c2 % 12) + 12) % 12, mm)) return c2;
+    }
+    return r;
+  }
+  static seqEval(ev, mm, walk, sc) {
+    if (ev.a && ev.b) {
+      const vel = ev.a.v + (ev.b.v - ev.a.v) * mm, len = ev.a.l + (ev.b.l - ev.a.l) * mm;
+      const note = walk ? MorphEngine.seqQuant(sc, ev.a.p + (ev.b.p - ev.a.p) * mm, mm)
+        : ev.a.p === ev.b.p ? ev.a.p : (mm >= ev.thr ? ev.b.p : ev.a.p);
+      return { note, vel, len };
+    }
+    const s = ev.a || ev.b, on = ev.a ? mm < ev.thr : mm >= ev.thr;
+    if (!on) return null;
+    return { note: walk ? MorphEngine.seqQuant(sc, s.p, mm) : s.p, vel: s.v, len: s.l };
+  }
+  seqRun(len) {
+    if (!this.playing || !this.seq) return;
+    const S = this.seq, adv = this.bpm / 60 * 48 / this.sr * len, endT = this.stick + adv;
+    for (let k = this.offs.length - 1; k >= 0; k--) if (this.offs[k].at <= endT) { this.noteOff(this.offs[k].note); this.offs.splice(k, 1); }
+    const mm = this.val[this.I.pattern];
+    let from = this.spos, to = from + adv;
+    for (;;) {
+      const lim = Math.min(to, S.loop);
+      while (this.ei < S.events.length && S.events[this.ei].tick < lim) {
+        const ev = S.events[this.ei++], r = MorphEngine.seqEval(ev, mm, this.walk, S.scale);
+        if (!r) continue;
+        // monophonic: a new note always ends the one before it
+        for (const o of this.offs) if (o.note !== r.note) this.noteOff(o.note);
+        this.offs.length = 0;
+        this.noteOn(r.note, 0.25 + 0.75 * r.vel);
+        this.offs.push({ note: r.note, at: this.stick + (ev.tick - from) + Math.max(1, r.len * 0.92) });
+      }
+      if (to >= S.loop) { to -= S.loop; from -= S.loop; this.ei = 0; } else break;
+    }
+    this.spos = to; this.stick = endT;
+    if (++this.repCount >= 64) { this.repCount = 0; this.reports.push({ type:'pos', pos: this.spos, loop: S.loop }); }
+  }
+  noteOff(note) {
+    if (this.mono) {
+      const top = this.stack[this.stack.length - 1], v = this.voices[0];
+      this.stack = this.stack.filter(n => n !== note);
+      if (note === top) {
+        if (this.stack.length) { v.note = this.stack[this.stack.length - 1]; this.lastPitch = v.note; }   // legato back to the held key
+        else if (v.active && v.note === note) { v.aSt = 3; v.fSt = 3; }
+      }
+      return;
+    }
+    for (const v of this.voices) if (v.active && v.note === note && v.aSt !== 3) { v.aSt = 3; v.fSt = 3; }
+  }
+
+  /* =================================================================
+     EFFECTS: fixed order, every unit always running so any setting,
+     including its mix, can morph without clicks.
+     Drive -> Formant -> Modulation -> Delay -> Reverb -> Lo-fi -> OTT
+     Settings arrive once per 16-sample block; anything that would
+     click if it stepped (delay times, filter sweeps, tap gains) is
+     smoothed again per sample.
+     ================================================================= */
+  fxInit() {
+    const sr = this.sr, pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
+    this.rng = 0x9e3779b9;
+    // bypass: one on/off per effect (drive, formant, modulation, delay, reverb, lo-fi, OTT), crossfaded over ~15 ms
+    this.by = new Float64Array(7).fill(1); this.byT = new Float64Array(7).fill(1); this.byC = 1 - Math.exp(-1 / (0.015 * sr));
+    // drive: 4x oversampling with a 33-tap linear-phase filter (8 samples of latency, matched on the dry path)
+    this.osH = MorphEngine.osFilter();
+    this.drXL = new Float64Array(9); this.drXR = new Float64Array(9);
+    this.drZL = new Float64Array(33); this.drZR = new Float64Array(33); this.drZw = 0;
+    this.drDL = new Float64Array(8); this.drDR = new Float64Array(8); this.drDw = 0;
+    this.drLpL = 0; this.drLpR = 0; this.drDcXL = 0; this.drDcYL = 0; this.drDcXR = 0; this.drDcYR = 0;
+    // formant
+    this.fs = new Float64Array(12);
+    // modulation
+    this.mdN = pow2(sr * 0.06); this.mdL = new Float32Array(this.mdN); this.mdR = new Float32Array(this.mdN);
+    this.mdW = 0; this.lfo = 0; this.fbL = 0; this.fbR = 0;
+    this.apL = new Float64Array(6); this.apR = new Float64Array(6); this.phL = 0; this.phR = 0;
+    this.msm = null;   // per-sample smoothed modulation settings
+    // delay: one line per division, all running at once
+    this.dls = MorphEngine.DIVS.map(beats => {
+      const n = pow2(beats * 1.5 * sr + 8);   // long enough at 40 bpm
+      return { L: new Float32Array(n), R: new Float32Array(n), m: n - 1, t: -1, lpL: 0, lpR: 0, hpL: 0, hpR: 0, wIn: 1, wOut: 0 };
+    });
+    this.dlMax = Math.max(...this.dls.map(d => d.m + 1)); this.dlW = 0; this.dlSpill = false; this.dlFirst = true;
+    // reverb
+    this.rvN = pow2(sr * 0.2); this.rv = []; for (let i = 0; i < 8; i++) this.rv.push(new Float32Array(this.rvN));
+    this.rvLen = new Float64Array(8).fill(-1); this.rvLp = new Float64Array(8); this.rvG = new Float64Array(8); this.rvT = new Float64Array(8);
+    this.rvApLen = [142, 107, 379, 277].map(x => Math.round(x * sr / 44100));
+    this.rvAp = this.rvApLen.map(l => new Float32Array(pow2(l + 1)));
+    this.rvW = 0;
+    // lo-fi
+    this.lfN = pow2(sr * 0.05); this.lfL = new Float32Array(this.lfN); this.lfR = new Float32Array(this.lfN); this.lfW = 0;
+    this.wowPh = 0; this.flPh1 = 0; this.flPh2 = 0; this.drift = 0; this.driftT = 0; this.lfD = -1;
+    this.wowR = 0; this.wowRT = 0; this.flR = 0; this.flRT = 0;
+    this.lfBpL = [0, 0]; this.lfBpR = [0, 0];
+    this.dpG = 1; this.dpT = 1; this.dpTimer = 0; this.dpLpL = 0; this.dpLpR = 0;
+    // codec: 512-point STFT, 50% overlap, square-root Hann windows (512 samples of latency when engaged)
+    this.cWin = Float64Array.from({ length: 512 }, (_, n) => Math.sqrt(0.5 - 0.5 * Math.cos(2 * Math.PI * n / 512)));
+    this.cInL = new Float64Array(512); this.cInR = new Float64Array(512); this.cPos = 0;
+    this.cOlaL = new Float64Array(1024); this.cOlaR = new Float64Array(1024); this.cT = 0; this.cHop = 0;
+    this.cRe = new Float64Array(512); this.cIm = new Float64Array(512); this.cXf = 0; this.cAmt = 0;
+    this.lfLpL = 0; this.lfLpR = 0; this.nDkL = 0; this.nDkR = 0; this.nBrL = 0; this.nBrR = 0; this.crL = 0; this.crR = 0; this.crLp = 0;
+    // OTT
+    this.xo = new Float64Array(8);
+    this.oEnv = new Float64Array(3); this.oGain = new Float64Array([1, 1, 1]); this.oTgt = new Float64Array([1, 1, 1]);
+    this.oInE = 1e-6; this.oOutE = 1e-6; this.oComp = 1; this.oRep = 0;
+    this.oLa = [0, 1, 2, 3, 4, 5].map(() => new Float64Array(128)); this.oLaW = 0; this.oLaN = Math.round(0.0015 * sr);
+  }
+  static osFilter() {
+    const N = 33, fc = 0.11, h = new Float64Array(N); let s = 0;
+    for (let n = 0; n < N; n++) {
+      const x = n - 16, sinc = x === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * x) / (Math.PI * x);
+      const w = 0.42 - 0.5 * Math.cos(2 * Math.PI * n / (N - 1)) + 0.08 * Math.cos(4 * Math.PI * n / (N - 1));
+      h[n] = sinc * w; s += h[n];
+    }
+    for (let n = 0; n < N; n++) h[n] /= s;
+    return h;
+  }
+  static get DIVS() { return [0.125, 1 / 6, 0.25, 1 / 3, 0.375, 0.5, 2 / 3, 0.75, 1, 1.5, 2, 3]; }   // delay times in beats
+  static get VOWELS() { return [[650, 1080, 2650], [400, 1700, 2600], [290, 1870, 2800], [400, 800, 2600], [350, 600, 2700]]; }   // a e i o u
+  rand() { let x = this.rng; x ^= x << 13; x ^= x >>> 17; x ^= x << 5; this.rng = x >>> 0; return this.rng / 4294967296; }
+
+  codecFrame(inp, ola) {
+    const N = 512, re = this.cRe, im = this.cIm, win = this.cWin, a = this.cAmt;
+    for (let k = 0; k < N; k++) { re[k] = inp[(this.cPos + k) & 511] * win[k]; im[k] = 0; }
+    MorphEngine.fft(re, im, false);
+    const cut = Math.round(256 * Math.min(1, 20000 * Math.pow(0.25, a) / (this.sr / 2)));
+    const thr = -80 + 62 * a, q = 0.5 + 5.5 * a;
+    let M = 1e-12;
+    for (let k = 1; k < 256; k++) M = Math.max(M, Math.hypot(re[k], im[k]));
+    for (let k = 1; k < 256; k++) {
+      let g = 0;
+      if (k <= cut) {
+        const db = 20 * Math.log10(Math.hypot(re[k], im[k]) / M + 1e-12);
+        const jit = (this.rand() * 2 - 1) * 8 * a;   // bins near the threshold flicker, like codec "birdies"
+        if (db + jit >= thr) g = Math.pow(10, (Math.round(db / q) * q - db) / 20);
+      }
+      re[k] *= g; im[k] *= g; re[N - k] = re[k]; im[N - k] = -im[k];
+    }
+    re[256] = 0; im[256] = 0;
+    MorphEngine.fft(re, im, true);
+    const t0 = this.cT - 512;   // time of this frame's first sample
+    for (let k = 0; k < N; k++) ola[(t0 + k) & 1023] += re[k] / N * win[k];
+  }
+  fx(L, R, p, len) {
+    const v = this.val, I = this.I, sr = this.sr, TAU = 2 * Math.PI, msr = sr / 1000;
+    const readF = (buf, mask, pos) => { const i = Math.floor(pos), f = pos - i; const a = buf[i & mask]; return a + (buf[(i + 1) & mask] - a) * f; };
+
+    /* ---- drive ---- */
+    // Level-referenced: a full-level signal comes out at the same level whatever the drive,
+    // so turning it up changes tone, not volume. The curve runs from warm and asymmetric
+    // (even harmonics) through a firmer knee to a sine wavefolder.
+    const drv = v[I.drive], dsh = v[I.dshape], dmix = v[I.dmix];
+    // Heavier drive squares the wave off, which raises its average level; dcomp pulls that back.
+    const REF = 0.35, dg = 0.5 * Math.pow(32, drv), dcomp = 1 / Math.tanh(dg) / (1 + 3.5 * Math.pow(drv, 1.5));
+    const dLpC = 1 - Math.exp(-TAU * 20000 * Math.pow(0.35, drv) / sr);
+    const shape = a => {
+      const soft = Math.tanh(a + 0.25) - 0.2449186624;   // tanh(0.25)
+      const firm = a / Math.pow(1 + a * a * a * a, 0.25);
+      return dsh < 0.5 ? soft + (firm - soft) * dsh * 2 : firm + (Math.sin(a) - firm) * (dsh - 0.5) * 2;
+    };
+    const H = this.osH;
+
+    /* ---- formant ---- */
+    const vp = v[I.fvowel] * 4, vi = Math.min(3, Math.floor(vp)), vf = vp - vi, VW = MorphEngine.VOWELS, fr = Math.pow(2, v[I.fshift] / 12);
+    const fk = 1 / (3 + v[I.freso] * 17), fmix = v[I.fmix], fGain = [1, 0.7, 0.45], fMake = 2.2 / Math.sqrt(fk);
+    const fa1 = [], fa2 = [], fa3 = [];
+    for (let b = 0; b < 3; b++) {
+      const f = Math.min(sr * 0.45, (VW[vi][b] + (VW[vi + 1][b] - VW[vi][b]) * vf) * fr);
+      const g = Math.tan(Math.PI * f / sr), a1 = 1 / (1 + g * (g + fk));
+      fa1.push(a1); fa2.push(g * a1); fa3.push(g * g * a1);
+    }
+
+    /* ---- modulation targets (smoothed per sample below) ---- */
+    // Type: 0 chorus (3 taps, long delay) -> 0.5 flanger (1 tap, short delay, feedback) -> 1 phaser.
+    // Going chorus -> flanger, the outer tap fades out first, then the middle one, like unison in reverse.
+    const mt = v[I.mtype], u = Math.min(1, mt * 2);
+    const T = [
+      15 + (1.5 - 15) * u,                          // 0 base delay (ms)
+      (6 + (1.2 - 6) * u) * v[I.mdepth],            // 1 depth (ms)
+      Math.max(0, Math.min(1, 2 - 2 * u)),          // 2 middle tap gain
+      Math.max(0, 1 - 2 * u),                       // 3 outer tap gain
+      Math.max(0, (mt - 0.5) * 2),                  // 4 phaser share
+      v[I.mfb] * (0.25 + 0.75 * u) * 0.95,          // 5 delay feedback
+      v[I.mfb] * 0.85,                              // 6 phaser feedback
+      0.5 + 4 * v[I.mdepth],                        // 7 phaser sweep (octaves)
+      v[I.mmix],                                    // 8 mix
+    ];
+    if (!this.msm) this.msm = T.slice();
+    const S = this.msm, lfoInc = v[I.mrate] / sr;
+
+    /* ---- delay ---- */
+    const dIdx = Math.max(0, Math.min(11, Math.round(v[I.dltime])));
+    const dfb = v[I.dlfb], pp = v[I.dlpp], dlmix = v[I.dlmix];
+    // Tone: below 50% darkens (low-pass sweeping down to 400 Hz), above 50% thins (high-pass sweeping up to 2 kHz).
+    // It filters the echoes you hear and every repeat, so its effect builds with feedback.
+    const dt = v[I.dltone], dtc = 1 - Math.exp(-TAU * (dt < 0.5 ? 400 * Math.pow(2, dt * 2 * 5.5) : 18000) / sr);
+    const dth = 1 - Math.exp(-TAU * (dt > 0.5 ? 20 * Math.pow(2, (dt - 0.5) * 2 * 6.6) : 20) / sr);
+    const spill = this.dlSpill, xfc = 1 - Math.exp(-1 / (0.012 * sr));   // ~12 ms crossfade
+    const dls = this.dls;
+    for (let i = 0; i < dls.length; i++) {
+      const d = dls[i];
+      d.tgt = Math.min(d.m - 4, MorphEngine.DIVS[i] * 60 / this.bpm * sr);
+      if (d.t < 0) d.t = d.tgt;
+      // Cut: every line hears the input, only the selected one is heard.
+      // Spill: only the selected line gets the input, all are heard, so old tails ring out.
+      d.inT = spill ? (i === dIdx ? 1 : 0) : 1;
+      d.outT = spill ? 1 : (i === dIdx ? 1 : 0);
+      if (this.dlFirst) { d.wIn = d.inT; d.wOut = d.outT; }
+    }
+    this.dlFirst = false;
+
+    /* ---- reverb ---- */
+    const scale = 0.35 + 1.4 * v[I.rvsize], RVB = [29.7, 37.1, 41.1, 43.7, 53.3, 59.9, 67.1, 73.1], rdecay = v[I.rvdecay];
+    for (let i = 0; i < 8; i++) {
+      const t = RVB[i] * scale * msr;
+      if (this.rvLen[i] < 0) this.rvLen[i] = t;
+      this.rvG[i] = Math.pow(10, -3 * this.rvLen[i] / (sr * rdecay));
+      this.rvT[i] = t;
+    }
+    const rdc = 1 - v[I.rvdamp] * 0.85, rmix = v[I.rvmix];
+
+    /* ---- lo-fi ---- */
+    this.driftT += (this.rand() * 2 - 1 - this.driftT) * 0.02;   // slow random drift for wow depth
+    // wow and flutter rates wander a little too
+    if (this.rand() < len / (0.6 * sr)) this.wowRT = this.rand() * 2 - 1;
+    if (this.rand() < len / (0.3 * sr)) this.flRT = this.rand() * 2 - 1;
+    this.wowR += (this.wowRT - this.wowR) * 0.01; this.flR += (this.flRT - this.flR) * 0.02;
+    const wowD = v[I.lwow] * 8, flD = v[I.lflut] * 0.8, lch = v[I.lchar];
+    const wowInc = 0.55 * (1 + 0.4 * this.wowR) / sr, fl1Inc = 7.3 * (1 + 0.2 * this.flR) / sr, fl2Inc = 11.9 * (1 - 0.15 * this.flR) / sr;
+    // character: tape-style drive (asymmetric, so it adds intermodulation between notes), a low bump, and high rolloff
+    const cg = 1 + 7 * lch, cA = 0.2 * lch, cTa = Math.tanh(cA), cOut = (1 + 0.1 * lch) / cg;
+    const lLpC = 1 - Math.exp(-TAU * 20000 * Math.pow(0.18, lch) / sr);
+    const bg = Math.tan(Math.PI * 100 / sr), bk = 1.2, ba1 = 1 / (1 + bg * (bg + bk)), ba2 = bg * ba1, ba3 = bg * ba2, bump = lch * 0.7;
+    // dropouts: level dips (never below about 15%) that also dull the sound, never full silence
+    const ldrop = v[I.ldrop];
+    if (this.dpTimer > 0) { this.dpTimer -= len; if (this.dpTimer <= 0) this.dpT = 1; }
+    else if (this.rand() < ldrop * 2.5 * len / sr) { this.dpT = 0.15 + 0.35 * this.rand(); this.dpTimer = (0.04 + 0.25 * this.rand()) * sr; }
+    const dpDn = 1 - Math.exp(-1 / (0.006 * sr)), dpUp = 1 - Math.exp(-1 / (0.03 * sr)), dpLpC = 1 - Math.exp(-TAU * 2000 / sr);
+    // codec
+    this.cAmt = 1 - Math.pow(1 - v[I.lcodec], 2.2);   // most of the damage now arrives in the first half
+    const cXfT = v[I.lcodec] > 0.001 ? 1 : 0, cXfC = 1 - Math.exp(-1 / (0.03 * sr));
+    // Noise: dark hiss (0) -> bright hiss (35%) -> crackle (60%), then crackle gets denser up to 100%
+    const nt = v[I.lnoise], nm = v[I.lnmix], ngain = nm > 0 ? 0.03 * Math.pow(10, -(1 - nm) * 45 / 20) * Math.min(1, nm * 20) : 0;   // even steps in loudness
+    const nDark = nt < 0.35 ? 1 - nt / 0.35 : 0, nBright = nt < 0.35 ? nt / 0.35 : nt < 0.6 ? 1 - (nt - 0.35) / 0.25 : 0, nCrack = nt < 0.35 ? 0 : nt < 0.6 ? (nt - 0.35) / 0.25 : 1;
+    const crDense = 0.1 + 1.9 * Math.max(0, Math.min(1, (nt - 0.35) / 0.65));   // sparse where crackle first appears, growing steadily to the top
+    const cDk = 1 - Math.exp(-TAU * 900 / sr), cBr = 1 - Math.exp(-TAU * 9000 / sr), crP = 0.0025 * 48000 / sr * crDense;
+
+    /* ---- OTT ---- */
+    // Three bands, each pulled toward a target level: downward above it, upward below it.
+    // Very quiet material (below about -80 dB) is left alone so silence doesn't turn into hiss.
+    const od = v[I.ottdepth] * 1.5, otime = v[I.otttime], oout = Math.pow(10, v[I.ottout] / 20);
+    const oAtk = 1 - Math.exp(-1 / (0.002 * otime * sr)), oRel = 1 - Math.exp(-1 / (0.07 * otime * sr));
+    const OT = [-26, -24, -30];
+    const ottGain = (b, e) => {   // per-band gain from its level: squash above the target, lift below it
+      const lv = 10 * Math.log10(e + 1e-12), t = OT[b];
+      const down = lv > t ? (t + (lv - t) / 10) - lv : 0;
+      const gate = Math.max(0, Math.min(1, (lv + 80) / 10));
+      const up = lv < t ? Math.min(30, (t - (t - lv) / 3) - lv) * gate : 0;
+      return Math.pow(10, Math.min(24, od * (down + up + 8)) / 20);   // lift capped at +24 dB
+    };
+    const gFall = 0.25, gRise = 1 - Math.exp(-1 / (0.02 * otime * sr));
+    const xa = f => { const g = Math.tan(Math.PI * f / sr), a1 = 1 / (1 + g * (g + Math.SQRT2)); return [a1, g * a1, g * g * a1]; };
+    const [x1a, x1b, x1c] = xa(v[I.ottlo]), [x2a, x2b, x2c] = xa(v[I.otthi]);
+    const lmC = 1 - Math.exp(-1 / (0.3 * sr));
+    const compT = Math.max(0.25, Math.min(4, Math.sqrt((this.oInE + 1e-9) / (this.oOutE + 1e-9))));
+    if ((this.oRep += len) >= 1024) {   // band levels for the OTT picture
+      this.oRep = 0;
+      this.reports.push({ type:'ott', lv: [0, 1, 2].map(b => 10 * Math.log10(this.oEnv[b] + 1e-12)), g: [0, 1, 2].map(b => 20 * Math.log10(this.oGain[b]) + [v[I.ottgl], v[I.ottgm], v[I.ottgh]][b] + 20 * Math.log10(this.oComp)) });
+    }
+    const bgL = Math.pow(10, v[I.ottgl] / 20), bgM = Math.pow(10, v[I.ottgm] / 20), bgH = Math.pow(10, v[I.ottgh] / 20);
+
+    const fs = this.fs, mdL = this.mdL, mdR = this.mdR, mdM = this.mdN - 1;
+    const rvM = this.rvN - 1, rv = this.rv, rvLen = this.rvLen, rvLp = this.rvLp, rvG = this.rvG, rvT = this.rvT, xo = this.xo;
+    const lfM = this.lfN - 1, dlMaxM = this.dlMax - 1;
+
+    const BY = this.by, BT = this.byT, byC = this.byC;
+    for (let s = 0; s < len; s++) {
+      let xL = L[p + s], xR = R[p + s];
+      for (let k = 0; k < 7; k++) BY[k] += (BT[k] - BY[k]) * byC;
+
+      const bL0 = xL, bR0 = xR;
+      /* drive (4x oversampled) */
+      {
+        const XL = this.drXL, XR = this.drXR;
+        for (let j = 8; j > 0; j--) { XL[j] = XL[j - 1]; XR[j] = XR[j - 1]; }
+        XL[0] = xL; XR[0] = xR;
+        let zw = this.drZw;
+        for (let k = 0; k < 4; k++) {
+          let uL = 0, uR = 0;
+          for (let j = 0, t = k; t < 33; j++, t += 4) { uL += H[t] * XL[j]; uR += H[t] * XR[j]; }
+          this.drZL[zw] = REF * shape(dg * 4 * uL / REF) * dcomp;
+          this.drZR[zw] = REF * shape(dg * 4 * uR / REF) * dcomp;
+          zw = zw === 32 ? 0 : zw + 1;
+        }
+        this.drZw = zw;
+        let yL = 0, yR = 0;
+        for (let t = 0, q = zw === 0 ? 32 : zw - 1; t < 33; t++, q = q === 0 ? 32 : q - 1) { yL += H[t] * this.drZL[q]; yR += H[t] * this.drZR[q]; }
+        this.drLpL += (yL - this.drLpL) * dLpC; this.drLpR += (yR - this.drLpR) * dLpC;
+        // DC blocker (the warm curve is asymmetric)
+        const dL = this.drLpL - this.drDcXL + 0.9995 * this.drDcYL; this.drDcXL = this.drLpL; this.drDcYL = dL;
+        const dR = this.drLpR - this.drDcXR + 0.9995 * this.drDcYR; this.drDcXR = this.drLpR; this.drDcYR = dR;
+        const dw = this.drDw, dryL = this.drDL[dw], dryR = this.drDR[dw];   // dry delayed to match the filters
+        this.drDL[dw] = xL; this.drDR[dw] = xR; this.drDw = (dw + 1) & 7;
+        xL = dryL + (dL - dryL) * dmix; xR = dryR + (dR - dryR) * dmix;
+      }
+
+      xL = bL0 + (xL - bL0) * BY[0]; xR = bR0 + (xR - bR0) * BY[0];   // bypass crossfade
+      const bL1 = xL, bR1 = xR;
+      /* formant */
+      {
+        let wL = 0, wR = 0;
+        for (let b = 0; b < 3; b++) {
+          const o = b * 4;
+          let v3 = xL - fs[o + 1], v1 = fa1[b] * fs[o] + fa2[b] * v3, v2 = fs[o + 1] + fa2[b] * fs[o] + fa3[b] * v3;
+          fs[o] = 2 * v1 - fs[o]; fs[o + 1] = 2 * v2 - fs[o + 1]; wL += v1 * fk * fGain[b];
+          v3 = xR - fs[o + 3]; v1 = fa1[b] * fs[o + 2] + fa2[b] * v3; v2 = fs[o + 3] + fa2[b] * fs[o + 2] + fa3[b] * v3;
+          fs[o + 2] = 2 * v1 - fs[o + 2]; fs[o + 3] = 2 * v2 - fs[o + 3]; wR += v1 * fk * fGain[b];
+        }
+        xL += (wL * fMake - xL) * fmix; xR += (wR * fMake - xR) * fmix;
+      }
+
+      xL = bL1 + (xL - bL1) * BY[1]; xR = bR1 + (xR - bR1) * BY[1];   // bypass crossfade
+      const bL2 = xL, bR2 = xR;
+      /* modulation */
+      {
+        for (let k = 0; k < 9; k++) S[k] += (T[k] - S[k]) * 0.002;
+        const base = S[0], dep = S[1], g1 = S[2], g2 = S[3], ph = S[4], fbD = S[5], fbP = S[6], octs = S[7], mmix = S[8];
+        const w = this.mdW;
+        mdL[w] = xL + this.fbL * fbD; mdR[w] = xR + this.fbR * fbD;
+        let dL = 0, dR = 0;
+        const gs = [1, g1, g2];
+        for (let j = 0; j < 3; j++) {
+          const gj = gs[j]; if (gj <= 1e-4) continue;
+          const phs = this.lfo + j / 3;
+          const rl = readF(mdL, mdM, w - (base + dep * 0.5 * (1 + Math.sin(TAU * phs))) * msr);
+          const rr = readF(mdR, mdM, w - (base + dep * 0.5 * (1 + Math.sin(TAU * (phs + 0.25)))) * msr);
+          if (j === 0) { this.fbL = Math.tanh(rl); this.fbR = Math.tanh(rr); }
+          dL += rl * gj; dR += rr * gj;
+        }
+        const nrm = 1 / Math.sqrt(1 + g1 * g1 + g2 * g2);
+        dL *= nrm; dR *= nrm;
+        // phaser: six first-order all-passes, swept per sample, feedback soft-limited
+        const tL = Math.tan(Math.PI * Math.min(sr * 0.45, 200 * Math.pow(2, octs * (0.5 + 0.5 * Math.sin(TAU * this.lfo)))) / sr);
+        const tR = Math.tan(Math.PI * Math.min(sr * 0.45, 200 * Math.pow(2, octs * (0.5 + 0.5 * Math.sin(TAU * (this.lfo + 0.25))))) / sr);
+        const aL = (tL - 1) / (tL + 1), aR = (tR - 1) / (tR + 1);
+        let pL = xL + Math.tanh(this.phL * fbP), pR = xR + Math.tanh(this.phR * fbP);
+        for (let k = 0; k < 6; k++) {
+          let y = aL * pL + this.apL[k]; this.apL[k] = pL - aL * y; pL = y;
+          y = aR * pR + this.apR[k]; this.apR[k] = pR - aR * y; pR = y;
+        }
+        this.phL = pL; this.phR = pR;
+        const wL = dL + (pL - dL) * ph, wR = dR + (pR - dR) * ph;
+        this.mdW = (w + 1) & mdM; this.lfo += lfoInc; if (this.lfo >= 1) this.lfo -= 1;
+        xL += (wL - xL) * 0.5 * mmix; xR += (wR - xR) * 0.5 * mmix;   // full mix = equal dry and wet
+      }
+
+      xL = bL2 + (xL - bL2) * BY[2]; xR = bR2 + (xR - bR2) * BY[2];   // bypass crossfade
+      const bL3 = xL, bR3 = xR;
+      /* delay: 12 lines in parallel, one per division */
+      {
+        const w = this.dlW, inL = xL * (1 - pp) + (xL + xR) * 0.5 * pp, inR = xR * (1 - pp);
+        let oL = 0, oR = 0;
+        for (let i = 0; i < 12; i++) {
+          const d = dls[i];
+          d.wIn += (d.inT - d.wIn) * xfc; d.wOut += (d.outT - d.wOut) * xfc;
+          d.t += (d.tgt - d.t) * 0.0003;   // only moves when the tempo changes
+          const eL = readF(d.L, d.m, w - d.t), eR = readF(d.R, d.m, w - d.t);
+          d.lpL += (eL - d.lpL) * dtc; d.lpR += (eR - d.lpR) * dtc;
+          d.hpL += (d.lpL - d.hpL) * dth; d.hpR += (d.lpR - d.hpR) * dth;
+          const fL = d.lpL - d.hpL, fR = d.lpR - d.hpR;
+          d.L[w & d.m] = inL * d.wIn + dfb * Math.tanh(fL + (fR - fL) * pp);
+          d.R[w & d.m] = inR * d.wIn + dfb * Math.tanh(fR + (fL - fR) * pp);
+          oL += fL * d.wOut; oR += fR * d.wOut;
+        }
+        this.dlW = (w + 1) & dlMaxM;
+        xL = xL * (1 - 0.5 * dlmix) + oL * dlmix; xR = xR * (1 - 0.5 * dlmix) + oR * dlmix;
+      }
+
+      xL = bL3 + (xL - bL3) * BY[3]; xR = bR3 + (xR - bR3) * BY[3];   // bypass crossfade
+      const bL4 = xL, bR4 = xR;
+      /* reverb */
+      {
+        const w = this.rvW;
+        let inp = (xL + xR) * 0.5;
+        for (let j = 0; j < 4; j++) {
+          const b = this.rvAp[j], m = b.length - 1, d = b[(w - this.rvApLen[j]) & m], y = -0.6 * inp + d;
+          b[w & m] = inp + 0.6 * y; inp = y;
+        }
+        let sum = 0;
+        for (let i = 0; i < 8; i++) {
+          rvLen[i] += (rvT[i] - rvLen[i]) * 0.0005;
+          const y = readF(rv[i], rvM, w - rvLen[i]);
+          rvLp[i] += (y - rvLp[i]) * rdc; sum += rvLp[i];
+        }
+        sum *= 0.25;
+        for (let i = 0; i < 8; i++) rv[i][w & rvM] = inp * (i & 1 ? 0.5 : -0.5) + rvG[i] * (rvLp[i] - sum);
+        this.rvW = (w + 1) & rvM;
+        const oL = (rvLp[0] - rvLp[2] + rvLp[4] - rvLp[6]) * 0.6, oR = (rvLp[1] - rvLp[3] + rvLp[5] - rvLp[7]) * 0.6;
+        xL = xL * (1 - 0.5 * rmix) + oL * rmix; xR = xR * (1 - 0.5 * rmix) + oR * rmix;
+      }
+
+      xL = bL4 + (xL - bL4) * BY[4]; xR = bR4 + (xR - bR4) * BY[4];   // bypass crossfade
+      const bL5 = xL, bR5 = xR;
+      /* lo-fi: wow and flutter, tape character, noise */
+      {
+        const w = this.lfW;
+        this.lfL[w] = xL; this.lfR[w] = xR;
+        this.drift += (this.driftT - this.drift) * 0.00005;
+        const wobble = wowD * (0.5 + 0.5 * Math.sin(TAU * this.wowPh)) + wowD * 0.4 * this.drift
+          + flD * (Math.sin(TAU * this.flPh1) + 0.5 * Math.sin(TAU * this.flPh2));
+        const target = (6 + wobble) * msr;
+        if (this.lfD < 0) this.lfD = target;
+        this.lfD += (target - this.lfD) * 0.01;
+        xL = readF(this.lfL, lfM, w - this.lfD); xR = readF(this.lfR, lfM, w - this.lfD);
+        this.lfW = (w + 1) & lfM;
+        this.wowPh += wowInc; if (this.wowPh >= 1) this.wowPh -= 1;
+        this.flPh1 += fl1Inc; if (this.flPh1 >= 1) this.flPh1 -= 1;
+        this.flPh2 += fl2Inc; if (this.flPh2 >= 1) this.flPh2 -= 1;
+        // character
+        {
+          const B = this.lfBpL, C = this.lfBpR;
+          let v3 = xL - B[1], v1 = ba1 * B[0] + ba2 * v3, v2 = B[1] + ba2 * B[0] + ba3 * v3; B[0] = 2 * v1 - B[0]; B[1] = 2 * v2 - B[1];
+          xL += v1 * bk * bump;
+          v3 = xR - C[1]; v1 = ba1 * C[0] + ba2 * v3; v2 = C[1] + ba2 * C[0] + ba3 * v3; C[0] = 2 * v1 - C[0]; C[1] = 2 * v2 - C[1];
+          xR += v1 * bk * bump;
+          xL = (Math.tanh(cg * xL + cA) - cTa) * cOut; xR = (Math.tanh(cg * xR + cA) - cTa) * cOut;
+          this.lfLpL += (xL - this.lfLpL) * lLpC; this.lfLpR += (xR - this.lfLpR) * lLpC;
+          xL = this.lfLpL; xR = this.lfLpR;
+        }
+        // dropouts
+        {
+          this.dpG += (this.dpT - this.dpG) * (this.dpT < this.dpG ? dpDn : dpUp);
+          this.dpLpL += (xL - this.dpLpL) * dpLpC; this.dpLpR += (xR - this.dpLpR) * dpLpC;
+          const dull = 1 - this.dpG;
+          xL = (xL + (this.dpLpL - xL) * dull) * this.dpG; xR = (xR + (this.dpLpR - xR) * dull) * this.dpG;
+        }
+        // codec: spectral holes, band-limiting and coarse levels, like a low-bitrate MP3
+        {
+          const ri = (this.cT - 512) & 1023;
+          const oL = this.cOlaL[ri], oR = this.cOlaR[ri]; this.cOlaL[ri] = 0; this.cOlaR[ri] = 0;
+          this.cInL[this.cPos] = xL; this.cInR[this.cPos] = xR; this.cPos = (this.cPos + 1) & 511;
+          this.cT = (this.cT + 1) & 1023;
+          if (++this.cHop === 256) { this.cHop = 0; this.codecFrame(this.cInL, this.cOlaL); this.codecFrame(this.cInR, this.cOlaR); }
+          this.cXf += (cXfT - this.cXf) * cXfC;
+          xL += (oL - xL) * this.cXf; xR += (oR - xR) * this.cXf;
+        }
+        if (ngain > 0) {
+          const wL = this.rand() * 2 - 1, wR = this.rand() * 2 - 1;
+          this.nDkL += (wL - this.nDkL) * cDk; this.nDkR += (wR - this.nDkR) * cDk;
+          this.nBrL += (wL - this.nBrL) * cBr; this.nBrR += (wR - this.nBrR) * cBr;
+          if (this.rand() < crP) { const a = Math.pow(this.rand(), 3) * (this.rand() < 0.5 ? -1 : 1); if (this.rand() < 0.5) this.crL += a; else this.crR += a; }
+          this.crLp += ((this.rand() * 2 - 1) * 0.25 - this.crLp) * 0.05;   // faint surface bed under the clicks
+          const nL = this.nDkL * 1.5 * nDark + this.nBrL * 0.5 * nBright + (this.crL * 9 + this.crLp * 5) * nCrack;
+          const nR = this.nDkR * 1.5 * nDark + this.nBrR * 0.5 * nBright + (this.crR * 9 + this.crLp * 5) * nCrack;
+          this.crL *= 0.55; this.crR *= 0.55;
+          xL += nL * ngain; xR += nR * ngain;
+        }
+      }
+
+      xL = bL5 + (xL - bL5) * BY[5]; xR = bR5 + (xR - bR5) * BY[5];   // bypass crossfade
+      const bL6 = xL, bR6 = xR;
+      /* OTT: low / mid / high always sum back to the input; each band is squashed toward its target */
+      {
+        const lp = (x, o, a1, a2, a3) => { const v3 = x - xo[o + 1], v1 = a1 * xo[o] + a2 * v3, v2 = xo[o + 1] + a2 * xo[o] + a3 * v3; xo[o] = 2 * v1 - xo[o]; xo[o + 1] = 2 * v2 - xo[o + 1]; return v2; };
+        const loL = lp(xL, 0, x1a, x1b, x1c), loR = lp(xR, 2, x1a, x1b, x1c);
+        const rL = xL - loL, rR = xR - loR;
+        const miL = lp(rL, 4, x2a, x2b, x2c), miR = lp(rR, 6, x2a, x2b, x2c);
+        const hiL = rL - miL, hiR = rR - miR;
+        const e0 = Math.max(loL * loL, loR * loR), e1 = Math.max(miL * miL, miR * miR), e2 = Math.max(hiL * hiL, hiR * hiR);
+        const E = this.oEnv, G = this.oGain;
+        E[0] += (e0 > E[0] ? oAtk : oRel) * (e0 - E[0]);
+        E[1] += (e1 > E[1] ? oAtk : oRel) * (e1 - E[1]);
+        E[2] += (e2 > E[2] ? oAtk : oRel) * (e2 - E[2]);
+        // Gain drops land at once and rises ease in, and the audio runs 1.5 ms behind the detector, so a
+        // note arriving after a quiet gap is caught before its first peak instead of getting the gap's lift.
+        for (let b = 0; b < 3; b++) { const tg = ottGain(b, E[b]); G[b] += (tg - G[b]) * (tg < G[b] ? gFall : gRise); }
+        const la = this.oLa, lw = this.oLaW, lr = (lw - this.oLaN) & 127;
+        la[0][lw] = loL; la[1][lw] = miL; la[2][lw] = hiL; la[3][lw] = loR; la[4][lw] = miR; la[5][lw] = hiR;
+        this.oLaW = (lw + 1) & 127;
+        const dxL = la[0][lr] + la[1][lr] + la[2][lr], dxR = la[3][lr] + la[4][lr] + la[5][lr];   // delayed input, for the level match
+        let yL = la[0][lr] * G[0] * bgL + la[1][lr] * G[1] * bgM + la[2][lr] * G[2] * bgH, yR = la[3][lr] * G[0] * bgL + la[4][lr] * G[1] * bgM + la[5][lr] * G[2] * bgH;
+        // Level match: OTT changes the dynamics, not the overall loudness. Slow averages of the level going in
+        // and coming out set a correction (within ±12 dB), so Depth doesn't swing the volume around.
+        this.oInE += (dxL * dxL + dxR * dxR - this.oInE) * lmC; this.oOutE += (yL * yL + yR * yR - this.oOutE) * lmC;
+        this.oComp += (compT - this.oComp) * lmC;
+        xL = yL * this.oComp * oout; xR = yR * this.oComp * oout;
+      }
+      xL = bL6 + (xL - bL6) * BY[6]; xR = bR6 + (xR - bR6) * BY[6];   // bypass crossfade
+      L[p + s] = xL; R[p + s] = xR;
+    }
+  }
+
+  /* ---------- per-block work ---------- */
+  resolve() {
+    const m = this.morph, defs = this.defs;
+    this.mSm = this.first ? m : this.mSm + (m - this.mSm) * 0.08;
+    for (let i = 0; i < defs.length; i++) {
+      const d = defs[i];
+      const mm = MorphEngine.bend(m, this.C[i]);
+      let target = d.snap ? (mm < 0.5 ? this.A[i] : this.B[i]) : this.A[i] + (this.B[i] - this.A[i]) * mm;
+      if (this.first || d.snap || d.curve === 'int') this.cur[i] = target;
+      else this.cur[i] += (target - this.cur[i]) * 0.08;   // de-zipper
+      this.val[i] = MorphEngine.denorm(d, this.cur[i]);
+    }
+    this.first = false;
+  }
+  build() {
+    const tA = this.tables.A, tB = this.tables.B;
+    if (!tA || !tB) return false;
+    // Each table is read at its own position (these never morph). The Wave value, which does
+    // morph and has its own curve, sets how much of B's shape is in the blend.
+    const v = this.val, I = this.I;
+    MorphEngine.frameAt(tA, v[I.posA], this.spectral, this.fa[0], this.fa[1]);
+    MorphEngine.frameAt(tB, v[I.posB], this.spectral, this.fb[0], this.fb[1]);
+    MorphEngine.interp(this.fa[0], this.fa[1], this.fb[0], this.fb[1], v[I.wave], this.spectral, this.fr[0], this.fr[1]);
+    const t = this.bankPrev; this.bankPrev = this.bankCur; this.bankCur = t;
+    for (let k = 0; k < 10; k++) {
+      const out = this.bankCur[k], N = out.length - 1;
+      MorphEngine.synth(this.fr[0], this.fr[1], 512 >> k, N, out, this.scr[k][0], this.scr[k][1]);
+      out[N] = out[0];
+    }
+    return true;
+  }
+  maybeBuild(len) {
+    this.since += len;
+    if (!this.tables.A || !this.tables.B) return;
+    const v = this.val, I = this.I;
+    const key = v[I.posA].toFixed(4) + '|' + v[I.posB].toFixed(4) + '|' + v[I.wave].toFixed(4) + '|' + this.tabVer;
+    if (!this.bankReady) {
+      if (this.build()) {
+        for (let k = 0; k < 10; k++) this.bankPrev[k].set(this.bankCur[k]);
+        this.bankReady = true; this.xf = 1; this.lastKey = key; this.since = 0;
+      }
+      return;
+    }
+    // rebuild at most every 512 samples, crossfading from the previous tables
+    if (key !== this.lastKey && this.since >= 512 && this.xf >= 1) {
+      this.build(); this.lastKey = key; this.since = 0; this.xf = 0; this.xfInc = 1 / 512;
+    }
+  }
+  render(L, R, n) {
+    const sr = this.sr, I = this.I;
+    let p = 0;
+    while (p < n) {
+      const len = Math.min(16, n - p);
+      this.resolve();
+      this.seqRun(len);
+      this.maybeBuild(len);
+      if (this.bankReady) {
+        const v = this.val;
+        const tune = v[I.octave] * 12 + v[I.fine] / 100;
+        // Unison as a wet amount: the center voice always plays; the inner pair fades in over
+        // the first third, the middle pair over the second, the outer pair over the last.
+        const uAmt = v[I.unison];   // one control: more voices and a wider spread together
+        let uni = 0, pw = 0;
+        for (let j = 0; j < 7; j++) {
+          const pair = Math.abs(j - 3), gain = pair === 0 ? 1 : Math.max(0, Math.min(1, uAmt * 3 - (pair - 1)));
+          if (gain <= 0) continue;
+          const off = (j - 3) / 3;
+          this.uJ[uni] = j; this.uOff[uni] = off * uAmt * 0.5;   // up to ±50 cents at full
+          const a = (off * 0.7 + 1) * Math.PI / 4;
+          this.uL[uni] = Math.cos(a) * Math.SQRT2 * gain; this.uR[uni] = Math.sin(a) * Math.SQRT2 * gain;
+          pw += gain * gain; uni++;
+        }
+        const ug = 1 / Math.sqrt(pw);
+        for (let j = 0; j < uni; j++) { this.uL[j] *= ug; this.uR[j] *= ug; }
+        const glide = v[I.glide], gK = glide > 0.0005 ? 1 - Math.exp(-len / (glide * sr / 4)) : 1;
+        const cutoff = v[I.cutoff], k = 2 - 1.96 * v[I.reso], envAmt = v[I.envamt], kt = v[I.keytrack];
+        const bpG = Math.sqrt(k * 2);
+        const md = v[I.mode];
+        let wl, wb, wh;
+        if (md < 0.5) { const t = md * 2; wl = 1 - t; wb = t; wh = 0; } else { const t = (md - 0.5) * 2; wl = 0; wb = 1 - t; wh = t; }
+        const aInc = 1 / (v[I.aatk] * sr), aD = Math.exp(-5 / (v[I.adec] * sr)), aS = v[I.asus], aR = Math.exp(-6.9 / (v[I.arel] * sr));
+        const fInc = 1 / (v[I.fatk] * sr), fD = Math.exp(-5 / (v[I.fdec] * sr)), fS = v[I.fsus], fR = Math.exp(-6.9 / (v[I.frel] * sr));
+        const pa = (v[I.pan] + 1) * Math.PI / 4;
+        const gl = Math.cos(pa) * Math.SQRT2 * v[I.level] * 0.2, gr = Math.sin(pa) * Math.SQRT2 * v[I.level] * 0.2;
+        const xf0 = this.xf, xfI = this.xfInc;
+        const uL = this.uL, uR = this.uR, uDt = this.uDt, uLev = this.uLev, uJ = this.uJ;
+
+        for (const vc of this.voices) {
+          if (!vc.active) continue;
+          vc.pitch += (vc.note - vc.pitch) * gK;
+          // vibrato: depth fades in over the fade time; the rate can start fast and slow down, or the reverse
+          const vT = vc.vAge / sr, vF = v[I.vfade], vEnv = vF < 0.005 ? 1 : Math.min(1, vT / vF), rEnv = Math.min(1, vT / Math.max(0.005, v[I.vrtime]));
+          const vRate = Math.max(0.1, v[I.vrate] + v[I.vrfade] * (1 - rEnv));   // Rate fade is in Hz: the rate starts that far off and settles
+          const vib = v[I.vdepth] * vEnv * Math.sin(2 * Math.PI * vc.vPh);
+          vc.vPh += vRate * len / sr; if (vc.vPh >= 1) vc.vPh -= 1; vc.vAge += len;
+          const base = vc.pitch + tune + vib;
+          for (let j = 0; j < uni; j++) {
+            const dt = 440 * Math.pow(2, (base + this.uOff[j] - 69) / 12) / sr;
+            uDt[j] = dt;
+            let lev = Math.ceil(Math.log2(512 * dt / 0.45));
+            uLev[j] = lev < 0 ? 0 : lev > 9 ? 9 : lev;
+          }
+          const fc = Math.min(sr * 0.45, Math.max(20, cutoff * Math.pow(2, envAmt * 5 * vc.fLv + kt * (vc.pitch - 60) / 12)));
+          const g = Math.tan(Math.PI * fc / sr), a1 = 1 / (1 + g * (g + k)), a2 = g * a1, a3 = g * a2;
+          let aSt = vc.aSt, aLv = vc.aLv, fSt = vc.fSt, fLv = vc.fLv, l1 = vc.l1, l2 = vc.l2, r1 = vc.r1, r2 = vc.r2;
+          const ph = vc.ph, vel = vc.vel;
+          for (let s = 0; s < len; s++) {
+            const xf = Math.min(1, xf0 + xfI * s);
+            let sl = 0, sr2 = 0;
+            for (let j = 0; j < uni; j++) {
+              const bc = this.bankCur[uLev[j]], bp = this.bankPrev[uLev[j]], N = bc.length - 1;
+              const pj = uJ[j];
+              let q = ph[pj];
+              const pos = q * N, i = pos | 0, fr = pos - i;
+              const c = bc[i] + (bc[i + 1] - bc[i]) * fr, o = bp[i] + (bp[i + 1] - bp[i]) * fr;
+              const x = o + (c - o) * xf;
+              sl += x * uL[j]; sr2 += x * uR[j];
+              q += uDt[j]; if (q >= 1) q -= 1; ph[pj] = q;
+            }
+            if (aSt === 1) { aLv += aInc; if (aLv >= 1) { aLv = 1; aSt = 2; } } else if (aSt === 2) aLv = aS + (aLv - aS) * aD; else aLv *= aR;
+            if (fSt === 1) { fLv += fInc; if (fLv >= 1) { fLv = 1; fSt = 2; } } else if (fSt === 2) fLv = fS + (fLv - fS) * fD; else fLv *= fR;
+            let v3 = sl - l2, v1 = a1 * l1 + a2 * v3, v2 = l2 + a2 * l1 + a3 * v3;
+            l1 = 2 * v1 - l1; l2 = 2 * v2 - l2;
+            const oL = wl * v2 + wb * v1 * bpG + wh * (sl - k * v1 - v2);
+            v3 = sr2 - r2; v1 = a1 * r1 + a2 * v3; v2 = r2 + a2 * r1 + a3 * v3;
+            r1 = 2 * v1 - r1; r2 = 2 * v2 - r2;
+            const oR = wl * v2 + wb * v1 * bpG + wh * (sr2 - k * v1 - v2);
+            const amp = aLv * vel;
+            L[p + s] += oL * amp * gl; R[p + s] += oR * amp * gr;
+          }
+          vc.aSt = aSt; vc.aLv = aLv; vc.fSt = fSt; vc.fLv = fLv; vc.l1 = l1; vc.l2 = l2; vc.r1 = r1; vc.r2 = r2;
+          if (aSt === 3 && aLv < 3e-4) vc.active = false;
+        }
+        this.xf = Math.min(1, this.xf + this.xfInc * len);
+      }
+      this.fx(L, R, p, len);
+      p += len;
+    }
+    for (let i = 0; i < n; i++) { L[i] = Math.tanh(L[i]); R[i] = Math.tanh(R[i]); }
+  }
+}
+
+
+/* =====================================================================
+   PARAMETER REGISTRY
+   curve: 'lin' | 'log' | 'int' | 'pow2'   snap: switch instead of blending
+   ===================================================================== */
+const DEFS = [
+  { id:'posA',     label:'Position A', group:'Wavetables',      min:0,     max:1,     curve:'lin',  single:'A', a:0.667, b:0.667 },
+  { id:'wave',     label:'Wave',       group:'Wavetables',      min:0,     max:1,     curve:'lin',  a:0, b:1 },
+  { id:'posB',     label:'Position B', group:'Wavetables',      min:0,     max:1,     curve:'lin',  single:'B', a:0.3, b:0.3 },
+  { id:'octave',   label:'Octave',     group:'Oscillator',      min:-2,    max:2,     curve:'int',  a:0, b:0 },
+  { id:'fine',     label:'Fine tune',  group:'Oscillator',      min:-100,  max:100,   curve:'lin',  a:0, b:0 },
+  { id:'unison',   label:'Unison',     group:'Oscillator',      min:0,     max:1,     curve:'lin',  a:0, b:0.35 },
+  { id:'glide',    label:'Glide',      group:'Oscillator',      min:0,     max:2,     curve:'pow2', a:0, b:0 },
+  { id:'vdepth',   label:'Vibrato',    group:'Oscillator',      min:0,     max:1,     curve:'pow2', a:0, b:0 },
+  { id:'vfade',    label:'Fade in',    group:'Oscillator',      min:0,     max:5,     curve:'pow2', a:0.6, b:0.6 },
+  { id:'vrate',    label:'Vib rate',   group:'Oscillator',      min:0.5,   max:12,    curve:'log',  a:5.5, b:5.5 },
+  { id:'vrfade',   label:'Rate fade',  group:'Oscillator',      min:-10,   max:10,    curve:'lin',  a:0, b:0 },
+  { id:'vrtime',   label:'Rate settle',group:'Oscillator',      min:0,     max:5,     curve:'pow2', a:1, b:1 },
+  { id:'cutoff',   label:'Cutoff',     group:'Filter',          min:30,    max:18000, curve:'log',  a:700, b:2500 },
+  { id:'reso',     label:'Resonance',  group:'Filter',          min:0,     max:1,     curve:'lin',  a:0.25, b:0.45 },
+  { id:'mode',     label:'Mode',       group:'Filter',          min:0,     max:1,     curve:'lin',  a:0, b:0.25 },
+  { id:'envamt',   label:'Env amount', group:'Filter',          min:-1,    max:1,     curve:'lin',  a:0.5, b:0.25 },
+  { id:'keytrack', label:'Key track',  group:'Filter',          min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
+  { id:'fatk',     label:'Attack',     group:'Filter envelope', min:0.001, max:10,    curve:'log',  a:0.003, b:0.4 },
+  { id:'fdec',     label:'Decay',      group:'Filter envelope', min:0.005, max:10,    curve:'log',  a:0.35, b:1.2 },
+  { id:'fsus',     label:'Sustain',    group:'Filter envelope', min:0,     max:1,     curve:'lin',  a:0.15, b:0.4 },
+  { id:'frel',     label:'Release',    group:'Filter envelope', min:0.005, max:10,    curve:'log',  a:0.3, b:1.5 },
+  { id:'aatk',     label:'Attack',     group:'Amp envelope',    min:0.001, max:10,    curve:'log',  a:0.003, b:0.25 },
+  { id:'adec',     label:'Decay',      group:'Amp envelope',    min:0.005, max:10,    curve:'log',  a:0.6, b:1 },
+  { id:'asus',     label:'Sustain',    group:'Amp envelope',    min:0,     max:1,     curve:'lin',  a:0.7, b:0.85 },
+  { id:'arel',     label:'Release',    group:'Amp envelope',    min:0.005, max:10,    curve:'log',  a:0.3, b:1.6 },
+  { id:'level',    label:'Level',      group:'Output',          min:0,     max:1,     curve:'lin',  a:0.8, b:0.8 },
+  { id:'pan',      label:'Pan',        group:'Output',          min:-1,    max:1,     curve:'lin',  a:0, b:0 },
+  { id:'drive',    label:'Drive',      group:'Drive',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'dshape',   label:'Shape',      group:'Drive',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'dmix',     label:'Mix',        group:'Drive',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'fvowel',   label:'Vowel',      group:'Formant filter',  min:0,     max:1,     curve:'lin',  a:0, b:1 },
+  { id:'fshift',   label:'Shift',      group:'Formant filter',  min:-12,   max:12,    curve:'lin',  a:0, b:0 },
+  { id:'freso',    label:'Resonance',  group:'Formant filter',  min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
+  { id:'fmix',     label:'Mix',        group:'Formant filter',  min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'mtype',    label:'Type',       group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'mrate',    label:'Rate',       group:'Modulation',      min:0.02,  max:10,    curve:'log',  a:0.4, b:0.4 },
+  { id:'mdepth',   label:'Depth',      group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
+  { id:'mfb',      label:'Feedback',   group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0.3, b:0.3 },
+  { id:'mmix',     label:'Mix',        group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'dltime',   label:'Time',       group:'Delay',           min:0,     max:11,    curve:'int',  a:7, b:7 },
+  { id:'dlfb',     label:'Feedback',   group:'Delay',           min:0,     max:0.95,  curve:'lin',  a:0.4, b:0.4 },
+  { id:'dlpp',     label:'Ping-pong',  group:'Delay',           min:0,     max:1,     curve:'lin',  a:0.6, b:0.6 },
+  { id:'dltone',   label:'Tone',       group:'Delay',           min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
+  { id:'dlmix',    label:'Mix',        group:'Delay',           min:0,     max:1,     curve:'lin',  a:0, b:0.3 },
+  { id:'rvsize',   label:'Size',       group:'Reverb',          min:0,     max:1,     curve:'lin',  a:0.5, b:0.7 },
+  { id:'rvdecay',  label:'Decay',      group:'Reverb',          min:0.2,   max:20,    curve:'log',  a:1.5, b:3 },
+  { id:'rvdamp',   label:'Damping',    group:'Reverb',          min:0,     max:1,     curve:'lin',  a:0.5, b:0.4 },
+  { id:'rvmix',    label:'Mix',        group:'Reverb',          min:0,     max:1,     curve:'lin',  a:0.12, b:0.3 },
+  { id:'lwow',     label:'Wow',        group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'lflut',    label:'Flutter',    group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'lchar',    label:'Character',  group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'lnoise',   label:'Noise',      group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'lnmix',    label:'Noise mix',  group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'ldrop',    label:'Dropouts',   group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'lcodec',   label:'Codec',      group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
+  { id:'ottdepth', label:'Depth',      group:'OTT',             min:0,     max:1,     curve:'lin',  a:0.13, b:0.13 },
+  { id:'otttime',  label:'Time',       group:'OTT',             min:0.1,   max:4,     curve:'log',  a:1, b:1 },
+  { id:'ottlo',    label:'Low split',  group:'OTT',             min:40,    max:500,   curve:'log',  a:120, b:120 },
+  { id:'otthi',    label:'High split', group:'OTT',             min:600,   max:10000, curve:'log',  a:2500, b:2500 },
+  { id:'ottgl',    label:'Low gain',   group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
+  { id:'ottgm',    label:'Mid gain',   group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
+  { id:'ottgh',    label:'High gain',  group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
+  { id:'ottout',   label:'Output',     group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
+  { id:'pattern',  label:'Pattern',    group:'Sequencer',       min:0,     max:1,     curve:'lin',  a:0, b:1 },
+];
+const IX = {}; DEFS.forEach((d, i) => { IX[d.id] = i; });
+const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' s');
+const pct = v => Math.round(v * 100) + '%';
+const FMT = {
+  posA: pct, posB: pct,
+  drive: pct, dshape: pct, dmix: pct,
+  fvowel: v => { const n = 'AEIOU', x = v * 4, i = Math.round(x); return Math.abs(x - i) < 0.08 ? n[i] : n[Math.floor(x)] + '–' + n[Math.min(4, Math.floor(x) + 1)]; },
+  fshift: v => (v > 0 ? '+' : '') + v.toFixed(1) + ' st', freso: pct, fmix: pct,
+  mtype: pct, mrate: v => (v < 1 ? v.toFixed(2) : v.toFixed(1)) + ' Hz', mdepth: pct, mfb: pct, mmix: pct,
+  dltime: v => ['1/32', '1/16 T', '1/16', '1/8 T', '1/16 D', '1/8', '1/4 T', '1/8 D', '1/4', '1/4 D', '1/2', '1/2 D'][v],
+  dlfb: pct, dlpp: pct, dltone: v => (Math.abs(v - 0.5) < 0.02 ? 'Flat' : v < 0.5 ? 'Dark ' + Math.round((0.5 - v) * 200) + '%' : 'Thin ' + Math.round((v - 0.5) * 200) + '%'), dlmix: pct,
+  rvsize: pct, rvdecay: v => v.toFixed(v < 10 ? 1 : 0) + ' s', rvdamp: pct, rvmix: pct,
+  lwow: pct, lflut: pct, lchar: pct, lnmix: pct, ldrop: pct, lcodec: pct,
+  vdepth: v => (v < 0.005 ? 'Off' : Math.round(v * 100) + ' ct'), vfade: v => (v < 0.005 ? 'None' : time(v)), vrate: v => v.toFixed(1) + ' Hz',
+  vrtime: v => (v < 0.005 ? 'Instant' : time(v)),
+  vrfade: v => (Math.abs(v) < 0.05 ? 'Steady' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(1) + ' Hz'),
+  ottlo: v => Math.round(v) + ' Hz', otthi: v => (v / 1000).toFixed(1) + ' kHz',
+  ottgl: v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB', ottgm: v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB', ottgh: v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB',
+  lnoise: v => (v < 0.03 ? 'Dark hiss' : v < 0.32 ? 'Dark–bright' : v < 0.38 ? 'Bright hiss' : v < 0.58 ? 'Hiss–crackle' : v < 0.62 ? 'Crackle' : 'Crackle ' + (0.1 + 1.9 * (v - 0.35) / 0.65).toFixed(1) + '×'),
+  ottdepth: pct, otttime: v => v.toFixed(2) + '×', ottout: v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB',
+  pattern: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
+  wave: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
+  octave: v => (v > 0 ? '+' + v : String(v)),
+  fine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`,
+  unison: v => (v < 0.005 ? 'Off' : pct(v)),
+  glide: v => (v < 0.001 ? 'Off' : time(v)),
+  cutoff: v => (v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 1 : 2) + ' kHz' : v.toFixed(0) + ' Hz'),
+  reso: pct,
+  mode: pct,
+  envamt: v => (v > 0 ? '+' : '') + Math.round(v * 100) + '%',
+  keytrack: pct,
+  fatk: time, fdec: time, fsus: pct, frel: time,
+  aatk: time, adec: time, asus: pct, arel: time,
+  level: pct,
+  pan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
+};
+const fmtCurve = c => Math.abs(c) < 0.03 ? 'Curve: even' : `Curve: ${c > 0 ? 'early' : 'late'} ${Math.round(Math.abs(c) * 100)}%`;
+const norm = (d, v) => d.curve === 'log' ? Math.log(v / d.min) / Math.log(d.max / d.min)
+  : d.curve === 'pow2' ? Math.sqrt((v - d.min) / (d.max - d.min)) : (v - d.min) / (d.max - d.min);
+const clamp = x => Math.max(0, Math.min(1, x));
+const isLinked = i => !!DEFS[i].single || !!state.links[DEFS[i].id];
+const clampC = c => Math.max(-1, Math.min(1, c));
+const quant = (d, x) => d.curve === 'int' ? Math.round(x * (d.max - d.min)) / (d.max - d.min) : x;
+const defaultNorm = (side, i) => norm(DEFS[i], side === 'A' ? DEFS[i].a : DEFS[i].b);
+const resolveNorm = i => {
+  const d = DEFS[i], a = state.A[i], b = state.B[i];
+  const mm = MorphEngine.bend(state.morph, state.C[i]);
+  if (d.snap) return mm < 0.5 ? a : b;
+  return quant(d, a + (b - a) * mm);
+};
+
+/* =====================================================================
+   WAVETABLES (UI side)
+   A table is up to 16 keyframes of 2048 samples. The UI analyzes each
+   frame into harmonics and sends the spectra to the engine.
+   ===================================================================== */
+const NS = 2048, MAXF = 16;
+const SIN = Float32Array.from({ length: NS }, (_, n) => Math.sin(2 * Math.PI * n / NS));
+const additive = (amps) => { const f = new Float32Array(NS);
+  amps.forEach((a, h) => { if (h && a) for (let n = 0; n < NS; n++) f[n] += a * SIN[(h * n) & (NS - 1)]; }); return f; };
+const shape = fn => Float32Array.from({ length: NS }, (_, n) => fn(n / NS));
+function normalizeFrame(f) {
+  let dc = 0; for (let n = 0; n < NS; n++) dc += f[n]; dc /= NS;
+  let pk = 0; for (let n = 0; n < NS; n++) { f[n] -= dc; pk = Math.max(pk, Math.abs(f[n])); }
+  if (pk > 1e-6) for (let n = 0; n < NS; n++) f[n] /= pk;
+  return f;
+}
+const PRESETS = {
+  'Basic shapes': () => [
+    shape(t => Math.sin(2 * Math.PI * t)),
+    shape(t => 1 - 4 * Math.abs(((t + 0.25) % 1) - 0.5)),
+    shape(t => ((t + 0.5) % 1) * 2 - 1),
+    shape(t => (t < 0.5 ? 1 : -1)),
+  ],
+  'Pulse width': () => Array.from({ length: 8 }, (_, j) => { const w = 0.5 - j * 0.46 / 7; return shape(t => (t < w ? 1 : -1)); }),
+  'Harmonic stack': () => [1, 2, 3, 5, 8, 16, 32, 64].map(H => additive(Array.from({ length: H + 1 }, (_, h) => (h ? 1 / h : 0)))),
+  'Sync sweep': () => [1, 1.5, 2.2, 3, 3.9, 5, 6.2, 7.5].map(r => shape(t => Math.sin(2 * Math.PI * r * t))),
+  'Vowel formants': () => Array.from({ length: 8 }, (_, j) => {
+    const c = 2 + j * 2.6;
+    return additive(Array.from({ length: 49 }, (_, h) => (h ? Math.exp(-((h - c) ** 2) / 4.5) + (h === 1 ? 0.5 : 0) : 0)));
+  }),
+  'Sine': () => [shape(t => Math.sin(2 * Math.PI * t))],
+};
+const makeTable = name => ({ name, frames: PRESETS[name]().map(normalizeFrame) });
+const cloneTable = t => ({ name: t.name, frames: t.frames.map(f => f.slice()) });
+
+/* ---------- state + persistence ---------- */
+const STORE = 'diptych-v3';  // patches from before the effects existed load with the new knobs at defaults
+const state = {
+  A: DEFS.map((_, i) => defaultNorm('A', i)),
+  B: DEFS.map((_, i) => defaultNorm('B', i)),
+  C: DEFS.map(() => 0),
+  morph: 0,
+  spectral: true,
+  locks: { level: true, pan: true, pattern: true, ottdepth: true, ottout: true },
+  secLocks: {},
+  linkMem: {},
+  mono: false,
+  links: { octave: true, fine: true, ottdepth: true, ottout: true },
+  fxOn: [true, true, true, true, true, true, true],
+  seq: null,
+  bpm: 120,
+  walk: true,
+  dlSpill: false,
+};
+const tables = { A: makeTable('Basic shapes'), B: makeTable('Vowel formants') };
+
+function enc(f) {
+  const i16 = new Int16Array(f.length);
+  for (let n = 0; n < f.length; n++) i16[n] = Math.max(-32767, Math.min(32767, Math.round(f[n] * 32767)));
+  const u8 = new Uint8Array(i16.buffer); let s = '';
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function dec(b) {
+  const s = atob(b), u8 = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i);
+  const i16 = new Int16Array(u8.buffer);
+  return Float32Array.from(i16, x => x / 32767);
+}
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+  const old = saved ? null : JSON.parse(localStorage.getItem('diptych-step2') || 'null');
+  if (old && old.tables) ['A', 'B'].forEach(s => {   // keep wavetables from the previous version
+    const t = old.tables[s];
+    if (t && Array.isArray(t.frames) && t.frames.length) tables[s] = { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) };
+  });
+  // Parameters are matched by name, so patches survive new knobs being added.
+  // Patches saved before names were stored are matched against the pre-effects list.
+  const FX = new Set(['drive','dshape','dmix','fvowel','fshift','freso','fmix','mtype','mrate','mdepth','mfb','mmix','dltime','dlfb','dlpp','dltone','dlmix','rvsize','rvdecay','rvdamp','rvmix','ottdepth','otttime','ottup','ottdown','ottout']);
+  const ids = saved && saved.A ? (saved.ids || (saved.A.length === DEFS.length ? DEFS.map(d => d.id) : DEFS.filter(d => !FX.has(d.id)).map(d => d.id))) : null;
+  if (saved && ids && ids.length === saved.A.length && saved.B.length === saved.A.length) {
+    ids.forEach((id, k) => {
+      const i = IX[id]; if (i === undefined) return;
+      state.A[i] = clamp(+saved.A[k]); state.B[i] = clamp(+saved.B[k]);
+      if (saved.C) state.C[i] = clampC(+saved.C[k] || 0);
+    });
+    state.morph = clamp(+saved.morph || 0);
+    if (saved.locks && typeof saved.locks === 'object') state.locks = saved.locks;
+    if (saved.links && typeof saved.links === 'object') state.links = saved.links;
+    if (!(saved.ver >= 5)) state.locks.pattern = true;   // Pattern starts locked from this version
+    if (saved.secLocks && typeof saved.secLocks === 'object') state.secLocks = saved.secLocks;
+    if (saved.linkMem && typeof saved.linkMem === 'object') state.linkMem = saved.linkMem;
+    state.mono = !!saved.mono;
+    if (saved.locks && saved.locks.tables) { state.secLocks.Wavetables = true; delete state.locks.tables; }
+    if (!(saved.ver >= 7)) ['ottdepth', 'ottout'].forEach(id => { state.locks[id] = true; });   // OTT Depth and Output start locked
+    if (!(saved.ver >= 8)) ['otttime', 'ottlo', 'otthi', 'ottgl', 'ottgm', 'ottgh'].forEach(id => { delete state.locks[id]; });   // the rest of OTT starts unlocked
+    if (!(saved.ver >= 6)) {   // OTT Depth and Output start linked, at 13% and 0 dB
+      state.links.ottdepth = true; state.links.ottout = true;
+      ['ottdepth', 'ottout'].forEach(id => { const i = IX[id]; state.A[i] = state.B[i] = defaultNorm('A', i); });
+    }
+    if (Array.isArray(saved.fxOn) && saved.fxOn.length === 7) state.fxOn = saved.fxOn.map(Boolean);
+    if (!(saved.ver >= 4)) {   // Octave and Fine tune start at 0 and linked
+      state.links.octave = true; state.links.fine = true;
+      ['octave', 'fine'].forEach(id => { const i = IX[id]; state.A[i] = state.B[i] = defaultNorm('A', i); });
+    }
+    if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
+    if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
+    state.walk = saved.walk !== false;
+    state.dlSpill = !!saved.dlSpill;
+    ['A', 'B'].forEach(s => {
+      const t = saved.tables && saved.tables[s];
+      if (t && Array.isArray(t.frames) && t.frames.length) tables[s] = { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) };
+    });
+  }
+} catch (e) {}
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORE, JSON.stringify({ ...state, ver: 8, ids: DEFS.map(d => d.id),
+        tables: { A: { name: tables.A.name, frames: tables.A.frames.map(enc) }, B: { name: tables.B.name, frames: tables.B.frames.map(enc) } } }));
+    } catch (e) {}
+  }, 400);
+}
+
+const spec = { A: null, B: null };
+function analyzeTable(side) {
+  const t = tables[side];
+  spec[side] = { k: t.frames.length, re: [], im: [] };
+  t.frames.forEach(f => { const a = MorphEngine.analyze(f); spec[side].re.push(a.re); spec[side].im.push(a.im); });
+}
+function analyzeFrame(side, j) {
+  const a = MorphEngine.analyze(tables[side].frames[j]);
+  spec[side].re[j] = a.re; spec[side].im[j] = a.im;
+}
+analyzeTable('A'); analyzeTable('B');
+
+/* ---------- audio startup ---------- */
+let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
+const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
+const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });
+const postTable = side => send({ type:'table', side, re: spec[side].re.slice(), im: spec[side].im.slice() });
+const sendTableNow = side => { if (ready) postTable(side); };
+const tableTimers = {};
+function sendTable(side) {
+  if (tableTimers[side]) return;
+  tableTimers[side] = setTimeout(() => { tableTimers[side] = null; sendTableNow(side); }, 50);
+}
+function sendAll() {
+  sendState(); postTable('A'); postTable('B');   // runs during startup, before ready is set
+  send({ type:'blend', v: state.spectral });
+  send({ type:'dlmode', v: state.dlSpill }); send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono }); state.fxOn.forEach((on, i) => send({ type:'bypass', i, on })); send({ type:'dlmode', v: state.dlSpill });
+  if (typeof buildSeq === 'function') { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); }
+}
+
+// Mobile browsers only allow audio to start inside certain gestures, and some
+// (notably iOS) can drop back to a suspended or "interrupted" state later.
+// Every tap, click and key press therefore tries to wake the audio up again.
+function kick() {
+  if (!ctx || userMuted) return;
+  if (ctx.state !== 'running') {
+    try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); s.connect(ctx.destination); s.start(0); } catch (e) {}
+    ctx.resume().then(updateAudioBtn, () => {});
+  }
+}
+function ensureAudio() {
+  if (ctx) { kick(); return starting; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) { engineInfo('This browser has no Web Audio support.'); return Promise.resolve(); }
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // lets iPhone play with the ringer on silent
+  ctx = new AC({ latencyHint: 'interactive' });
+  ctx.onstatechange = updateAudioBtn;
+  kick();
+  starting = (async () => {
+    const defs = DEFS.map(({ id, min, max, curve, snap }) => ({ id, min, max, curve, snap: !!snap }));
+    let kind = null;
+    if (ctx.audioWorklet) {
+      const src = `${MorphEngine.toString()}
+class MorphProcessor extends AudioWorkletProcessor {
+  constructor(o){ super(); this.e = new MorphEngine(sampleRate, o.processorOptions.defs); this.port.onmessage = ev => this.e.handle(ev.data); }
+  process(inputs, outputs){ const o = outputs[0]; const L = o[0], R = o[1]; L.fill(0); R.fill(0); this.e.render(L, R, L.length); const q = this.e.reports; for (let k = 0; k < q.length; k++) this.port.postMessage(q[k]); q.length = 0; return true; }
+}
+registerProcessor('morph-engine', MorphProcessor);`;
+      const urls = [];
+      try { urls.push(URL.createObjectURL(new Blob([src], { type:'application/javascript' }))); } catch (e) {}
+      urls.push('data:application/javascript;charset=utf-8,' + encodeURIComponent(src));
+      for (const u of urls) {
+        try {
+          await ctx.audioWorklet.addModule(u);
+          const node = new AudioWorkletNode(ctx, 'morph-engine', { numberOfInputs:0, numberOfOutputs:1, outputChannelCount:[2], processorOptions:{ defs } });
+          node.connect(ctx.destination);
+          node.port.onmessage = ev => onReport(ev.data);
+          send = m => node.port.postMessage(m);
+          kind = 'AudioWorklet (dedicated audio thread)';
+          break;
+        } catch (e) {}
+      }
+    }
+    if (!kind) {
+      const eng = new MorphEngine(ctx.sampleRate, defs);
+      const sp = ctx.createScriptProcessor(1024, 1, 2);
+      sp.onaudioprocess = e => {
+        const L = e.outputBuffer.getChannelData(0), R = e.outputBuffer.getChannelData(1);
+        L.fill(0); R.fill(0); eng.render(L, R, L.length);
+        eng.reports.forEach(onReport); eng.reports.length = 0;
+      };
+      sp.connect(ctx.destination);
+      window.__sp = sp;
+      send = m => eng.handle(m);
+      kind = 'compatibility mode (main thread)';
+    }
+    sendAll();
+    queue.forEach(m => send(m)); queue = [];
+    ready = true;
+    engineInfo(`Audio engine: ${kind}, ${ctx.sampleRate} Hz.`);
+    updateAudioBtn();
+  })();
+  return starting;
+}
+function engineInfo(t) { document.getElementById('engineInfo').textContent = t; }
+let userMuted = false;
+const audioBtn = document.getElementById('audioBtn');
+function updateAudioBtn() {
+  const off = !ready || !ctx || (ctx.state !== 'running' && !userMuted);
+  audioBtn.textContent = off ? 'Tap to start audio' : userMuted ? 'Unmute' : 'Mute';
+  audioBtn.classList.toggle('attn', off);
+}
+audioBtn.addEventListener('click', () => {
+  if (!ready || ctx.state !== 'running' && !userMuted) { ensureAudio(); kick(); return; }
+  userMuted = !userMuted;
+  if (userMuted) { send({ type:'panic' }); ctx.suspend(); } else ctx.resume();
+  updateAudioBtn();
+});
+['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'click', 'keydown'].forEach(t =>
+  document.addEventListener(t, () => ensureAudio(), { capture:true, passive:true }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
+
+/* =====================================================================
+   KNOBS
+   ===================================================================== */
+const VIZ = { 'Filter':'vzF', 'Filter envelope':'vzFE', 'Amp envelope':'vzAE', 'OTT':'vzOT' };
+const lockIcon = on => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="${on ? 'M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7' : 'M5.2 7V5.2a2.8 2.8 0 0 1 5.5-.8'}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+const iconBtn = (id, label, single) => `<span class="icons"><button type="button" class="lock" data-plock="${id}" aria-pressed="false" aria-label="Lock ${label}"></button>${single ? '' : `<button type="button" class="lock" data-plink="${id}" aria-pressed="false" aria-label="Link ${label}"></button>`}</span>`;
+const linkIcon = on => `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${on
+  ? '<path d="M6.6 9.4l2.8-2.8"/><path d="M7.4 4.9l1.3-1.3a2.6 2.6 0 0 1 3.7 3.7l-1.3 1.3"/><path d="M8.6 11.1l-1.3 1.3a2.6 2.6 0 0 1-3.7-3.7l1.3-1.3"/>'
+  : '<path d="M8.2 4.1l.9-.9a2.6 2.6 0 0 1 3.7 3.7l-.9.9"/><path d="M7.8 11.9l-.9.9a2.6 2.6 0 0 1-3.7-3.7l.9-.9"/><path d="M10.5 12.5l1 1M12.5 10.5l1 1" stroke-width="1.3"/>'}</svg>`;
+const CX = 40, R = 31, SWEEP = 75;   // SWEEP = 270° as a share of pathLength 100
+const ang = x => (135 + 270 * x) * Math.PI / 180;
+const pt = x => [CX + R * Math.cos(ang(x)), CX + R * Math.sin(ang(x))];
+const knobSVG = (d, i) => `<svg viewBox="0 0 80 80" aria-hidden="false">
+  <circle class="bg" cx="40" cy="40" r="${R}" pathLength="100" stroke-dasharray="${SWEEP} 200" transform="rotate(135 40 40)" fill="none" stroke-width="6" stroke-linecap="round"/>
+  <circle class="arcA" id="arcA${i}" cx="40" cy="40" r="${R}" pathLength="100" transform="rotate(135 40 40)" fill="none" stroke-width="6" stroke-linecap="round"/>
+  <circle class="arcB" id="arcB${i}" cx="40" cy="40" r="${R}" pathLength="100" transform="rotate(135 40 40)" fill="none" stroke-width="6" stroke-linecap="round"/>
+  <circle class="cap" cx="40" cy="40" r="21"/>
+  <path class="glyph" id="gl${i}"/>
+  <circle class="gdot" id="gd${i}" r="2"/>
+  <g class="ctr" id="c${i}" tabindex="0" role="slider" aria-label="${d.label} morph curve" aria-valuemin="-100" aria-valuemax="100">
+    <circle class="ring" cx="40" cy="40" r="23"/>
+  </g>
+  <g class="hdl hA" id="hA${i}" tabindex="0" role="slider" aria-label="${d.label} A value" aria-valuemin="0" aria-valuemax="100">
+    <circle class="ring" r="9"/><circle class="h" r="5.5"/>
+  </g>
+  <g class="hdl hB" id="hB${i}" tabindex="0" role="slider" aria-label="${d.label} B value" aria-valuemin="0" aria-valuemax="100">
+    <circle class="ring" r="9"/><circle class="h" id="hBc${i}" r="5.5"/>
+  </g>
+  <circle class="now" id="now${i}" r="3.4"/>
+</svg>`;
+
+const groupsEl = document.getElementById('groups');
+let groupBox = null, lastGroup = null;
+DEFS.forEach((d, i) => {
+  if (d.group !== lastGroup && d.group === 'Wavetables') { lastGroup = d.group; groupBox = document.getElementById('wtKnobs'); }
+  if (d.group !== lastGroup && d.group === 'Sequencer') { lastGroup = d.group; groupBox = document.getElementById('seqKnob'); }
+  if (d.group !== lastGroup) {
+    lastGroup = d.group;
+    const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
+    const viz = VIZ[d.group];
+    g.innerHTML = `<h2>${d.group}</h2>${viz ? `<canvas class="viz" id="${viz}" aria-label="${d.group}: A, B and current shape"></canvas>` : ''}<div class="knobs"></div>`;
+    groupsEl.appendChild(g); groupBox = g.querySelector('.knobs');
+  }
+  groupBox.insertAdjacentHTML('beforeend', `<div class="kn">
+    <div class="kname">${d.label}</div>
+    <div class="kwrap"><div class="knob" id="k${i}">${knobSVG(d, i)}</div>${iconBtn(d.id, d.label, d.single)}</div>
+    <div class="kval" id="v${i}"></div>
+    <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
+  </div>`);
+});
+
+const $ = id => document.getElementById(id);
+const valText = (i, x) => FMT[DEFS[i].id](MorphEngine.denorm(DEFS[i], x));
+const editing = {};   // i -> 'A' | 'B' | 'C' while a knob is being dragged
+
+function setArc(el, from, to) {
+  const s = Math.min(from, to), l = Math.abs(to - from);
+  el.setAttribute('stroke-dasharray', `${(SWEEP * l).toFixed(3)} 200`);
+  el.setAttribute('stroke-dashoffset', (-SWEEP * s).toFixed(3));
+}
+function updateKnob(i) {
+  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = resolveNorm(i);
+  setArc($('arcA' + i), a, r);
+  setArc($('arcB' + i), r, b);
+  const [ax, ay] = pt(a), [bx, by] = pt(b), [nx, ny] = pt(r);
+  $('hA' + i).setAttribute('transform', `translate(${ax.toFixed(2)} ${ay.toFixed(2)})`);
+  $('hB' + i).setAttribute('transform', `translate(${bx.toFixed(2)} ${by.toFixed(2)})`);
+  $('hBc' + i).setAttribute('r', Math.abs(a - b) < 0.035 ? 3 : 5.5);   // stacked handles stay visible
+  $('now' + i).setAttribute('cx', nx.toFixed(2)); $('now' + i).setAttribute('cy', ny.toFixed(2));
+  // Linked (or single-side) parameters don't morph: one handle, one value, no curve
+  const linked = isLinked(i), kn = $('k' + i);
+  kn.classList.toggle('kl-A', d.single === 'A'); kn.classList.toggle('kl-B', d.single === 'B'); kn.classList.toggle('kl-L', linked && !d.single);
+  $('now' + i).setAttribute('r', linked ? 0 : 3.4);
+  $('hB' + i).style.display = linked ? 'none' : '';
+  $('hB' + i).setAttribute('tabindex', linked ? -1 : 0);
+  $('c' + i).setAttribute('tabindex', linked ? -1 : 0);
+  $('gd' + i).setAttribute('r', linked ? 0 : 2);
+  if (linked) { setArc($('arcA' + i), 0, a); setArc($('arcB' + i), a, a); }
+
+  // center glyph: the morph curve drawn in an 18×18 box
+  const x0 = 31, y0 = 49, S = 18, m = state.morph;
+  let path, gy;
+  if (d.snap) {
+    const e = Math.pow(6, -c), t = Math.pow(0.5, 1 / e);
+    path = `M${x0} ${y0} H${(x0 + t * S).toFixed(2)} V${y0 - S} H${x0 + S}`;
+    gy = MorphEngine.bend(m, c) >= 0.5 ? 1 : 0;
+  } else if (d.curve === 'int') {
+    const steps = d.max - d.min, sA = Math.round(a * steps), sB = Math.round(b * steps), span = sB - sA;
+    const yOf = t => span === 0 ? MorphEngine.bend(t, c) : (Math.round((a + (b - a) * MorphEngine.bend(t, c)) * steps) - sA) / span;
+    let py = yOf(0); path = `M${x0} ${(y0 - py * S).toFixed(2)}`;
+    for (let k = 1; k <= 60; k++) {
+      const t = k / 60, ny = yOf(t);
+      if (ny !== py) { path += ` H${(x0 + t * S).toFixed(2)} V${(y0 - ny * S).toFixed(2)}`; py = ny; }
+    }
+    path += ` H${x0 + S}`;
+    gy = yOf(m);
+  } else {
+    path = '';
+    for (let k = 0; k <= 20; k++) { const t = k / 20; path += (k ? 'L' : 'M') + (x0 + t * S).toFixed(2) + ' ' + (y0 - MorphEngine.bend(t, c) * S).toFixed(2); }
+    gy = MorphEngine.bend(m, c);
+  }
+  $('gl' + i).setAttribute('d', linked ? '' : path);
+  $('gd' + i).setAttribute('cx', (x0 + m * S).toFixed(2)); $('gd' + i).setAttribute('cy', (y0 - gy * S).toFixed(2));
+
+  // text
+  const v = $('v' + i), ed = editing[i];
+  if (linked) {
+    v.className = 'kval'; v.textContent = valText(i, a);
+    $('va' + i).textContent = d.single === 'A' ? 'Side A' : linked && !d.single ? 'Linked' : '';
+    $('vb' + i).textContent = d.single === 'B' ? 'Side B' : '';
+    $('va' + i).classList.toggle('muted', !d.single);
+  } else {
+    v.className = 'kval' + (ed === 'A' ? ' a' : ed === 'B' ? ' b' : '');
+    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : valText(i, r);
+    $('va' + i).textContent = valText(i, a); $('va' + i).classList.remove('muted');
+    $('vb' + i).textContent = valText(i, b);
+  }
+
+  // accessibility
+  const hA = $('hA' + i), hB = $('hB' + i), cc = $('c' + i);
+  hA.setAttribute('aria-valuenow', Math.round(a * 100)); hA.setAttribute('aria-valuetext', valText(i, a));
+  hB.setAttribute('aria-valuenow', Math.round(b * 100)); hB.setAttribute('aria-valuetext', valText(i, b));
+  cc.setAttribute('aria-valuenow', Math.round(c * 100)); cc.setAttribute('aria-valuetext', fmtCurve(c));
+}
+function refreshAll() { DEFS.forEach((_, i) => updateKnob(i)); updateMorphUI(); }
+function setParam(side, i, x) {
+  x = clamp(x);
+  if (isLinked(i)) {   // linked or single-side: both sides always hold the same value
+    if (state.A[i] === x && state.B[i] === x) return;
+    state.A[i] = x; state.B[i] = x;
+    updateKnob(i);
+    if (ready) { send({ type:'param', side:'A', i, v:x }); send({ type:'param', side:'B', i, v:x }); }
+    drawWaves(); save();
+    return;
+  }
+  if (state[side][i] === x) return;
+  state[side][i] = x;
+  updateKnob(i);
+  if (ready) send({ type:'param', side, i, v:x });
+  drawWaves();
+  save();
+}
+function setCurve(i, c) {
+  c = clampC(Math.abs(c) < 0.03 ? 0 : c);
+  if (state.C[i] === c) return;
+  state.C[i] = c;
+  updateKnob(i);
+  if (ready) send({ type:'curve', i, v:c });
+  drawWaves();
+  save();
+}
+
+
+/* ---------- knob pointer interaction ---------- */
+function bindKnob(i) {
+  const el = $('k' + i), d = DEFS[i];
+  let pid = null, mode = null, sx = 0, sy = 0, sv = 0, lastTap = 0, lastMode = null;
+  const targetEl = md => md === 'C' ? $('c' + i) : $('h' + md + i);
+
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const rc = el.getBoundingClientRect();
+    const x = (e.clientX - rc.left) / rc.width * 80 - CX, y = (e.clientY - rc.top) / rc.height * 80 - CX;
+    if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
+    else if (Math.hypot(x, y) < 22) mode = 'C';
+    else {
+      let rel = (Math.atan2(y, x) * 180 / Math.PI - 135 + 720) % 360;
+      const xp = rel <= 270 ? rel / 270 : (rel > 315 ? 0 : 1);
+      const a = state.A[i], b = state.B[i];
+      if (Math.abs(a - b) < 0.035) {
+        // Stacked handles: at the start of the ring take B, at the end take A,
+        // otherwise grabbing on the lower (counter-clockwise) side takes A and the upper side takes B.
+        const h = (a + b) / 2;
+        mode = h <= 0.01 ? 'B' : h >= 0.99 ? 'A' : (xp < h ? 'A' : 'B');
+      } else mode = Math.abs(a - xp) < Math.abs(b - xp) ? 'A' : 'B';
+    }
+    const now = performance.now();
+    if (now - lastTap < 300 && mode === lastMode) {
+      if (mode === 'C') setCurve(i, 0); else setParam(mode, i, defaultNorm(DEFS[i].single || mode, i));
+      lastTap = 0; mode = null; return;
+    }
+    lastTap = now; lastMode = mode;
+    pid = e.pointerId; el.setPointerCapture(pid);
+    sx = e.clientX; sy = e.clientY;
+    sv = mode === 'C' ? state.C[i] : state[mode][i];
+    editing[i] = mode; el.classList.add('dragging');
+    targetEl(mode).classList.add('active');
+    targetEl(mode).focus({ preventScroll:true });
+    updateKnob(i);
+  });
+  el.addEventListener('pointermove', e => {
+    if (e.pointerId !== pid) return;
+    const delta = ((sy - e.clientY) + (e.clientX - sx) * 0.5) / (e.shiftKey ? 900 : 200);
+    if (mode === 'C') setCurve(i, sv + delta * 2);
+    else setParam(mode, i, quant(d, clamp(sv + delta)));
+  });
+  const end = e => {
+    if (e.pointerId !== pid) return;
+    targetEl(mode).classList.remove('active');
+    pid = null; delete editing[i]; el.classList.remove('dragging');
+    updateKnob(i);
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+
+  // keyboard: each handle and the center are focusable sliders
+  ['A', 'B', 'C'].forEach(md => {
+    const t = targetEl(md);
+    t.addEventListener('keydown', e => {
+      const isC = md === 'C';
+      if (isLinked(i) && md !== 'A') return;
+      const step = isC ? (e.shiftKey ? 0.25 : 0.05) : d.curve === 'int' ? 1 / (d.max - d.min) : (e.shiftKey ? 0.1 : 0.01);
+      let x = isC ? state.C[i] : state[md][i];
+      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') x += step;
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') x -= step;
+      else if (e.key === 'Home') x = isC ? -1 : 0;
+      else if (e.key === 'End') x = 1;
+      else if (e.key === 'Delete' || e.key === 'Backspace') x = isC ? 0 : defaultNorm(md, i);
+      else return;
+      e.preventDefault(); e.stopPropagation();
+      if (isC) setCurve(i, x); else setParam(md, i, quant(d, clamp(x)));
+    });
+    t.addEventListener('focus', () => { if (!el.classList.contains('dragging')) { editing[i] = md; updateKnob(i); } });
+    t.addEventListener('blur', () => { if (!el.classList.contains('dragging')) { delete editing[i]; updateKnob(i); } });
+  });
+}
+DEFS.forEach((_, i) => bindKnob(i));
+
+
+/* ---------- wave displays ---------- */
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const W = { fa:[new Float32Array(513), new Float32Array(513)], fb:[new Float32Array(513), new Float32Array(513)],
+            fr:[new Float32Array(513), new Float32Array(513)], sR:new Float32Array(256), sI:new Float32Array(256), out:new Float32Array(256) };
+function synthDisplay(re, im) { MorphEngine.synth(re, im, 64, 256, W.out, W.sR, W.sI); return W.out; }
+function drawWave(cv, data, color, opts = {}) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  let pk = opts.fit ? 0 : 1;
+  if (opts.fit) { for (const x of data) pk = Math.max(pk, Math.abs(x)); if (pk < 1e-6) pk = 1; }
+  const pad = opts.pad ?? 4, mid = h / 2, amp = (h / 2 - pad) / pk;
+  g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath(); g.moveTo(0, mid); g.lineTo(w, mid); g.stroke();
+  g.strokeStyle = color; g.lineWidth = opts.lw || 1.8; g.lineJoin = 'round'; g.beginPath();
+  const n = data.length;
+  for (let i = 0; i <= n; i++) { const x = i / n * w, y = mid - data[i % n] * amp; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+  g.stroke();
+}
+/* ---------- filter + envelope pictures ---------- */
+const hexRgb = h => { h = h.trim(); if (h.length === 4) h = '#' + [...h.slice(1)].map(c => c + c).join(''); return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255); };
+const toLin = c => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4), toS = c => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055);
+function oklab(rgb) {
+  const [r, g, b] = rgb.map(toLin);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b), m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b), s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+}
+function fromOklab([L, a, b]) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  return 'rgb(' + [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s]
+    .map(c => Math.round(clamp(toS(Math.max(0, c))) * 255)).join(',') + ')';
+}
+// mix in OKLCH (shorter hue path), matching the CSS gradient and ring colors
+const mixColor = t => {
+  const [L1, a1, b1] = oklab(hexRgb(css('--a'))), [L2, a2, b2] = oklab(hexRgb(css('--b')));
+  const C1 = Math.hypot(a1, b1), C2 = Math.hypot(a2, b2), h1 = Math.atan2(b1, a1);
+  let dh = Math.atan2(b2, a2) - h1; if (dh > Math.PI) dh -= 2 * Math.PI; else if (dh < -Math.PI) dh += 2 * Math.PI;
+  const L = L1 + (L2 - L1) * t, C = C1 + (C2 - C1) * t, h = h1 + dh * t;
+  return fromOklab([L, C * Math.cos(h), C * Math.sin(h)]);
+};
+function prep(cv) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return null;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  return { g, w, h };
+}
+// three values of a parameter: A's, B's and the one you hear now
+const trio = id => { const i = IX[id], d = DEFS[i]; return [MorphEngine.denorm(d, state.A[i]), MorphEngine.denorm(d, state.B[i]), MorphEngine.denorm(d, resolveNorm(i))]; };
+function plotSet(c, fn, n) {
+  const cols = [css('--a'), css('--b'), mixColor(state.morph)], widths = [1.2, 1.2, 3.6];
+  for (const s of [0, 1, 2]) {
+    c.g.strokeStyle = cols[s]; c.g.lineWidth = widths[s]; c.g.globalAlpha = s < 2 ? 0.6 : 1; c.g.lineCap = 'round'; c.g.lineJoin = 'round';
+    c.g.beginPath();
+    for (let k = 0; k <= n; k++) { const [x, y] = fn(s, k / n); k ? c.g.lineTo(x, y) : c.g.moveTo(x, y); }
+    c.g.stroke();
+  }
+  c.g.globalAlpha = 1;
+}
+function label(c, text, x, y, align) { c.g.fillStyle = css('--muted'); c.g.font = '11px "Barlow Semi Condensed", sans-serif'; c.g.textAlign = align; c.g.fillText(text, x, y); }
+function drawFilterViz() {
+  const c = prep($('vzF')); if (!c) return;
+  const cut = trio('cutoff'), res = trio('reso'), md = trio('mode');
+  const top = 24, bot = -36, yOf = db => 6 + (top - Math.max(bot, Math.min(top, db))) / (top - bot) * (c.h - 12);
+  c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
+  c.g.beginPath(); c.g.moveTo(0, yOf(0)); c.g.lineTo(c.w, yOf(0)); c.g.stroke();
+  [100, 1000, 10000].forEach(f => { const x = Math.log(f / 20) / Math.log(1000) * c.w; c.g.beginPath(); c.g.moveTo(x, 0); c.g.lineTo(x, c.h); c.g.stroke(); });
+  label(c, '100', Math.log(5) / Math.log(1000) * c.w + 3, c.h - 5, 'left');
+  label(c, '1k', Math.log(50) / Math.log(1000) * c.w + 3, c.h - 5, 'left');
+  label(c, '10k', Math.log(500) / Math.log(1000) * c.w + 3, c.h - 5, 'left');
+  plotSet(c, (s, t) => {
+    const f = 20 * Math.pow(1000, t), w = f / cut[s], k = 2 - 1.96 * res[s], bpG = Math.sqrt(k * 2), m = md[s];
+    const wl = m < 0.5 ? 1 - m * 2 : 0, wb = m < 0.5 ? m * 2 : 2 - m * 2, wh = m < 0.5 ? 0 : m * 2 - 1;
+    const nr = wl - wh * w * w, ni = wb * bpG * w, dr = 1 - w * w, di = k * w;
+    const db = 10 * Math.log10((nr * nr + ni * ni) / (dr * dr + di * di) + 1e-12);
+    return [t * c.w, yOf(db)];
+  }, 160);
+}
+function drawEnvViz(id, pre) {
+  const c = prep($(id)); if (!c) return;
+  const A = trio(pre + 'atk'), D = trio(pre + 'dec'), S = trio(pre + 'sus'), Rl = trio(pre + 'rel');
+  const span = Math.max(...[0, 1, 2].map(s => A[s] + D[s] + Rl[s])), hold = span * 0.3, T = span + hold;
+  const lvl = (s, t) => {
+    const a = A[s], d = D[s], su = S[s], r = Rl[s];
+    if (t < a) return t / a;
+    const endHold = a + d + hold;
+    const dec = u => su + (1 - su) * Math.exp(-5 * u / d);
+    if (t < endHold) return dec(t - a);
+    return dec(endHold - a) * Math.exp(-6.9 * (t - endHold) / r);
+  };
+  const yOf = v => c.h - 6 - v * (c.h - 14);
+  plotSet(c, (s, t) => [t * c.w, yOf(lvl(s, t * T))], 220);
+  label(c, time(T), c.w - 5, 12, 'right');
+}
+/* OTT: where the bands split, and each band's level going in (outline) and coming out (filled) */
+let ottLive = null, ottQueued = false;
+function drawOttViz() {
+  const c = prep($('vzOT')); if (!c) return;
+  const fx = f => Math.log(f / 20) / Math.log(1000) * c.w, yOf = db => c.h - 4 - (Math.max(-72, Math.min(0, db)) + 72) / 72 * (c.h - 34);
+  const lo = MorphEngine.denorm(DEFS[IX.ottlo], resolveNorm(IX.ottlo)), hi = MorphEngine.denorm(DEFS[IX.otthi], resolveNorm(IX.otthi));
+  const gains = ['ottgl', 'ottgm', 'ottgh'].map(id => MorphEngine.denorm(DEFS[IX[id]], resolveNorm(IX[id])));
+  const edges = [0, fx(lo), fx(hi), c.w], col = mixColor(state.morph);
+  c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
+  [fx(lo), fx(hi)].forEach(x => { c.g.beginPath(); c.g.moveTo(x, 0); c.g.lineTo(x, c.h); c.g.stroke(); });
+  for (let b = 0; b < 3; b++) {
+    const x0 = edges[b] + 3, w = edges[b + 1] - edges[b] - 6;
+    if (w > 2) {
+      // fill: the band's gain setting, from nearly empty at -12 dB to full at +12 dB
+      const top = 30, fh = (c.h - 4 - top) * Math.max(0.04, (gains[b] + 12) / 24);
+      c.g.fillStyle = col; c.g.globalAlpha = 0.5; c.g.fillRect(x0, c.h - 4 - fh, w, fh); c.g.globalAlpha = 1;
+      if (ottLive) { const inDb = ottLive.lv[b]; c.g.strokeStyle = css('--ink'); c.g.lineWidth = 1.5; c.g.strokeRect(x0 + 0.75, yOf(inDb), w - 1.5, c.h - 4 - yOf(inDb)); }   // outline: live level
+    }
+    label(c, (gains[b] > 0 ? '+' : '') + gains[b].toFixed(1) + ' dB', edges[b] + (edges[b + 1] - edges[b]) / 2, 12, 'center');
+  }
+  label(c, Math.round(lo) + ' Hz', fx(lo) + 3, 25, 'left');
+  label(c, (hi / 1000).toFixed(1) + ' kHz', fx(hi) + 3, 25, 'left');
+}
+function onOtt(d) { ottLive = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttViz(); }); } }
+let wavesQueued = false;
+function drawWaves() {
+  if (wavesQueued) return; wavesQueued = true;
+  requestAnimationFrame(() => {
+    wavesQueued = false;
+    const sp = state.spectral;
+    MorphEngine.frameAt(spec.A, state.A[IX.posA], sp, W.fa[0], W.fa[1]);
+    drawWave($('cvA'), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
+    MorphEngine.frameAt(spec.B, state.A[IX.posB], sp, W.fb[0], W.fb[1]);
+    drawWave($('cvB'), synthDisplay(W.fb[0], W.fb[1]), css('--b'), { fit:true });
+    MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(IX.wave), sp, W.fr[0], W.fr[1]);
+    drawWave($('cvH'), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
+    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
+    $('nmA').textContent = tables.A.name; $('nmB').textContent = tables.B.name;
+  });
+}
+function updateBlendUI() {}
+
+/* ---------- morph ---------- */
+const morphEl = $('morph');
+function updateMorphUI() {
+  const m = state.morph;
+  morphEl.value = Math.round(m * 1000);
+  document.documentElement.style.setProperty('--mix', (m * 100).toFixed(1) + '%');
+  const pa = Math.round((1 - m) * 100), pb = 100 - pa;
+  morphEl.setAttribute('aria-valuetext', `${pa}% A, ${pb}% B`);
+  drawWaves();
+}
+morphEl.addEventListener('input', () => {
+  state.morph = morphEl.value / 1000;
+  updateMorphUI();
+  DEFS.forEach((_, i) => updateKnob(i));
+  if (ready) send({ type:'morph', v: state.morph });
+  save();
+});
+/* ---------- undo ---------- */
+const undoStack = [];
+function snapshot() {
+  return { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: state.morph, spectral: state.spectral, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
+           tA: cloneTable(tables.A), tB: cloneTable(tables.B), seq: JSON.parse(JSON.stringify(state.seq)) };
+}
+function pushUndo() { undoStack.push(snapshot()); if (undoStack.length > 30) undoStack.shift(); $('undo').disabled = false; }
+$('undo').addEventListener('click', () => {
+  const s = undoStack.pop(); if (!s) return;
+  applyBulk(() => { Object.assign(state, { A: s.A, B: s.B, C: s.C, morph: s.morph, spectral: s.spectral, links: s.links, linkMem: s.linkMem }); updateIcons(); tables.A = s.tA; tables.B = s.tB; state.seq = s.seq; });
+  $('undo').disabled = !undoStack.length;
+});
+function bulk(fn) { pushUndo(); applyBulk(fn); }
+function applyBulk(fn) {
+  fn(); analyzeTable('A'); analyzeTable('B'); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
+  if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
+  if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
+  if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
+  save();
+}
+// Copy covers the sound only: sequences and the Pattern knob stay as they are
+const copySound = (from, to) => bulk(() => {
+  const ip = IX.pattern, keep = state[to][ip];
+  state[to] = state[from].slice(); state[to][ip] = keep;
+  tables[to] = cloneTable(tables[from]);
+});
+$('copyAB').addEventListener('click', () => copySound('A', 'B'));
+$('copyBA').addEventListener('click', () => copySound('B', 'A'));
+$('swap').addEventListener('click', () => bulk(() => {
+  let t = state.A; state.A = state.B; state.B = t; state.C = state.C.map(c => -c);
+  t = tables.A; tables.A = tables.B; tables.B = t;
+  t = state.seq.A; state.seq.A = state.seq.B; state.seq.B = t;
+}));
+$('resetAll').addEventListener('click', () => bulk(() => {
+  state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
+  state.spectral = true; state.links = { octave: true, fine: true, ottdepth: true, ottout: true }; updateIcons(); tables.A = makeTable('Basic shapes'); tables.B = makeTable('Vowel formants');
+  state.seq = defaultSeqs();
+}));
+
+/* ---------- randomize ----------
+   Values are drawn from musically useful ranges rather than the full range
+   of each knob, so results are usually playable. */
+const rnd = Math.random;
+const logr = (lo, hi) => lo * Math.pow(hi / lo, rnd());
+const RND = {
+  // wavetables and pattern
+  posA: () => rnd(), posB: () => rnd(),
+  wave: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
+  pattern: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
+  // oscillator
+  octave: () => { const r = rnd(); return r < 0.15 ? -1 : r > 0.85 ? 1 : 0; },
+  fine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
+  unison: () => (rnd() < 0.4 ? 0 : rnd()),
+  glide: () => (rnd() < 0.5 ? 0 : rnd() < 0.9 ? rnd() * 0.1 : 0.1 + rnd() ** 2 * 0.5),   // half off; 95% under 100 ms
+  vdepth: () => (rnd() < 0.85 ? rnd() * 0.3 : 0.3 + rnd() * 0.7),   // mostly within ±30 cents
+  vfade: () => rnd() ** 2 * 3,
+  vrate: () => logr(2, 9),
+  vrfade: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 8), vrtime: () => rnd() ** 2 * 4,
+  // filter and envelopes
+  cutoff: () => logr(150, 12000),
+  reso: () => rnd() ** 1.5 * 0.85,
+  mode: () => (rnd() < 0.5 ? 0 : rnd()),
+  envamt: () => (rnd() < 0.8 ? rnd() : -rnd() * 0.6),
+  keytrack: () => rnd(),
+  fatk: () => logr(0.001, rnd() < 0.7 ? 0.1 : 1.5),
+  fdec: () => logr(0.05, 3),
+  fsus: () => rnd(),
+  frel: () => logr(0.02, 3),
+  aatk: () => logr(0.001, rnd() < 0.7 ? 0.05 : 1.2),
+  adec: () => logr(0.05, 3),
+  asus: () => 0.2 + rnd() * 0.8,
+  arel: () => logr(0.03, 3),
+  level: () => 0.5 + rnd() * 0.5,
+  pan: () => (rnd() * 2 - 1) * 0.6,
+  // effects: full range, the synth is meant to surprise
+  drive: () => rnd(), dshape: () => rnd(), dmix: () => rnd(),
+  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.66 ? 0 : rnd()),
+  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.4 ? 0 : rnd()),
+  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.4 ? 0 : rnd() < 0.85 ? rnd() * 0.35 : rnd() < 0.8 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly 0–35%, rarely above 50%
+  rvsize: () => rnd(), rvdecay: () => logr(0.2, 20), rvdamp: () => rnd(), rvmix: () => (rnd() < 0.4 ? 0 : rnd() < 0.8 ? rnd() * 0.35 : 0.35 + rnd() * 0.65),
+  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten
+  lwow: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lflut: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lchar: () => rnd() ** 2,
+  ldrop: () => (rnd() < 0.9 ? 0 : rnd() ** 2), lcodec: () => (rnd() < 0.66 ? 0 : rnd() ** 2),
+  lnoise: () => rnd(), lnmix: () => (rnd() < 0.85 ? rnd() * 0.15 : 0.15 + rnd() * 0.2),   // never above 35%, mostly 0–15%
+  ottdepth: () => rnd(), otttime: () => logr(0.1, 4),
+  ottlo: () => logr(40, 500), otthi: () => logr(600, 10000),
+  ottgl: () => (rnd() * 2 - 1) * 3, ottgm: () => (rnd() * 2 - 1) * 3, ottgh: () => (rnd() * 2 - 1) * 3,   // mixed signs enforced in mixOttGains
+  ottout: () => 0,
+};
+const TABLE_CHOICES = Object.keys(PRESETS).filter(n => n !== 'Sine');
+const rv = (d, side) => quant(d, clamp(norm(d, RND[d.id](side))));
+// Keep morphs dramatic: a side's new value lands at least 15% of the knob's throw away from the other side.
+// Parameters whose chance of landing at 0 matters more than the A/B gap skip the 15% rule.
+const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop']);
+function rvApart(d, side, other) {
+  if (NO_SPREAD.has(d.id)) return rv(d, side);
+  for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
+  const room = Math.max(other, 1 - other);   // no luck from the usual range: step toward whichever end has more room
+  return quant(d, clamp(other + (other <= 0.5 ? 1 : -1) * (SPREAD + rnd() * (room - SPREAD))));
+}
+// A parameter is locked if its own padlock is on or its whole section is locked.
+// Section locks sit on top of the individual ones, so unlocking a section brings back each knob's own setting.
+const isLocked = d => !!state.locks[d.id] || !!state.secLocks[d.group];
+const inGroup = (d, g) => !g || d.group === g;
+// OTT band gains: within ±3 dB, and never all boosting or all cutting on one side
+function mixOttGains(side, g) {
+  const ids = ['ottgl', 'ottgm', 'ottgh'];
+  if (!inGroup(DEFS[IX.ottgl], g)) return;
+  const free = ids.filter(id => !isLocked(DEFS[IX[id]]) && !state.links[id]);
+  if (!free.length) return;
+  const val = id => MorphEngine.denorm(DEFS[IX[id]], state[side][IX[id]]);
+  const signs = () => ids.map(val).filter(x => Math.abs(x) > 0.05).map(Math.sign);
+  const sg = signs();
+  if (sg.length === 3 && sg.every(x => x === sg[0])) {
+    const id = free[Math.floor(rnd() * free.length)], d = DEFS[IX[id]];
+    state[side][IX[id]] = norm(d, -val(id));
+  }
+}
+// Formant, Modulation, Delay and Reverb mixes: at most two above 50%, and at most one above 90%
+function effectMixRules(side, g) {
+  const ids = ['fmix', 'mmix', 'dlmix', 'rvmix'].filter(id => inGroup(DEFS[IX[id]], g));
+  const val = id => state[side][IX[id]], free = id => !isLocked(DEFS[IX[id]]) && !state.links[id];
+  const shuffle = a => a.map(x => [rnd(), x]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+  let hi = shuffle(ids.filter(id => val(id) > 0.5 && free(id)));
+  while (ids.filter(id => val(id) > 0.5).length > 2 && hi.length) state[side][IX[hi.pop()]] = rnd() * 0.5;
+  let top = shuffle(ids.filter(id => val(id) > 0.9 && free(id)));
+  while (ids.filter(id => val(id) > 0.9).length > 1 && top.length) state[side][IX[top.pop()]] = 0.5 + rnd() * 0.4;
+}
+// A near-sine wave through a low-pass set low (or a high-pass set high) can be close to silent,
+// so when a side's wave is nearly pure, its cutoff is moved toward the open end.
+function sineGuard(side) {
+  const d = DEFS[IX.cutoff]; if (isLocked(d) || state.links.cutoff) return;
+  MorphEngine.frameAt(spec.A, state.A[IX.posA], true, W.fa[0], W.fa[1]);
+  MorphEngine.frameAt(spec.B, state.A[IX.posB], true, W.fb[0], W.fb[1]);
+  MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][IX.wave], true, W.fr[0], W.fr[1]);
+  let tot = 0; for (let h = 1; h <= 512; h++) tot += W.fr[0][h] ** 2 + W.fr[1][h] ** 2;
+  const pure = (W.fr[0][1] ** 2 + W.fr[1][1] ** 2) / (tot + 1e-12) > 0.85;
+  if (!pure) return;
+  const mode = MorphEngine.denorm(DEFS[IX.mode], state[side][IX.mode]), c = state[side][IX.cutoff];
+  if (mode < 0.35 && c < 0.6) state[side][IX.cutoff] = 0.6 + rnd() * 0.4;
+  else if (mode > 0.65 && c > 0.35) state[side][IX.cutoff] = rnd() * 0.35;
+}
+// raw = section dice: anywhere in each knob's full range, none of the shaping rules (locks still apply)
+// Section dice use each knob's full range, except that some Lo-fi amounts usually stay gentle
+const RAW_LEAN = { lnmix: 0.3, lcodec: 0.3, ldrop: 0.3, lwow: 0.4, lflut: 0.4 };
+const rvRaw = d => quant(d, d.id in RAW_LEAN && rnd() < 0.8 ? rnd() * RAW_LEAN[d.id] : rnd());
+function randomizeSide(side, g, raw) {
+  const other = side === 'A' ? 'B' : 'A';
+  DEFS.forEach((d, i) => {
+    if (!inGroup(d, g) || isLocked(d)) return;
+    if (d.single) { if (d.single === side) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, side); return; }
+    if (state.links[d.id]) return;   // shared values only change with Randomize all or Randomize linked
+    state[side][i] = raw ? rvRaw(d) : rvApart(d, side, state[other][i]);
+  });
+  if (!raw) { mixOttGains(side, g); effectMixRules(side, g); }
+  if ((!g || g === 'Wavetables') && !state.secLocks.Wavetables) { tables[side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(side); }
+  if (!raw) sineGuard(side);
+}
+$('rndA').addEventListener('click', () => bulk(() => randomizeSide('A')));
+$('rndB').addEventListener('click', () => bulk(() => randomizeSide('B')));
+function randomizeLinked(g, raw) {   // linked knobs only: one new value shared by both sides
+  DEFS.forEach((d, i) => { if (inGroup(d, g) && state.links[d.id] && !d.single && !isLocked(d)) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, 'A'); });
+}
+function randomizeAll(g, raw) {
+  randomizeSide('A', g, raw); randomizeSide('B', g, raw);
+  if ((!g || g === 'Delay') && !state.secLocks.Delay) { state.dlSpill = rnd() < 0.5; updateDlUI(); }   // Cut or Spill
+  randomizeLinked(g, raw);
+  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
+}
+$('rndLinked').addEventListener('click', () => bulk(() => randomizeLinked()));
+$('rndAll').addEventListener('click', () => bulk(() => randomizeAll()));
+/* ---------- lock / link icons ---------- */
+function updateIcons() {
+  document.querySelectorAll('[data-seclock]').forEach(b => {
+    const g = b.dataset.seclock, on = !!state.secLocks[g];
+    b.setAttribute('aria-pressed', on); b.innerHTML = lockIcon(on);
+    b.setAttribute('aria-label', `${on ? 'Unlock' : 'Lock'} the whole ${g} section for randomizing`);
+    b.closest('.group').classList.toggle('seclocked', on);
+  });
+  document.querySelectorAll('[data-plock]').forEach(b => {
+    const id = b.dataset.plock, on = !!state.locks[id];
+    b.setAttribute('aria-pressed', on); b.innerHTML = lockIcon(on);
+    b.setAttribute('aria-label', `${on ? 'Unlock' : 'Lock'} ${DEFS[IX[id]].label} for randomizing`);
+  });
+  document.querySelectorAll('[data-plink]').forEach(b => {
+    const id = b.dataset.plink, on = !!state.links[id];
+    b.setAttribute('aria-pressed', on); b.innerHTML = linkIcon(on);
+    b.setAttribute('aria-label', `${on ? 'Unlink' : 'Link'} ${DEFS[IX[id]].label} A and B`);
+  });
+}
+function toggleLink(i) {
+  const d = DEFS[i], id = d.id;
+  pushUndo();
+  if (!state.links[id]) {
+    state.linkMem[id] = [state.A[i], state.B[i]];   // remembered, so unlinking brings the two sides back
+    const v = resolveNorm(i);   // snap both sides to what you hear now, so nothing jumps
+    state.links[id] = true; state.A[i] = v; state.B[i] = v;
+  } else {
+    delete state.links[id];
+    const m = state.linkMem[id];
+    if (m) { state.A[i] = m[0]; state.B[i] = m[1]; delete state.linkMem[id]; }
+  }
+  if (ready) { send({ type:'param', side:'A', i, v: state.A[i] }); send({ type:'param', side:'B', i, v: state.B[i] }); }
+  updateKnob(i); updateIcons(); drawWaves(); save();
+}
+document.addEventListener('click', e => {
+  const sl = e.target.closest('[data-seclock]');
+  if (sl) { const g = sl.dataset.seclock; state.secLocks[g] = !state.secLocks[g]; updateIcons(); save(); return; }
+  const dc = e.target.closest('[data-dice]');
+  if (dc) { const g = dc.dataset.dice, s = dc.dataset.side; bulk(() => (s ? randomizeSide(s, g, true) : randomizeAll(g, true))); return; }
+  const pl = e.target.closest('[data-plock]');
+  if (pl) { const id = pl.dataset.plock; state.locks[id] = !state.locks[id]; updateIcons(); save(); return; }
+  const pk = e.target.closest('[data-plink]');
+  if (pk) toggleLink(IX[pk.dataset.plink]);
+});
+
+/* =====================================================================
+   WAVETABLE EDITOR
+   ===================================================================== */
+const ed = $('ed'), edCv = $('edCanvas');
+let edSide = 'A', edFrame = 0, tool = 'draw', harm = null, stroke = null;
+const HN = 32;
+const NOTES = {
+  draw: 'Draw directly on the wave. Edits play live, so hold or latch a note to hear them.',
+  line: 'Drag to draw straight lines. Edits play live, so hold or latch a note to hear them.',
+  harm: 'Drag across the bars to set the first 32 harmonics. This rebuilds the frame from those harmonics.',
+};
+const presetSel = $('edPreset');
+presetSel.innerHTML = '<option value="">Choose…</option>' + Object.keys(PRESETS).map(n => `<option>${n}</option>`).join('');
+
+new ResizeObserver(() => document.documentElement.style.setProperty('--kbh', $('kb').offsetHeight + 'px')).observe($('kb'));
+
+function openEditor(side) {
+  edSide = side; edFrame = Math.min(edFrame, tables[side].frames.length - 1);
+  ed.classList.toggle('b', side === 'B');
+  $('edTitle').textContent = `Wavetable ${side}: ${tables[side].name}`;
+  ed.classList.add('open');
+  if (tool === 'harm') loadHarm();
+  renderStrip(); drawEditor(); setTool(tool);
+  $('edDone').focus({ preventScroll:true });
+}
+function closeEditor() { ed.classList.remove('open'); $('wt' + edSide).focus({ preventScroll:true }); }
+$('wtA').addEventListener('click', () => openEditor('A'));
+$('wtB').addEventListener('click', () => openEditor('B'));
+$('edDone').addEventListener('click', closeEditor);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ed.classList.contains('open')) closeEditor(); });
+
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool === t));
+  $('edNote').textContent = NOTES[t];
+  if (t === 'harm') loadHarm();
+  drawEditor();
+}
+document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+
+function loadHarm() {
+  const s = spec[edSide]; harm = new Float32Array(HN + 1);
+  let mx = 0;
+  for (let h = 1; h <= HN; h++) { harm[h] = Math.hypot(s.re[edFrame][h], s.im[edFrame][h]); mx = Math.max(mx, harm[h]); }
+  if (mx > 1e-6) for (let h = 1; h <= HN; h++) harm[h] /= mx;   // bars show the balance; the frame is always normalized
+}
+function frame() { return tables[edSide].frames[edFrame]; }
+function frameChanged(structure) {
+  if (structure) analyzeTable(edSide); else analyzeFrame(edSide, edFrame);
+  sendTable(edSide); drawEditor(); structure ? renderStrip() : drawThumb(edFrame); drawWaves(); save();
+}
+function drawEditor() {
+  const side = css(edSide === 'A' ? '--a' : '--b');
+  if (tool !== 'harm') { drawWave(edCv, frame(), side, { pad:10, lw:2.2 }); return; }
+  const dpr = window.devicePixelRatio || 1, w = edCv.clientWidth, h = edCv.clientHeight;
+  if (!w) return;
+  edCv.width = Math.round(w * dpr); edCv.height = Math.round(h * dpr);
+  const g = edCv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const bw = w / HN;
+  g.fillStyle = side;
+  for (let k = 1; k <= HN; k++) { const bh = harm[k] * (h - 16); g.fillRect((k - 1) * bw + 1.5, h - 8 - bh, Math.max(1, bw - 3), bh); }
+  g.fillStyle = css('--muted'); g.font = '11px "Barlow Semi Condensed", sans-serif';
+  g.textAlign = 'center';
+  [1, 8, 16, 24, 32].forEach(k => g.fillText(String(k), (k - 0.5) * bw, 12));
+}
+function drawThumb(j) {
+  const c = $('edStrip').children[j];
+  if (c) drawWave(c, tables[edSide].frames[j], css(edSide === 'A' ? '--a' : '--b'), { pad:3, lw:1.3 });
+}
+function renderStrip() {
+  const st = $('edStrip'), fr = tables[edSide].frames;
+  st.innerHTML = '';
+  fr.forEach((_, j) => {
+    const c = document.createElement('canvas');
+    c.setAttribute('role', 'option'); c.setAttribute('aria-label', `Frame ${j + 1}`); c.setAttribute('aria-selected', j === edFrame);
+    c.tabIndex = 0;
+    if (j === edFrame) c.classList.add('sel');
+    const pick = () => { edFrame = j; if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); };
+    c.addEventListener('click', pick);
+    c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    st.appendChild(c);
+  });
+  fr.forEach((_, j) => drawThumb(j));
+  $('edCount').textContent = `Frame ${edFrame + 1} of ${fr.length}`;
+  $('edAdd').disabled = fr.length >= MAXF; $('edDel').disabled = fr.length <= 1;
+  $('edTitle').textContent = `Wavetable ${edSide}: ${tables[edSide].name}`;
+}
+
+/* drawing */
+function edPoint(e) {
+  const r = edCv.getBoundingClientRect();
+  const fx = clamp((e.clientX - r.left) / r.width), fy = clamp((e.clientY - r.top) / r.height);
+  const pad = 10 / r.height;
+  return { i: Math.round(fx * (NS - 1)), v: Math.max(-1, Math.min(1, 1 - 2 * (fy - pad) / (1 - 2 * pad))), fx, fy };
+}
+function fillLine(f, a, b) {
+  if (a.i === b.i) { f[a.i] = b.v; return; }
+  const s = a.i < b.i ? 1 : -1;
+  for (let i = a.i; i !== b.i + s; i += s) f[i] = a.v + (b.v - a.v) * (i - a.i) / (b.i - a.i);
+}
+function setHarmAt(p, last) {
+  const k = Math.min(HN, Math.max(1, Math.floor(p.fx * HN) + 1)), v = clamp(1 - (p.fy * edCv.clientHeight - 8) / (edCv.clientHeight - 16));
+  if (last) { const lo = Math.min(last.k, k), hi = Math.max(last.k, k);
+    for (let q = lo; q <= hi; q++) harm[q] = hi === lo ? v : last.v + (v - last.v) * (q - last.k) / (k - last.k); }
+  else harm[k] = v;
+  const f = additive(harm); let pk = 0; for (const x of f) pk = Math.max(pk, Math.abs(x));
+  if (pk > 1e-6) for (let n = 0; n < NS; n++) f[n] /= pk;
+  tables[edSide].frames[edFrame] = f;
+  return { k, v };
+}
+edCv.addEventListener('pointerdown', e => {
+  e.preventDefault(); edCv.setPointerCapture(e.pointerId);
+  const p = edPoint(e);
+  if (tool === 'draw') { frame()[p.i] = p.v; stroke = { last: p }; }
+  else if (tool === 'line') stroke = { start: p, base: frame().slice() };
+  else stroke = { last: setHarmAt(p, null) };
+  stroke.id = e.pointerId;
+  frameChanged(false);
+});
+edCv.addEventListener('pointermove', e => {
+  if (!stroke || stroke.id !== e.pointerId) return;
+  const p = edPoint(e);
+  if (tool === 'draw') { fillLine(frame(), stroke.last, p); stroke.last = p; }
+  else if (tool === 'line') { frame().set(stroke.base); fillLine(frame(), stroke.start, p); }
+  else stroke.last = setHarmAt(p, stroke.last);
+  frameChanged(false);
+});
+const edEnd = e => { if (stroke && stroke.id === e.pointerId) stroke = null; };
+edCv.addEventListener('pointerup', edEnd); edCv.addEventListener('pointercancel', edEnd);
+
+/* tools */
+function afterTool() { if (tool === 'harm') loadHarm(); frameChanged(false); }
+$('edSmooth').addEventListener('click', () => {
+  const f = frame(), r = 12;
+  for (let pass = 0; pass < 2; pass++) {
+    const src = f.slice(); let acc = 0;
+    for (let k = -r; k <= r; k++) acc += src[(k + NS) % NS];
+    for (let n = 0; n < NS; n++) { f[n] = acc / (2 * r + 1); acc += src[(n + r + 1) % NS] - src[(n - r + NS) % NS]; }
+  }
+  afterTool();
+});
+$('edNorm').addEventListener('click', () => { normalizeFrame(frame()); afterTool(); });
+$('edInv').addEventListener('click', () => { const f = frame(); for (let n = 0; n < NS; n++) f[n] = -f[n]; afterTool(); });
+$('edClear').addEventListener('click', () => { tables[edSide].frames[edFrame] = PRESETS['Sine']()[0]; afterTool(); });
+$('edAdd').addEventListener('click', () => {
+  const fr = tables[edSide].frames; if (fr.length >= MAXF) return;
+  fr.splice(edFrame + 1, 0, frame().slice()); edFrame++;
+  if (tool === 'harm') loadHarm(); frameChanged(true);
+});
+$('edDel').addEventListener('click', () => {
+  const fr = tables[edSide].frames; if (fr.length <= 1) return;
+  fr.splice(edFrame, 1); edFrame = Math.min(edFrame, fr.length - 1);
+  if (tool === 'harm') loadHarm(); frameChanged(true);
+});
+presetSel.addEventListener('change', () => {
+  if (!presetSel.value) return;
+  tables[edSide] = makeTable(presetSel.value); presetSel.value = ''; edFrame = 0;
+  if (tool === 'harm') loadHarm(); frameChanged(true);
+});
+$('edLoad').addEventListener('click', () => $('edFile').click());
+$('edFile').addEventListener('change', async () => {
+  const file = $('edFile').files[0]; $('edFile').value = '';
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const audio = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(buf);
+    const d = audio.getChannelData(0), L = d.length;
+    let frames = [];
+    if (L >= NS * 2 && L % NS === 0) {
+      const total = L / NS, count = Math.min(MAXF, total);
+      for (let j = 0; j < count; j++) { const src = Math.round(j * (total - 1) / Math.max(1, count - 1)); frames.push(d.slice(src * NS, src * NS + NS)); }
+    } else {
+      const f = new Float32Array(NS);
+      for (let n = 0; n < NS; n++) { const x = n * L / NS, i = Math.floor(x), fr = x - i; f[n] = d[i % L] + ((d[(i + 1) % L]) - d[i % L]) * fr; }
+      frames = [f];
+    }
+    tables[edSide] = { name: file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Loaded', frames: frames.map(f => normalizeFrame(Float32Array.from(f))) };
+    edFrame = 0; if (tool === 'harm') loadHarm(); frameChanged(true);
+    $('edNote').textContent = frames.length > 1 ? `Loaded ${frames.length} frames.` : 'Loaded as a single cycle. Files made of 2048-sample frames load as multi-frame tables.';
+  } catch (err) {
+    $('edNote').textContent = 'That file could not be read as audio. WAV files work best.';
+  }
+});
+
+/* =====================================================================
+   KEYBOARD
+   ===================================================================== */
+/* effect on/off switches (for both sides), in each effect's heading */
+const FX_GROUPS = ['Drive', 'Formant filter', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT'];
+// every section heading gets a dice (randomize just this section) and a padlock (lock the whole section)
+const DICE = '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5.3" cy="5.3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="10.7" cy="10.7" r="1.2" fill="currentColor"/></svg>';
+document.querySelectorAll('.group[data-group]').forEach(sec => {
+  const g = sec.dataset.group, h = sec.querySelector('h2');
+  h.classList.add('fxh');
+  h.insertAdjacentHTML('beforeend', `<button type="button" class="lock sectool da" data-dice="${g}" data-side="A" aria-label="Randomize ${g} on side A">${DICE}</button><button type="button" class="lock sectool db" data-dice="${g}" data-side="B" aria-label="Randomize ${g} on side B">${DICE}</button><button type="button" class="lock sectool" data-dice="${g}" data-side="" aria-label="Randomize all of ${g}, linked knobs included">${DICE}</button><button type="button" class="lock sectool" data-seclock="${g}" aria-pressed="false"></button>`);
+  const k = FX_GROUPS.indexOf(g);
+  if (k >= 0) h.insertAdjacentHTML('beforeend', `<button type="button" class="fxsw" data-fx="${k}" aria-label="${g} on"></button>`);
+});
+function updateFxUI() {
+  document.querySelectorAll('[data-fx]').forEach(b => {
+    const k = +b.dataset.fx, on = state.fxOn[k];
+    b.setAttribute('aria-pressed', on); b.textContent = on ? 'On' : 'Off';
+    b.closest('.group').classList.toggle('fxoff', !on);
+  });
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-fx]'); if (!b) return;
+  const k = +b.dataset.fx; state.fxOn[k] = !state.fxOn[k];
+  updateFxUI(); if (ready) send({ type:'bypass', i:k, on: state.fxOn[k] }); save();
+});
+updateFxUI();
+
+/* delay time changes: Cut or Spill */
+$('k' + IX.dltime).closest('.group').insertAdjacentHTML('beforeend', `
+  <div class="blendrow"><span class="opt"><span>Time changes</span><span class="seg" role="group" aria-label="What happens when the delay time changes">
+    <button type="button" id="dlCut">Cut</button><button type="button" id="dlSpill">Spill</button></span></span></div>`);
+function updateDlUI() { $('dlCut').setAttribute('aria-pressed', !state.dlSpill); $('dlSpill').setAttribute('aria-pressed', state.dlSpill); }
+$('dlCut').addEventListener('click', () => { state.dlSpill = false; updateDlUI(); if (ready) send({ type:'dlmode', v:false }); save(); });
+$('dlSpill').addEventListener('click', () => { state.dlSpill = true; updateDlUI(); if (ready) send({ type:'dlmode', v:true }); save(); });
+updateDlUI();
+const keysEl = $('keys');
+const WHITE = [0, 2, 4, 5, 7, 9, 11, 12];
+const BLACK = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
+let octShift = 0;
+const base = () => 48 + 12 * octShift;
+const keyEls = {};
+WHITE.forEach(o => {
+  const k = document.createElement('div'); k.className = 'white'; k.dataset.off = o;
+  if (o % 12 === 0) k.innerHTML = '<span></span>';
+  keysEl.appendChild(k); keyEls[o] = k;
+});
+BLACK.forEach(([o, w]) => {
+  const k = document.createElement('div'); k.className = 'black'; k.dataset.off = o;
+  k.style.left = ((w + 1) * 12.5 - 3.75) + '%';
+  keysEl.appendChild(k); keyEls[o] = k;
+});
+function labelOct() {
+  const name = n => 'C' + (Math.floor(n / 12) - 1);
+  $('octLabel').textContent = name(base());
+  keyEls[0].querySelector('span').textContent = name(base());
+  keyEls[12].querySelector('span').textContent = name(base() + 12);
+}
+const sounding = new Map();
+function markKeys() { Object.entries(keyEls).forEach(([o, el]) => el.classList.toggle('on', sounding.has(base() + +o))); }
+function on(n) { sounding.set(n, (sounding.get(n) || 0) + 1); post({ type:'on', note:n, vel:0.9 }); markKeys(); }
+function off(n) {
+  const c = (sounding.get(n) || 0) - 1;
+  if (c <= 0) { sounding.delete(n); post({ type:'off', note:n }); } else sounding.set(n, c);
+  markKeys();
+}
+let latch = false; const latched = new Set();
+function press(n) {
+  if (latch) { if (latched.has(n)) { latched.delete(n); off(n); } else { latched.add(n); on(n); } }
+  else on(n);
+}
+function release(n) { if (!latch) off(n); }
+$('latch').addEventListener('click', e => {
+  latch = !latch; e.currentTarget.setAttribute('aria-pressed', latch);
+  if (!latch) { latched.forEach(n => off(n)); latched.clear(); }
+});
+const pointers = new Map();
+const noteAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.dataset && el.dataset.off !== undefined ? base() + +el.dataset.off : null; };
+keysEl.addEventListener('pointerdown', e => {
+  e.preventDefault(); keysEl.setPointerCapture(e.pointerId);
+  const n = noteAt(e.clientX, e.clientY); pointers.set(e.pointerId, n);
+  if (n !== null) press(n);
+});
+keysEl.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId) || latch) return;
+  const prev = pointers.get(e.pointerId), n = noteAt(e.clientX, e.clientY);
+  if (n === prev) return;
+  if (prev !== null) release(prev);
+  if (n !== null) press(n);
+  pointers.set(e.pointerId, n);
+});
+const pEnd = e => { if (!pointers.has(e.pointerId)) return; const n = pointers.get(e.pointerId); pointers.delete(e.pointerId); if (n !== null) release(n); };
+keysEl.addEventListener('pointerup', pEnd); keysEl.addEventListener('pointercancel', pEnd);
+function shiftOct(dir) { octShift = Math.max(-2, Math.min(3, octShift + dir)); labelOct(); markKeys(); }
+$('octDown').addEventListener('click', () => shiftOct(-1));
+$('octUp').addEventListener('click', () => shiftOct(1));
+const KEYMAP = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k:12 };
+const heldKeys = new Map();
+window.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+  if (panel === 'seq') {
+    if (e.key === ' ' && !e.target.closest('button,select,input')) { e.preventDefault(); setPlaying(!seqPlaying); }
+    return;
+  }
+  const key = e.key.toLowerCase();
+  if (key === 'z') { shiftOct(-1); return; }
+  if (key === 'x') { shiftOct(1); return; }
+  if (!(key in KEYMAP) || heldKeys.has(key)) return;
+  const n = base() + KEYMAP[key]; heldKeys.set(key, n); press(n);
+});
+window.addEventListener('keyup', e => {
+  const key = e.key.toLowerCase();
+  if (!heldKeys.has(key)) return;
+  release(heldKeys.get(key)); heldKeys.delete(key);
+});
+window.addEventListener('blur', () => { heldKeys.forEach(n => release(n)); heldKeys.clear(); });
+
+/* =====================================================================
+   SEQUENCER
+   Each side has its own pattern (rate, steps, scale). Both are laid on a
+   shared grid of 48 ticks per quarter note. Where both sides start a note
+   at the same tick, the note morphs; where only one does, the note has a
+   fixed switch point on the Pattern knob. Switch points are spread evenly
+   through the loop in bit-reversed order, like ordered dithering, so each
+   Pattern value always gives exactly the same sequence.
+   ===================================================================== */
+const RATES = [['1/4', 48], ['1/4 dotted', 72], ['1/8', 24], ['1/8 dotted', 36], ['1/16', 12], ['Mixed', 0]];
+const MIXED = 5;
+/* A pattern is always n16 sixteenth-note steps long. The rate lays notes over that grid: a dotted 8th
+   pattern of 16 steps holds notes at every third sixteenth, and the last one is cut short at the end.
+   s.steps holds one entry per note slot. With Mixed, every slot has its own length (dur). */
+const MIX_POOL = [12, 12, 12, 24, 24, 24, 36, 48, 72];
+const patTicks = s => s.n16 * 12;
+function stepPos(s) {
+  const total = patTicks(s), r = RATES[s.rate][1], pos = [];
+  let t = 0; s.steps.forEach((st, i) => { pos.push(t); t += r || st.dur || 12; });
+  return { pos, total };
+}
+const stepDur = (s, i) => { const P = stepPos(s); return Math.min(RATES[s.rate][1] || s.steps[i].dur || 12, P.total - P.pos[i]); };
+// Rebuild the slot list so it exactly covers the pattern, keeping whichever note was sounding at each new slot's start
+function fitSlots(s, freshDurs) {
+  const old = s.steps, oldP = old.length ? stepPos(s) : null, total = patTicks(s), r = RATES[s.rate][1], slots = [];
+  let t = 0;
+  while (t < total) {
+    const dur = r || (freshDurs || !old[slots.length] || !old[slots.length].dur ? MIX_POOL[Math.floor(Math.random() * MIX_POOL.length)] : old[slots.length].dur);
+    let src = null;
+    if (oldP) { let k = 0; for (let i = 0; i < old.length; i++) if (oldP.pos[i] <= t) k = i; src = old[k]; }
+    slots.push({ on: src ? src.on : false, note: src ? src.note : 48 + (s.root || 0), len: src ? src.len : 1, vel: src ? src.vel : 0.75, dur });
+    t += dur;
+  }
+  s.steps = slots;
+}
+const giveDurs = (s, fresh) => fitSlots(s, fresh);
+// generated notes stay out of the very top: anything above E5 drops an octave
+const tame = n => { while (n > 76) n -= 12; return n; };
+const R16 = 4;   // index of 1/16
+// earlier versions stored rates as positions in a longer list that included triplets
+const OLD_RATE_TICKS = [48, 72, 32, 24, 36, 16, 12, 18, 8, 6, 4];
+const SCALES = {
+  'Major': [0, 2, 4, 5, 7, 9, 11], 'Natural minor': [0, 2, 3, 5, 7, 8, 10], 'Dorian': [0, 2, 3, 5, 7, 9, 10],
+  'Phrygian': [0, 1, 3, 5, 7, 8, 10], 'Lydian': [0, 2, 4, 6, 7, 9, 11], 'Mixolydian': [0, 2, 4, 5, 7, 9, 10],
+  'Harmonic minor': [0, 2, 3, 5, 7, 8, 11], 'Major pentatonic': [0, 2, 4, 7, 9], 'Minor pentatonic': [0, 3, 5, 7, 10],
+  'Blues': [0, 3, 5, 6, 7, 10], 'Whole tone': [0, 2, 4, 6, 8, 10], 'Chromatic': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+};
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const noteName = n => NOTE_NAMES[((n % 12) + 12) % 12] + (Math.floor(n / 12) - 1);
+const randDegrees = (n, k) => { const d = [...Array(n).keys()]; for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; } return d.slice(0, Math.min(k, n)).sort((x, y) => x - y); };
+// Random 2/3/4 pick that many notes from the scale when you generate; the result is then fixed
+const CHORDS = { 'Triad': n => [0, 2, 4], 'Seventh': n => [0, 2, 4, 6], 'Sus': n => [0, 3, 4], 'Random 2': n => randDegrees(n, 2), 'Random 3': n => randDegrees(n, 3), 'Random 4': n => randDegrees(n, 4) };
+const MODES = ['Up', 'Down', 'Up-down', 'Down-up', 'Converge', 'Random'];
+const MAXSTEPS = 32;
+
+const scalePcs = s => new Set(SCALES[s.scale].map(x => (x + s.root) % 12));
+function degNote(s, d) {
+  const sc = SCALES[s.scale], n = sc.length;
+  return 48 + s.root + sc[((d % n) + n) % n] + 12 * Math.floor(d / n);
+}
+function generate(s, chord, mode, octs) {
+  const n = SCALES[s.scale].length, base = CHORDS[chord](n);
+  let list = [];
+  for (let o = 0; o < octs; o++) base.forEach(d => list.push(degNote(s, d + o * n)));
+  list = [...new Set(list)].sort((x, y) => x - y);
+  let order;
+  if (mode === 'Up') order = list;
+  else if (mode === 'Down') order = list.slice().reverse();
+  else if (mode === 'Up-down') order = list.concat(list.slice(1, -1).reverse());
+  else if (mode === 'Down-up') { const r = list.slice().reverse(); order = r.concat(r.slice(1, -1).reverse()); }
+  else if (mode === 'Converge') { order = []; let lo = 0, hi = list.length - 1; while (lo <= hi) { order.push(list[lo++]); if (lo <= hi) order.push(list[hi--]); } }
+  else { order = list.slice(); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; } }
+  if (!order.length) order = [48 + s.root];
+  const P = stepPos(s);
+  s.steps = s.steps.map((old, i) => ({ on: true, note: tame(order[i % order.length]), len: 1, vel: P.pos[i] % 48 === 0 ? 1 : 0.75, dur: old.dur }));
+}
+function makeSeq(rate, len, root, scale, chord, mode, octs) {
+  const s = { rate, root, scale, n16: len, v2: 1, v3: 1, v4: 1, density: 1, dseed: Math.random(), rot: 0, steps: [] };
+  fitSlots(s);
+  generate(s, chord, mode, octs);
+  return s;
+}
+const defaultSeqs = () => ({
+  A: makeSeq(R16, 16, 0, 'Minor pentatonic', 'Triad', 'Up-down', 2),
+  B: makeSeq(R16, 16, 0, 'Minor pentatonic', 'Seventh', 'Down', 2),
+});
+const cloneSeq = s => JSON.parse(JSON.stringify(s));
+if (!state.seq) state.seq = defaultSeqs();
+function fixSeq(s) {
+  if (!s.v2) {   // move old rate positions onto the list without triplets, picking the closest rate
+    const t = OLD_RATE_TICKS[s.rate] || 12;
+    let best = 0; RATES.forEach((r, i) => { if (Math.abs(r[1] - t) < Math.abs(RATES[best][1] - t)) best = i; });
+    s.rate = best; s.v2 = 1;
+  }
+  if (!s.v3) { if (s.rate === 6) s.rate = 4; s.v3 = 1; }   // 1/32 was removed
+  if (!s.v4) {   // dotted 1/16 was removed, and patterns became a fixed number of sixteenths
+    const oldTicks = [48, 72, 24, 36, 12, 18][s.rate], oldTotal = s.steps.reduce((t, st) => t + (oldTicks || st.dur || 12), 0);
+    s.rate = s.rate === 5 ? 4 : s.rate === 6 ? MIXED : s.rate;
+    s.n16 = Math.max(1, Math.min(32, Math.round(oldTotal / 12)));
+    fitSlots(s); s.v4 = 1;
+  }
+  if (!s.n16) { s.n16 = 16; fitSlots(s); }
+  if (typeof s.dseed !== 'number') s.dseed = Math.random();
+  if (typeof s.density !== 'number') s.density = 1;
+  if (typeof s.rot !== 'number') s.rot = 0;
+  s.rot = ((s.rot % s.steps.length) + s.steps.length) % s.steps.length;
+}
+fixSeq(state.seq.A); fixSeq(state.seq.B);
+// Scale is shared by both sides; older patches with two different scales take side A's
+if (state.seq.B.root !== state.seq.A.root || state.seq.B.scale !== state.seq.A.scale) {
+  state.seq.B.root = state.seq.A.root; state.seq.B.scale = state.seq.A.scale;
+  setTimeout(() => { snapToScale(state.seq.B); seqChanged(); });
+}
+/* Density: the pattern's notes are taken in order from a fixed starting point (rot), and each gets a
+   rank from the golden-ratio sequence (k × 0.618, wrapped, plus a per-pattern offset). That order is
+   evenly spread but never periodic, so thinning doesn't strip out every other note (which in an
+   arpeggio is often all of one pitch). The starting point moves with the notes when you shift. */
+function keptSteps(s) {
+  fixSeq(s);
+  const n = s.steps.length, order = [];
+  for (let k = 0; k < n; k++) { const i = (s.rot + k) % n; if (s.steps[i].on) order.push(i); }
+  const ranked = order.map((i, k) => ({ i, key: (k * 0.6180339887 + s.dseed) % 1 })).sort((a, b) => a.key - b.key);
+  const keep = new Set(ranked.slice(0, Math.round(s.density * order.length)).map(x => x.i));
+  return s.steps.map((_, i) => keep.has(i));
+}
+// each kept note is cut off where the next kept note starts, so notes never overlap
+function playLens(s, kept) {   // in ticks
+  const n = s.steps.length, out = new Array(n).fill(0), P = stepPos(s);
+  for (let i = 0; i < n; i++) {
+    if (!kept[i]) continue;
+    let gap = P.total;
+    for (let d = 1; d < n; d++) { const j = (i + d) % n; if (kept[j]) { gap = (P.pos[j] - P.pos[i] + P.total) % P.total || P.total; break; } }
+    out[i] = Math.min(s.steps[i].len * stepDur(s, i), gap);
+  }
+  return out;
+}
+
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+const bitrev = (i, bits) => { let r = 0; for (let k = 0; k < bits; k++) { r = (r << 1) | (i & 1); i >>= 1; } return r; };
+function scaleMorph(A, B) {
+  const a = scalePcs(A), b = scalePcs(B), shared = new Array(12).fill(false), change = new Array(12).fill(null);
+  const sharedList = [];
+  for (let pc = 0; pc < 12; pc++) if (a.has(pc) && b.has(pc)) { shared[pc] = true; sharedList.push(pc); }
+  // order the differing notes by distance around the circle of fifths from the shared notes
+  const fifth = pc => (pc * 7) % 12;
+  const anchors = sharedList.length ? sharedList : [A.root];
+  const dist = pc => Math.min(...anchors.map(s => { const d = Math.abs(fifth(pc) - fifth(s)); return Math.min(d, 12 - d); }));
+  const sortD = l => l.sort((x, y) => dist(x) - dist(y) || x - y);
+  const aOnly = sortD([...a].filter(x => !b.has(x))), bOnly = sortD([...b].filter(x => !a.has(x)));
+  const out = [];
+  const addFirst = !sharedList.length;   // never let the scale go empty
+  while (aOnly.length || bOnly.length) {
+    if (addFirst) { if (bOnly.length) out.push({ pc: bOnly.shift(), add: true }); if (aOnly.length) out.push({ pc: aOnly.shift(), add: false }); }
+    else { if (aOnly.length) out.push({ pc: aOnly.shift(), add: false }); if (bOnly.length) out.push({ pc: bOnly.shift(), add: true }); }
+  }
+  out.forEach((c, k) => { change[c.pc] = { add: c.add, thr: (k + 0.5) / out.length }; });
+  return { shared, change };
+}
+function assignThresholds(list) {
+  const n = list.length; if (!n) return;
+  const bits = Math.max(1, Math.ceil(Math.log2(n)));
+  list.map((e, i) => ({ e, k: bitrev(i, bits) })).sort((x, y) => x.k - y.k).forEach((o, r) => { o.e.thr = (r + 0.5) / n; });
+}
+let seqCache = null;
+function buildSeq() {
+  if (seqCache) return seqCache;
+  const A = state.seq.A, B = state.seq.B;
+  const dA = stepPos(A).total, dB = stepPos(B).total;
+  let loop = dA / gcd(dA, dB) * dB;
+  if (loop > 48 * 4 * 64) loop = Math.max(dA, dB);
+  const map = new Map();
+  const add = (side, S) => {
+    const kept = keptSteps(S), lens = playLens(S, kept), P = stepPos(S);
+    for (let base = 0; base < loop; base += P.total) S.steps.forEach((st, i) => {
+      const t = base + P.pos[i];
+      if (!kept[i] || t >= loop) return;
+      let e = map.get(t); if (!e) { e = { tick: t }; map.set(t, e); }
+      e[side] = { p: st.note, v: st.vel, l: lens[i] };
+    });
+  };
+  add('a', A); add('b', B);
+  const events = [...map.values()].sort((x, y) => x.tick - y.tick);
+  assignThresholds(events.filter(e => !(e.a && e.b)));
+  assignThresholds(events.filter(e => e.a && e.b && e.a.p !== e.b.p));
+  events.forEach(e => { if (e.thr === undefined) e.thr = 0.5; });
+  seqCache = { events, loop, scale: scaleMorph(A, B), dA, dB };
+  return seqCache;
+}
+function sendSeq() { if (ready) { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); } }
+function seqChanged() { seqCache = null; sendSeq(); drawLanes(); if (sq.classList.contains('open')) drawRoll(); save(); }
+
+/* ---------- bottom pane: keys / sequencer ---------- */
+let panel = 'keys', seqPlaying = false, seqPos = null, seqLoop = 1;
+function setPanel(p, quiet) {
+  if (p === panel) return;
+  panel = p;
+  $('pmKeys').setAttribute('aria-pressed', p === 'keys'); $('pmSeq').setAttribute('aria-pressed', p === 'seq');
+  $('kctl').hidden = p !== 'keys'; $('sctl').hidden = p !== 'seq';
+  $('slide').classList.toggle('seq', p === 'seq');
+  $('keysPane').inert = p !== 'keys'; $('seqPane').inert = p !== 'seq';
+  if (p === 'seq') {   // leave normal playing cleanly
+    latch = false; $('latch').setAttribute('aria-pressed', 'false'); latched.clear();
+    sounding.clear(); markKeys(); if (!quiet) post({ type:'panic' });
+    drawLanes();
+  } else setPlaying(false);
+}
+$('pmKeys').addEventListener('click', () => setPanel('keys'));
+$('pmSeq').addEventListener('click', () => { if (panel !== 'seq') { setPanel('seq'); setPlaying(true); } });
+const ICON_PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>';
+const ICON_STOP = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>';
+function setPlaying(on) {
+  seqPlaying = on;
+  $('play').innerHTML = on ? ICON_STOP : ICON_PLAY;
+  $('play').setAttribute('aria-label', on ? 'Stop' : 'Play');
+  $('play').classList.toggle('playing', on);
+  if (on) { sendSeq(); post({ type:'seqPlay', on:true }); }
+  else { if (ready) send({ type:'seqPlay', on:false }); seqPos = null; drawLanes(); }
+}
+$('play').addEventListener('click', () => setPlaying(!seqPlaying));
+function drawBpmKnob() {
+  const x = (state.bpm - 50) / 150;
+  $('bpmArc').setAttribute('stroke-dasharray', `${(75 * x).toFixed(2)} 200`);
+  $('bpmPtr').setAttribute('transform', `rotate(${-135 + 270 * x} 20 20)`);
+}
+function setBpm(v) { state.bpm = Math.max(50, Math.min(200, Math.round(v))); $('bpmVal').textContent = state.bpm; $('bpmBox').setAttribute('aria-valuenow', state.bpm); drawBpmKnob(); if (ready) send({ type:'bpm', v: state.bpm }); save(); }
+function holdRepeat(el, fn) {
+  let t1 = null, t2 = null;
+  const stop = () => { clearTimeout(t1); clearInterval(t2); };
+  el.addEventListener('pointerdown', () => { fn(); t1 = setTimeout(() => { t2 = setInterval(fn, 60); }, 350); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => el.addEventListener(t, stop));
+}
+{ // drag the tempo readout up/down or sideways
+  const el = $('bpmBox'); let pid = null, x0 = 0, y0 = 0, b0 = 0;
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); x0 = e.clientX; y0 = e.clientY; b0 = state.bpm; });
+  el.addEventListener('pointermove', e => { if (e.pointerId === pid) setBpm(b0 + ((e.clientX - x0) - (e.clientY - y0)) / 3); });
+  ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { pid = null; }));
+  el.addEventListener('keydown', e => { const d = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -1 : 0; if (d) { e.preventDefault(); setBpm(state.bpm + d * (e.shiftKey ? 10 : 1)); } });
+}
+function onReport(d) {
+  if (d.type === 'pos' && seqPlaying) { seqPos = d.pos; seqLoop = d.loop; drawLanesSoon(); }
+  else if (d.type === 'ott') onOtt(d);
+}
+// mono / poly for playing the keys (the sequencer is always one note at a time)
+function updateMonoUI() { ['monoBtn', 'monoBtn2'].forEach(id => { $(id).textContent = state.mono ? 'Mono' : 'Poly'; $(id).setAttribute('aria-label', `Voice mode: ${state.mono ? 'mono, one note at a time' : 'poly'}. Tap to switch`); }); }
+['monoBtn', 'monoBtn2'].forEach(id => $(id).addEventListener('click', () => { state.mono = !state.mono; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); }));
+updateMonoUI();
+
+/* ---------- mini lanes: A, what plays now, B ---------- */
+let lanesQueued = false;
+function drawLanesSoon() { if (lanesQueued) return; lanesQueued = true; requestAnimationFrame(() => { lanesQueued = false; drawLanes(); }); }
+function drawLanes() {
+  if (panel !== 'seq' && !sq.classList.contains('open')) return;
+  const s = buildSeq(), mm = resolveNorm(IX.pattern), walk = state.walk;
+  let lo = 127, hi = 0;
+  s.events.forEach(e => { [e.a, e.b].forEach(x => { if (x) { lo = Math.min(lo, x.p); hi = Math.max(hi, x.p); } }); });
+  if (lo > hi) { lo = 48; hi = 72; }
+  lo -= 1; hi += 1;
+  const rows = [['lnA', e => (e.a ? { note: e.a.p, len: e.a.l } : null), css('--a')],
+                ['lnL', e => MorphEngine.seqEval(e, mm, walk, s.scale), mixColor(state.morph)],
+                ['lnB', e => (e.b ? { note: e.b.p, len: e.b.l } : null), css('--b')]];
+  rows.forEach(([id, fn, col]) => {
+    const c = prep($(id)); if (!c) return;
+    c.g.fillStyle = col;
+    const yOf = n => c.h - 3 - (n - lo) / (hi - lo) * (c.h - 6);
+    const notes = s.events.map(e => ({ t: e.tick, r: fn(e) })).filter(x => x.r);
+    notes.forEach((x, k) => {
+      const next = k + 1 < notes.length ? notes[k + 1].t : notes[0].t + s.loop;   // mono: a note ends where the next begins
+      const len = Math.min(x.r.len * 0.92, next - x.t);
+      c.g.fillRect(x.t / s.loop * c.w, yOf(x.r.note) - 1.5, Math.max(2, len / s.loop * c.w), 3);
+    });
+    // loop boundaries of each side inside the combined loop
+    const d = id === 'lnA' ? s.dA : id === 'lnB' ? s.dB : 0;
+    if (d && d < s.loop) { c.g.fillStyle = css('--line'); for (let t = d; t < s.loop; t += d) c.g.fillRect(t / s.loop * c.w, 0, 1, c.h); }
+    if (seqPos !== null) { c.g.fillStyle = css('--ink'); c.g.fillRect(seqPos / s.loop * c.w, 0, 1.5, c.h); }
+  });
+}
+
+/* ---------- Pitch mode (Walk / Swap) ---------- */
+function updateWalkUI() { $('pmWalk').setAttribute('aria-pressed', state.walk); $('pmSwap').setAttribute('aria-pressed', !state.walk); }
+$('pmWalk').addEventListener('click', () => { state.walk = true; updateWalkUI(); if (ready) send({ type:'walk', v:true }); drawLanes(); save(); });
+$('pmSwap').addEventListener('click', () => { state.walk = false; updateWalkUI(); if (ready) send({ type:'walk', v:false }); drawLanes(); save(); });
+
+/* ---------- piano roll editor ---------- */
+const sq = $('sq'), roll = $('roll'), velCv = $('velCv');
+let sqSide = 'A', rollDrag = null;
+$('sqRate').innerHTML = RATES.map((r, i) => `<option value="${i}">${r[0]}</option>`).join('');
+$('sqRoot').innerHTML = NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+$('sqScale').innerHTML = Object.keys(SCALES).map(n => `<option>${n}</option>`).join('');
+$('sqChord').innerHTML = Object.keys(CHORDS).map(n => `<option>${n}</option>`).join('');
+$('sqMode').innerHTML = MODES.map(n => `<option>${n}</option>`).join('');
+const cur = () => state.seq[sqSide];
+function openSeq(side) {
+  sqSide = side || sqSide;
+  sq.classList.add('open'); sq.classList.toggle('b', sqSide === 'B');
+  syncSeqControls(); drawRoll(); drawLanes();
+  $('sqDone').focus({ preventScroll:true });
+}
+function closeSeq() { sq.classList.remove('open'); $('seqEdit').focus({ preventScroll:true }); }
+$('seqEdit').addEventListener('click', () => openSeq());
+$('sqDone').addEventListener('click', closeSeq);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && sq.classList.contains('open')) closeSeq(); });
+$('sqA').addEventListener('click', () => openSeq('A'));
+$('sqB').addEventListener('click', () => openSeq('B'));
+function syncSeqControls() {
+  const s = cur(); fixSeq(s);
+  $('sqDens').value = Math.round(s.density * 100); $('sqDensVal').textContent = Math.round(s.density * 100) + '%';
+  $('sqA').setAttribute('aria-pressed', sqSide === 'A'); $('sqB').setAttribute('aria-pressed', sqSide === 'B');
+  $('sqRate').value = s.rate; $('sqRoot').value = s.root; $('sqScale').value = s.scale;
+  $('sqLen').textContent = s.n16;
+  $('sqOther').textContent = `Copy to ${sqSide === 'A' ? 'B' : 'A'}`;
+}
+function snapToScale(s) {
+  const pcs = scalePcs(s);
+  s.steps.forEach(st => { for (let d = 0; d < 12; d++) { if (pcs.has(((st.note - d) % 12 + 12) % 12)) { st.note -= d; break; } if (pcs.has((st.note + d) % 12)) { st.note += d; break; } } });
+}
+function editSeq(fn) { pushUndo(); fn(cur()); syncSeqControls(); seqChanged(); }
+$('sqRate').addEventListener('change', () => editSeq(s => { s.rate = +$('sqRate').value; fitSlots(s, true); }));
+function setScale(root, scale) {   // shared by both sides
+  ['A', 'B'].forEach(k => { const q = state.seq[k]; q.root = root; q.scale = scale; snapToScale(q); });
+}
+$('sqRoot').addEventListener('change', () => editSeq(() => setScale(+$('sqRoot').value, cur().scale)));
+$('sqScale').addEventListener('change', () => editSeq(() => setScale(cur().root, $('sqScale').value)));
+$('sqLenDn').addEventListener('click', () => editSeq(s => { if (s.n16 > 1) { s.n16--; fitSlots(s); } }));
+$('sqLenUp').addEventListener('click', () => editSeq(s => { if (s.n16 < MAXSTEPS) { s.n16++; fitSlots(s); } }));
+['pointerdown', 'keydown'].forEach(t => $('sqDens').addEventListener(t, () => pushUndo()));
+$('sqDens').addEventListener('input', () => { cur().density = $('sqDens').value / 100; $('sqDensVal').textContent = $('sqDens').value + '%'; seqChanged(); });
+// shift the whole pattern one step, wrapping around the loop
+$('sqLeft').addEventListener('click', () => editSeq(s => { s.steps.push(s.steps.shift()); s.rot = (s.rot - 1 + s.steps.length) % s.steps.length; }));
+$('sqRight').addEventListener('click', () => editSeq(s => { s.steps.unshift(s.steps.pop()); s.rot = (s.rot + 1) % s.steps.length; }));
+let genType = 'Arp';
+function setGen(t) {
+  genType = t;
+  $('gnArp').setAttribute('aria-pressed', t === 'Arp'); $('gnRiff').setAttribute('aria-pressed', t === 'Riff');
+  $('arpRow').hidden = t !== 'Arp'; $('riffRow').hidden = t !== 'Riff';
+}
+$('gnArp').addEventListener('click', () => setGen('Arp'));
+$('gnRiff').addEventListener('click', () => setGen('Riff'));
+setGen('Arp');
+$('sqGen').addEventListener('click', () => editSeq(s => genFromControls(s)));
+$('sqClear').addEventListener('click', () => editSeq(s => s.steps.forEach(st => { st.on = false; })));
+/* random tools: each regenerates the current side's pattern */
+const pick = a => a[Math.floor(Math.random() * a.length)];
+// with the oscillator already shifted up an octave, keep generated patterns within two octaves
+const octCap = () => (Math.max(MorphEngine.denorm(DEFS[IX.octave], state.A[IX.octave]), MorphEngine.denorm(DEFS[IX.octave], state.B[IX.octave])) > 0 ? 2 : 3);
+function randArpSettings() {   // now: random generator settings, Arp or Riff
+  setGen(Math.random() < 0.5 ? 'Arp' : 'Riff');
+  $('sqChord').value = pick(Object.keys(CHORDS)); $('sqMode').value = pick(MODES);
+  const o = Math.random(); $('sqOct').value = String(Math.min(octCap(), o < 0.45 ? 1 : o < 0.9 ? 2 : 3));   // three octaves only rarely
+  $('rfStyle').value = pick(['Motif', 'Pedal', 'Cells']); $('rfOct').value = String(1 + Math.floor(Math.random() * 2)); $('rfSync').value = Math.round(Math.random() * 100);
+}
+const genFromControls = s => (genType === 'Riff' ? riff(s, $('rfStyle').value, +$('rfOct').value, $('rfSync').value / 100) : generate(s, $('sqChord').value, $('sqMode').value, +$('sqOct').value));
+
+/* Riff generator
+   Motif: a short motif, repeated, varied, then answered (call and response over four cells).
+   Pedal: a low root repeated, with notes jumping out above it.
+   Cells: rhythmic groups (3+3+2 and friends), each starting a new note.
+   Syncopation pushes onsets off the beat and toward odd groupings. */
+function riff(s, style, octs, sync) {
+  const R = Math.random, n = s.steps.length, ns = SCALES[s.scale].length, span = Math.max(2, ns * octs);
+  const out = s.steps.map(st => ({ on: false, note: 48 + s.root, len: 1, vel: 0.75, dur: st.dur }));
+  const walk = (d, big) => Math.max(0, Math.min(span - 1, d + Math.round((R() * 2 - 1) * (big ? ns * 0.6 : 2.4))));
+  const cellRhythm = len => {
+    const on = Array.from({ length: len }, (_, i) => R() < (i % 2 ? 0.2 + 0.55 * sync : 0.75 - 0.4 * sync));
+    if (R() < sync * 0.6) on[0] = false;   // skip the downbeat now and then
+    if (!on.some(Boolean)) on[Math.floor(R() * len)] = true;
+    return on;
+  };
+  const put = (i, d, vel) => { if (i < n) { out[i] = { ...out[i], on: true, note: tame(degNote(s, d)), vel }; } };
+  if (style === 'Motif') {
+    const cl = Math.max(2, Math.ceil(n / 4)), rh = cellRhythm(cl);
+    let d = Math.floor(R() * Math.min(ns, span)); const motif = rh.map(on => (on ? (d = walk(d, false)) : null));
+    const shift = R() < 0.5 ? 2 : -1, answer = motif.map((x, i) => (x === null ? null : i >= cl / 2 ? walk(x, true) : x));
+    const answerRh = R() < 0.5 ? rh : cellRhythm(cl);
+    [motif, motif, motif.map(x => (x === null ? null : Math.max(0, Math.min(span - 1, x + shift)))), answer].forEach((m, c) => {
+      (c === 3 ? answerRh : rh).forEach((on, i) => { const x = m[i] ?? motif.find(v => v !== null) ?? 0; if (on) put(c * cl + i, x, i === 0 || (i === 1 && !rh[0]) ? 1 : 0.7 + R() * 0.2); });
+    });
+  } else if (style === 'Pedal') {
+    const groups = sync > 0.5 ? [3, 3, 2] : [2, 2];
+    let i = 0, g = 0;
+    while (i < n) {
+      const len = groups[g++ % groups.length];
+      for (let k = 0; k < len && i + k < n; k++) {
+        const on = k === 0 || R() < 0.35 + 0.3 * (1 - sync);
+        if (!on) continue;
+        if (k === 0 && R() < 0.3) put(i + k, ns + Math.floor(R() * Math.max(1, span - ns)), 1);   // jump out above the pedal
+        else put(i + k, 0, k === 0 ? 0.95 : 0.7);
+      }
+      i += len;
+    }
+  } else {
+    const sets = sync > 0.5 ? [[3, 3, 2], [3, 3, 3, 3, 4], [3, 2, 3]] : [[2, 2, 4], [4, 2, 2], [3, 3, 2]];
+    const groups = pick(sets); let i = 0, g = 0, d = Math.floor(R() * Math.min(ns, span));
+    while (i < n) {
+      const len = groups[g++ % groups.length]; d = walk(d, R() < 0.2);
+      put(i, d, 1);
+      for (let k = 1; k < len; k++) if (R() < 0.45) put(i + k, R() < 0.3 && d + ns < span ? d + ns : d, 0.65);
+      i += len;
+    }
+  }
+  // 95% of riffs start on the very first beat
+  if (!out[0].on && R() < 0.95) { const first = out.find(x => x.on); out[0] = { ...out[0], on: true, note: first ? first.note : tame(degNote(s, 0)), vel: 1 }; }
+  s.steps = out;
+}
+function randNotes(s) {
+  const n = SCALES[s.scale].length, span = n * Math.min(+$('sqOct').value, octCap()), P = stepPos(s);
+  let d = Math.floor(Math.random() * span);
+  s.steps = s.steps.map((old, i) => {
+    const beat = P.pos[i] % 48 === 0;
+    d += Math.random() < 0.15 ? Math.round((Math.random() * 2 - 1) * n) : Math.round((Math.random() * 2 - 1) * 2);   // mostly small moves, sometimes a leap
+    d = Math.max(0, Math.min(span - 1, d));
+    const x = Math.random();
+    return { on: beat ? Math.random() < 0.92 : Math.random() < 0.72, note: tame(degNote(s, d)), len: x < 0.12 ? 2 : x < 0.22 ? 0.5 : 1, vel: beat ? 1 : 0.75, dur: old.dur };
+  });
+}
+function randVel(s) { s.steps.forEach(st => { st.vel = 0.05 + Math.random() * 0.95; }); }
+function randRhythm(s) { s.steps.forEach(st => { const x = Math.random(); if (x < 0.15) st.on = false; else if (x < 0.25) st.len = 2; else if (x < 0.33) st.len = 0.5; }); }
+// launch: a new shared scale, then each side gets a whole new 16-step pattern
+function randSeqs() {
+  ['A', 'B'].forEach(k => { const q = state.seq[k]; fixSeq(q); q.n16 = 16; fitSlots(q); });
+  setScale(Math.floor(Math.random() * 12), pick(Object.keys(SCALES)));
+  ['A', 'B'].forEach(k => fullSeqRandom(state.seq[k]));
+}
+$('rzNotes').addEventListener('click', () => editSeq(randNotes));
+// top bar: new patterns for one side (keeps the shared scale) or both (new scale too)
+// main-page sequence dice and launch: new rate, new generator settings (Arp or Riff), rhythm, velocity,
+// and a density that leans high (never below 30%)
+const highDensity = () => 1 - 0.7 * Math.random() ** 2;
+function fullSeqRandom(q) { fixSeq(q); randRate(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); q.density = highDensity(); }
+function randSeqSide(k) { fullSeqRandom(state.seq[k]); }
+$('rsA').addEventListener('click', () => bulk(() => randSeqSide('A')));
+$('rsB').addEventListener('click', () => bulk(() => randSeqSide('B')));
+$('rsBoth').addEventListener('click', () => bulk(() => randSeqs()));
+$('rzVel').addEventListener('click', () => editSeq(randVel));
+function randRate(s) { s.rate = Math.floor(Math.random() * RATES.length); fitSlots(s, true); }
+$('rzRate').addEventListener('click', () => editSeq(randRate));
+$('rzArp').addEventListener('click', () => editSeq(s => { randArpSettings(); genFromControls(s); }));
+function randAllSide(s) { randRate(s); randArpSettings(); genFromControls(s); randRhythm(s); randVel(s); s.density = 0.3 + 0.7 * Math.random(); }
+$('rzAll').addEventListener('click', () => editSeq(randAllSide));
+$('sqOther').addEventListener('click', () => { pushUndo(); state.seq[sqSide === 'A' ? 'B' : 'A'] = cloneSeq(cur()); seqChanged(); });
+
+const GUT = 34, RH = 14;
+function rollRows() { const pcs = scalePcs(cur()), rows = []; for (let n = 84; n >= 36; n--) if (pcs.has(n % 12)) rows.push(n); return rows; }
+function rowOf(rows, note) { let best = 0; rows.forEach((n, i) => { if (Math.abs(n - note) < Math.abs(rows[best] - note)) best = i; }); return best; }
+function rollGeom(s, w) {   // x position and width of every step (steps can differ in length with Mixed)
+  const P = stepPos(s), span = w - GUT;
+  return { P, x: i => GUT + P.pos[i] / P.total * span, wOf: t => t / P.total * span };
+}
+function drawRoll() {
+  const s = cur(), rows = rollRows(), L = s.steps.length;
+  roll.style.height = rows.length * RH + 'px';
+  const c = prep(roll); if (!c) return;
+  const G = rollGeom(s, c.w), side = css(sqSide === 'A' ? '--a' : '--b');
+  rows.forEach((n, i) => {
+    if (n % 12 === s.root) { c.g.fillStyle = css('--line'); c.g.globalAlpha = 0.45; c.g.fillRect(GUT, i * RH, c.w - GUT, RH); c.g.globalAlpha = 1; }
+    c.g.fillStyle = css('--muted'); c.g.font = '10px "Barlow Semi Condensed", sans-serif'; c.g.textAlign = 'left';
+    c.g.fillText(noteName(n), 3, i * RH + 10.5);
+  });
+  const tx = t => GUT + t / G.P.total * (c.w - GUT);
+  for (let t = 0; t <= G.P.total; t += 12) {   // the sixteenth grid, with beats and bars stronger
+    const beat = t % 48 === 0, bar = t % 192 === 0;
+    c.g.fillStyle = css(bar ? '--muted' : '--line'); c.g.globalAlpha = bar ? 0.7 : beat ? 1 : 0.35;
+    c.g.fillRect(Math.min(c.w - 1, tx(t)) - (bar ? 0.5 : 0), 0, bar ? 1.5 : 1, c.h);
+  }
+  c.g.fillStyle = side; c.g.globalAlpha = 0.18;   // where each note slot starts
+  for (let k = 1; k < L; k++) c.g.fillRect(G.x(k), 0, 1, c.h);
+  c.g.globalAlpha = 1;
+  const kept = keptSteps(s), lens = playLens(s, kept);
+  s.steps.forEach((st, k) => {
+    if (!st.on) return;
+    const y = rowOf(rows, st.note) * RH;
+    if (!kept[k]) {   // thinned out by Density: shown as an outline so you can see what comes back
+      c.g.strokeStyle = side; c.g.globalAlpha = 0.5; c.g.lineWidth = 1;
+      c.g.strokeRect(G.x(k) + 1.5, y + 2, Math.max(3, G.wOf(st.len * stepDur(s, k)) - 3), RH - 4);
+      c.g.globalAlpha = 1; return;
+    }
+    c.g.fillStyle = side; c.g.globalAlpha = 0.45 + 0.55 * st.vel;
+    c.g.fillRect(G.x(k) + 1, y + 1.5, Math.max(3, G.wOf(lens[k]) - 2), RH - 3);
+  });
+  c.g.globalAlpha = 1;
+  const v = prep(velCv); if (!v) return;
+  s.steps.forEach((st, k) => {
+    if (!st.on) return;
+    v.g.fillStyle = side; v.g.fillRect(G.x(k) + 2, v.h - st.vel * (v.h - 4), Math.max(2, G.wOf(stepDur(s, k)) - 4), st.vel * (v.h - 4));
+  });
+  v.g.fillStyle = css('--muted'); v.g.font = '10px "Barlow Semi Condensed", sans-serif'; v.g.fillText('Vel', 3, 12);
+}
+function stepAt(s, G, x) { let k = 0; for (let i = 0; i < s.steps.length; i++) if (x >= G.x(i)) k = i; return k; }
+function rollHit(e) {
+  const rc = roll.getBoundingClientRect(), s = cur(), rows = rollRows(), G = rollGeom(s, rc.width);
+  const x = e.clientX - rc.left, y = e.clientY - rc.top, k = stepAt(s, G, x);
+  const row = Math.max(0, Math.min(rows.length - 1, Math.floor(y / RH)));
+  return { k, note: rows[row], x, G, inGutter: x < GUT };
+}
+roll.addEventListener('pointerdown', e => {
+  const h = rollHit(e); if (h.inGutter) return;
+  e.preventDefault(); roll.setPointerCapture(e.pointerId); pushUndo();
+  const st = cur().steps[h.k];
+  if (st.on && st.note === h.note) rollDrag = { id: e.pointerId, type: 'len', k: h.k, x0: h.x, tap: true };
+  else { st.on = true; st.note = h.note; if (!st.len) st.len = 1; rollDrag = { id: e.pointerId, type: 'paint', last: h.k }; seqChanged(); }
+});
+roll.addEventListener('pointermove', e => {
+  if (!rollDrag || rollDrag.id !== e.pointerId) return;
+  const h = rollHit(e), steps = cur().steps;
+  if (rollDrag.type === 'len') {
+    if (Math.abs(h.x - rollDrag.x0) > 6) rollDrag.tap = false;
+    if (!rollDrag.tap) { const k = rollDrag.k, one = h.G.wOf(stepDur(cur(), k)); steps[k].len = Math.max(0.25, Math.min(8, Math.round((h.x - h.G.x(k)) / one * 4) / 4)); seqChanged(); }
+  } else {
+    const lo = Math.min(rollDrag.last, h.k), hi = Math.max(rollDrag.last, h.k);
+    for (let k = lo; k <= hi; k++) { if (k === rollDrag.last && k !== h.k) continue; steps[k].on = true; steps[k].note = h.note; }
+    rollDrag.last = h.k; seqChanged();
+  }
+});
+const rollEnd = e => {
+  if (!rollDrag || rollDrag.id !== e.pointerId) return;
+  if (rollDrag.type === 'len' && rollDrag.tap) { cur().steps[rollDrag.k].on = false; seqChanged(); }
+  rollDrag = null;
+};
+roll.addEventListener('pointerup', rollEnd); roll.addEventListener('pointercancel', rollEnd);
+let velDrag = null;
+function velAt(e) {
+  const rc = velCv.getBoundingClientRect(), s = cur(), G = rollGeom(s, rc.width), x = e.clientX - rc.left;
+  if (x < GUT) return;
+  const k = stepAt(s, G, x);
+  s.steps[k].vel = Math.max(0.05, Math.min(1, 1 - (e.clientY - rc.top - 2) / (rc.height - 4)));
+  seqChanged();
+}
+velCv.addEventListener('pointerdown', e => { e.preventDefault(); velCv.setPointerCapture(e.pointerId); pushUndo(); velDrag = e.pointerId; velAt(e); });
+velCv.addEventListener('pointermove', e => { if (velDrag === e.pointerId) velAt(e); });
+['pointerup', 'pointercancel'].forEach(t => velCv.addEventListener(t, () => { velDrag = null; }));
+
+$('bpmVal').textContent = state.bpm; drawBpmKnob();
+$('play').innerHTML = ICON_PLAY; $('play').setAttribute('aria-label', 'Play');
+updateWalkUI();
+setPanel('seq', true);   // the sequencer is the starting view
+
+
+labelOct();
+updateIcons();
+refreshAll();
+updateBlendUI();
+// Every launch starts from a fresh random patch and fresh 16-step sequences. Undo brings back the last session.
+bulk(() => { randomizeAll(); randSeqs(); });
+setBpm(85 + Math.random() * 50);
+window.addEventListener('resize', () => { drawWaves(); if (ed.classList.contains('open')) { drawEditor(); renderStrip(); } });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { drawWaves(); if (ed.classList.contains('open')) { drawEditor(); renderStrip(); } });
+</script>
+</body>
+</html>
