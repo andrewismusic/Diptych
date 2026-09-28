@@ -1,0 +1,17 @@
+/* ---------- wavetable editor ---------- */
+.ed{position:fixed;left:0;right:0;top:0;bottom:var(--kbh,0px);z-index:20;background:var(--bg);overflow-y:auto;
+    padding-top:env(safe-area-inset-top,0px);display:none;border-bottom:1px solid var(--line)}
+.ed.open{display:block}
+.ed{--side:var(--a)} .ed.b{--side:var(--b)}
+.edwrap{max-width:780px;margin:0 auto;padding:10px 12px 14px;display:flex;flex-direction:column;gap:10px}
+.edhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.edhead h2{margin:0;font-size:1.2rem;font-weight:600;color:var(--side);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.edrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.edrow label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.92rem}
+.edrow .count{color:var(--muted);font-size:.9rem;margin-left:auto}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 4px}
+.strip canvas{width:60px;height:38px;flex:0 0 auto;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;touch-action:manipulation}
+.strip canvas.sel{outline:2px solid var(--side);outline-offset:1px}
+#edCanvas{width:100%;height:210px;display:block;touch-action:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:crosshair}
+.ednote{margin:0;color:var(--muted);font-size:.88rem}
+

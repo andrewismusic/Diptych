@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Diptych: morph synth, step 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* @include styles/base.css */
+/* @include styles/header.css */
+/* @include styles/knobs.css */
+/* @include styles/wavetables.css */
+/* @include styles/editor.css */
+/* @include styles/bottom-panel.css */
+/* @include styles/responsive.css */
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="titlebar">
+      <h1>Diptych <span>morph synth</span></h1>
+      <button id="audioBtn" class="attn" type="button">Tap to start audio</button>
+    </div>
+    <div class="morphfoot">
+      <div class="btns">
+        <button type="button" id="copyAB">Copy A to B</button>
+        <button type="button" id="copyBA">Copy B to A</button>
+        <button type="button" id="swap">Swap</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="groups">
+  <div class="patchbar">
+    <div class="rrow"><span class="rlbl">Randomize sound</span>
+      <button type="button" id="rndA" class="ra">A</button>
+      <button type="button" id="rndLinked">Linked</button>
+      <button type="button" id="rndAll">All</button>
+      <button type="button" id="rndB" class="rb">B</button>
+    </div>
+    <div class="rrow"><span class="rlbl">Randomize sequence</span>
+      <button type="button" id="rsA" class="ra">A</button>
+      <button type="button" id="rsBoth">Both</button>
+      <button type="button" id="rsB" class="rb">B</button>
+      <button type="button" id="undo" disabled>Undo</button>
+    </div>
+  </div>
+  <section class="group wide" data-group="Wavetables">
+    <h2>Wavetables</h2>
+    <div class="wt">
+      <button class="wtcard a" id="wtA" type="button" aria-label="Edit wavetable A">
+        <canvas id="cvA"></canvas>
+        <span class="wtlabel"><span class="nm" id="nmA"></span><span class="ac">Edit A</span></span>
+      </button>
+      <div class="wtcard">
+        <canvas id="cvH"></canvas>
+        <span class="wtlabel"><span class="nm">What you hear</span></span>
+      </div>
+      <button class="wtcard b" id="wtB" type="button" aria-label="Edit wavetable B">
+        <canvas id="cvB"></canvas>
+        <span class="wtlabel"><span class="nm" id="nmB"></span><span class="ac">Edit B</span></span>
+      </button>
+    </div>
+    <div class="wtknobs" id="wtKnobs"></div>
+  </section>
+</main>
+
+<div class="foot">
+  <p>Each ring has two handles: blue sets the A value and pink sets the B value. Drag a handle up or down. The dark dot shows the value you hear right now. Drag the center of a knob to bend its morph curve. Double-tap a handle or the center to reset it.</p>
+  <p>Position A and Position B pick where each wavetable is read. They belong to one side only and the morph never moves them. The Wave knob sets how much of B's shape is in the sound and morphs like any other knob, so its center curve controls how the shape changes across the sweep. The blend keeps each harmonic at full strength, so the sound stays full halfway between two shapes.</p>
+  <p>Unison fades extra voices in and spreads them further apart as you turn it up. The center voice always plays.</p>
+  <p>Effects run in a fixed order: Drive, Formant filter, Modulation, Delay, Reverb, Lo-fi, then OTT. Each is always running, and a setting of 0% means off, so effects can fade in or out across the morph. The On/Off switch by each effect's name turns it off for both sides without touching its settings. Drive keeps the same loudness as you turn it up, so it changes tone rather than volume; Shape goes from warm through a firmer edge to wavefolding. Formant Vowel sweeps A–E–I–O–U. Modulation Type goes from chorus at 0% to flanger at 50% to phaser at 100%. Delay runs every time division at once: Cut switches which one you hear, Spill switches which one receives new sound and lets the others' echoes ring out. Lo-fi adds wow and flutter, Character (tape drive, a low bump and high rolloff), Dropouts (brief dips that never go fully silent), Codec (the hollow, swirly sound of a low-bitrate MP3), and Noise, which goes from dark tape hiss to bright hiss to vinyl crackle. OTT squashes three bands toward a steady level: Downward pulls loud parts down, Upward lifts quiet parts and tails, and Depth sets how much of both. The split and gain knobs set where the bands divide and how loud each one is.</p>
+  <p>Vibrato fades in over Fade in after each note. Rate fade is in Hz: the wobble starts that much faster (positive) or slower (negative) than Vib rate and settles to it over Rate settle.</p>
+  <p>Tap Seq at the bottom to swap the keyboard for the sequencer. Each side has its own pattern, rate and scale; tap Edit there to change them. The Pattern knob morphs from A's pattern to B's. Notes both patterns start at the same moment blend; notes only one side has drop in or out at fixed points, so the same Pattern value always plays the same sequence. Walk moves differing pitches through the scale notes in between; Swap jumps straight from A's note to B's.</p>
+  <p>Each launch starts from a fresh random patch and random sequences; tap Undo to get back what you had last time.</p>
+  <p>The dice by a section's name randomize just that section, anywhere in each knob's full range and without the usual shaping rules: blue for side A, pink for side B, and the plain one for both sides including linked knobs; the padlock next to it locks the whole section, on top of the knobs' own locks. Mono (on the keyboard bar) lets only one note sound at a time.</p>
+  <p>Under each knob are a padlock and a chain. Unlinking brings back the values each side had before you linked. Locked parameters are skipped by randomize. Linked parameters don't morph: A and B share one value and the knob sets it directly.</p>
+  <p>With a computer keyboard, keys A to K play notes and Z / X change octave.</p>
+  <p id="engineInfo">Audio engine starts on your first tap.</p>
+  <button type="button" id="resetAll">Reset patch</button>
+</div>
+
+<div class="ed" id="ed" role="dialog" aria-modal="false" aria-labelledby="edTitle">
+  <div class="edwrap">
+    <div class="edhead">
+      <h2 id="edTitle">Wavetable A</h2>
+      <button type="button" id="edDone">Done</button>
+    </div>
+    <div class="edrow">
+      <label>Start from <select id="edPreset"></select></label>
+      <button type="button" id="edLoad">Load file</button>
+      <input type="file" id="edFile" accept="audio/*,.wav" hidden>
+    </div>
+    <div class="strip" id="edStrip" role="listbox" aria-label="Frames"></div>
+    <div class="edrow">
+      <button type="button" id="edAdd">Add frame</button>
+      <button type="button" id="edDel">Delete frame</button>
+      <span class="count" id="edCount"></span>
+    </div>
+    <div class="edrow">
+      <div class="seg" role="group" aria-label="Drawing tool">
+        <button type="button" data-tool="draw">Draw</button>
+        <button type="button" data-tool="line">Line</button>
+        <button type="button" data-tool="harm">Harmonics</button>
+      </div>
+    </div>
+    <canvas id="edCanvas" aria-label="Waveform drawing area"></canvas>
+    <div class="edrow">
+      <button type="button" id="edSmooth">Smooth</button>
+      <button type="button" id="edNorm">Normalize</button>
+      <button type="button" id="edInv">Invert</button>
+      <button type="button" id="edClear">Reset to sine</button>
+    </div>
+    <p class="ednote" id="edNote"></p>
+  </div>
+</div>
+
+<div class="ed" id="sq" role="dialog" aria-modal="false" aria-labelledby="sqTitle">
+  <div class="edwrap">
+    <div class="edhead">
+      <h2 id="sqTitle">Sequences</h2>
+      <span class="spacer"></span>
+      <button type="button" id="sqDone">Done</button>
+    </div>
+    <div class="sqset sqglobal">
+      <div class="edrow">
+        <span class="lbl sqtag">Both sides</span>
+        <label>Scale <select id="sqRoot"></select></label><select id="sqScale" aria-label="Scale type"></select>
+      </div>
+    </div>
+    <div class="edrow"><span class="seg" role="group" aria-label="Side"><button type="button" id="sqA">Side A</button><button type="button" id="sqB">Side B</button></span></div>
+    <div class="sqset sqside">
+      <div class="edrow">
+        <label>Rate <select id="sqRate"></select></label>
+        <span class="opt"><span class="lbl">Steps</span><button type="button" id="sqLenDn" aria-label="Fewer steps">−</button><b id="sqLen">16</b><button type="button" id="sqLenUp" aria-label="More steps">+</button></span>
+      </div>
+      <div class="edrow">
+        <span class="opt"><span class="lbl">Density</span><input type="range" id="sqDens" min="0" max="100" value="100" aria-label="Density"><b id="sqDensVal">100%</b></span>
+        <span class="opt"><span class="lbl">Shift</span><button type="button" id="sqLeft" aria-label="Shift pattern one step earlier">←</button><button type="button" id="sqRight" aria-label="Shift pattern one step later">→</button></span>
+      </div>
+      <div class="edrow">
+        <span class="lbl">Generator</span>
+        <span class="seg" role="group" aria-label="Generator"><button type="button" id="gnArp">Arp</button><button type="button" id="gnRiff">Riff</button></span>
+        <button type="button" id="sqGen">Generate</button>
+      </div>
+      <div class="edrow" id="arpRow">
+        <select id="sqChord" aria-label="Chord"></select>
+        <select id="sqMode" aria-label="Arp order"></select>
+        <select id="sqOct" aria-label="Octaves"><option value="1">1 oct</option><option value="2" selected>2 oct</option><option value="3">3 oct</option></select>
+      </div>
+      <div class="edrow" id="riffRow" hidden>
+        <select id="rfStyle" aria-label="Riff style"><option>Motif</option><option>Pedal</option><option>Cells</option></select>
+        <select id="rfOct" aria-label="Range"><option value="1">1 oct</option><option value="2" selected>2 oct</option></select>
+        <span class="opt"><span class="lbl">Syncopation</span><input type="range" id="rfSync" min="0" max="100" value="50" aria-label="Syncopation"></span>
+      </div>
+      <div class="edrow">
+        <span class="lbl">Random</span>
+        <button type="button" id="rzNotes">Notes</button>
+        <button type="button" id="rzVel">Velocity</button>
+        <button type="button" id="rzRate">Rate</button>
+        <button type="button" id="rzArp">Generator</button>
+        <button type="button" id="rzAll">All</button>
+      </div>
+    </div>
+    <canvas id="roll" aria-label="Piano roll: tap to add or remove notes, drag a note sideways to change its length"></canvas>
+    <canvas id="velCv" aria-label="Velocity: drag to set how hard each step plays"></canvas>
+    <div class="edrow">
+      <button type="button" id="sqClear">Clear</button>
+      <button type="button" id="sqOther">Copy to B</button>
+    </div>
+    <p class="ednote">Scale is shared by both sides; everything in the lower box belongs to the side you pick. Steps are always sixteenths; the rate places notes over them, and a note that runs past the end is cut short. Mixed gives every note its own length. Density thins notes out in an even but irregular order and brings the same ones back as you raise it. The Riff generator builds motifs with answers, pedal-tone riffs, or grouped rhythmic cells, with Syncopation pushing notes off the beat. Notes never overlap: a long note stops where the next one starts. Tap an empty cell to add a note, or drag across to paint several. Tap a note to remove it, or drag it sideways to change its length. Random Notes writes a new melody in the scale, Velocity re-rolls how hard notes play, Rate picks a new rate, Generator picks new generator settings and generates, and All does all of these plus density.</p>
+  </div>
+</div>
+
+<div class="kb" id="kb">
+  <div class="wrap">
+    <div class="morph">
+      <span class="letter a" aria-hidden="true">A</span>
+      <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">
+      <span class="letter b" aria-hidden="true">B</span>
+    </div>
+    <div class="kbbar">
+      <span class="seg" role="group" aria-label="Bottom panel">
+        <button type="button" id="pmKeys" aria-pressed="true">Keys</button><button type="button" id="pmSeq" aria-pressed="false">Seq</button>
+      </span>
+      <span class="spacer"></span>
+      <span class="ctl" id="kctl">
+        <button type="button" id="octDown" aria-label="Octave down">−</button>
+        <span class="oct" id="octLabel">C3</span>
+        <button type="button" id="octUp" aria-label="Octave up">+</button>
+        <button type="button" id="monoBtn" class="monobtn"></button>
+        <button type="button" id="latch" aria-pressed="false">Latch</button>
+      </span>
+      <span class="ctl" id="sctl" hidden>
+        <button type="button" id="monoBtn2" class="monobtn"></button>
+        <button type="button" id="play" class="playbtn" aria-label="Play"></button>
+        <span class="bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120">
+          <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
+            <circle cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="75 200" transform="rotate(135 20 20)" fill="none" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
+            <circle id="bpmArc" cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="0 200" transform="rotate(135 20 20)" fill="none" stroke="var(--mc)" stroke-width="4" stroke-linecap="round"/>
+            <line id="bpmPtr" x1="20" y1="20" x2="20" y2="9" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+          <span class="bpmtxt"><b id="bpmVal">120</b> bpm</span>
+        </span>
+      </span>
+    </div>
+    <div class="panes">
+      <div class="slide" id="slide">
+        <div class="pane" id="keysPane"><div class="keys" id="keys"></div></div>
+        <div class="pane seqpane" id="seqPane" inert>
+          <div class="knobs" id="seqKnob"></div>
+          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" id="pmWalk">Walk</button><button type="button" id="pmSwap">Swap</button></div>
+          <div class="seqright">
+            <div class="lanes">
+              <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
+              <span class="ln">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
+              <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
+            </div>
+            <div class="seqctl">
+              <button type="button" id="seqEdit">Edit sequences</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// @include engine/engine.js
+// @include params.js
+// @include wavetables.js
+// @include state.js
+// @include audio.js
+// @include ui/knobs.js
+// @include ui/displays.js
+// @include ui/morph.js
+// @include history.js
+// @include randomize.js
+// @include ui/locks.js
+// @include ui/wavetable-editor.js
+// @include ui/section-tools.js
+// @include ui/keyboard.js
+// @include sequencer/model.js
+// @include sequencer/transport.js
+// @include sequencer/editor.js
+// @include sequencer/piano-roll.js
+// @include main.js
+</script>
+</body>
+</html>

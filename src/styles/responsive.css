@@ -1,0 +1,8 @@
+@media (min-width:640px){
+  .seqpane{height:148px} .lanes{grid-template-rows:repeat(3,30px)} .lanes canvas{height:30px} .keys{height:148px}
+  .group{flex:0 1 auto} .group.wide{flex:1 1 100%}
+  .kn{width:98px} .knob{width:82px;height:82px}
+  .knobs,.viz{max-width:calc(4 * 98px + 6px)}
+  .seqpane .kn{width:88px} .seqpane .knob{width:72px;height:72px}
+  .wtcard canvas{height:72px} #edCanvas{height:260px}
+}

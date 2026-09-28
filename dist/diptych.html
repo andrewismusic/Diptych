@@ -446,6 +446,9 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
    lerp(A, B, bend(morph, curve)). The oscillator reads band-limited
    tables rebuilt (at most every 512 samples, with a crossfade) from
    table A and table B at the current Position, blended by the morph.
+
+   The whole class is stringified into the AudioWorklet (see audio.js),
+   so it must stay self-contained: no references to anything outside it.
    ===================================================================== */
 class MorphEngine {
   constructor(sr, defs) {
@@ -2395,7 +2398,9 @@ $('edFile').addEventListener('change', async () => {
 });
 
 /* =====================================================================
-   KEYBOARD
+   SECTION TOOLS
+   Dice, section padlocks and effect On/Off switches in every section
+   heading, plus the delay Cut / Spill switch.
    ===================================================================== */
 /* effect on/off switches (for both sides), in each effect's heading */
 const FX_GROUPS = ['Drive', 'Formant filter', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT'];
@@ -2430,6 +2435,9 @@ function updateDlUI() { $('dlCut').setAttribute('aria-pressed', !state.dlSpill);
 $('dlCut').addEventListener('click', () => { state.dlSpill = false; updateDlUI(); if (ready) send({ type:'dlmode', v:false }); save(); });
 $('dlSpill').addEventListener('click', () => { state.dlSpill = true; updateDlUI(); if (ready) send({ type:'dlmode', v:true }); save(); });
 updateDlUI();
+/* =====================================================================
+   KEYBOARD
+   ===================================================================== */
 const keysEl = $('keys');
 const WHITE = [0, 2, 4, 5, 7, 9, 11, 12];
 const BLACK = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];

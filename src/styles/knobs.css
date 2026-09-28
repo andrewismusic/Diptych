@@ -1,0 +1,49 @@
+/* ---------- groups + knobs ---------- */
+.patchbar{flex:1 1 100%;display:flex;flex-direction:column;gap:6px;padding:12px 0 0}
+.rrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.rlbl{color:var(--muted);font-size:.92rem;min-width:10.4em}
+.rrow #undo{margin-left:auto}
+.patchbar .ra{color:var(--a)} .patchbar .rb{color:var(--b)}
+main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
+.group{flex:1 1 100%;padding:12px 0 6px}
+.group h2{margin:0 0 6px;font-size:.95rem;font-weight:600;color:var(--muted)}
+.knobs{display:flex;flex-wrap:wrap;gap:6px 2px;max-width:calc(4 * 88px + 6px)}
+.kn{width:88px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.kname{font-weight:600;font-size:.92rem;white-space:nowrap}
+.kwrap{position:relative}
+.kwrap .icons{position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);z-index:1;display:flex;gap:0}
+.lock{border:0;background:none;padding:0;min-height:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);opacity:.45;border-radius:4px;flex:0 0 auto}
+.lock:hover{opacity:.8}
+.lock[hidden]{display:none}
+.lock[aria-pressed="true"]{background:none;color:var(--ink);opacity:1;border:0}
+.group h2 .lock{vertical-align:middle;margin-left:2px}
+.fxh{display:flex;align-items:center;gap:4px}
+.fxh .fxsw{margin-left:6px}
+.lock.sectool{opacity:.8}
+.lock.sectool.da{color:var(--a)} .lock.sectool.db{color:var(--b)}
+.seclocked .knobs{opacity:.75}
+.fxsw{min-height:26px;padding:2px 10px;font-size:.8rem;border-radius:13px}
+.fxsw[aria-pressed="false"]{color:var(--muted)}
+.fxoff .knobs,.fxoff .blendrow{opacity:.4}
+.viz{width:100%;max-width:calc(4 * 88px + 6px);height:88px;display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:2px 0 8px}
+.knob{width:72px;height:72px;touch-action:none;cursor:grab;position:relative;margin:2px 0}
+.knob.dragging{cursor:grabbing}
+.knob svg{width:100%;height:100%;display:block;overflow:visible}
+.knob svg *{pointer-events:none}
+.knob .bg{stroke:var(--line)}
+.knob .arcA,.knob .arcB{stroke:var(--mc)}
+.knob .cap{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.knob .glyph{stroke:var(--muted);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.knob .gdot{fill:var(--ink)}
+.knob .h{stroke:var(--surface);stroke-width:2}
+.knob .hA .h{fill:var(--a)} .knob .hB .h{fill:var(--b)}
+.knob .now{fill:var(--ink);stroke:var(--surface);stroke-width:1.5}
+.knob .ring{fill:none;stroke:var(--ink);stroke-width:1.5;opacity:0}
+.knob g:focus{outline:none}
+.knob g:focus-visible .ring,.knob g.active .ring{opacity:1}
+.knob .ctr .ring{stroke-dasharray:2 2}
+.kval{font-size:.9rem;min-height:1.3em;white-space:nowrap}
+.kval.a{color:var(--a);font-weight:600} .kval.b{color:var(--b);font-weight:600}
+.kab{font-size:.76rem;display:flex;flex-wrap:wrap;column-gap:5px;justify-content:center;line-height:1.2}
+.kab .a{color:var(--a)} .kab .b{color:var(--b)}
+

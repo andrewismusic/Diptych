@@ -2,7 +2,7 @@
 
 Diptych is a browser synthesizer built around one idea: **every sound has two complete settings, A and B, and a single morph slider moves between them.** It is not two instruments side by side. It is one instrument whose every parameter holds two values plus a curve describing how it travels between them.
 
-This document records every decision made while building the current version (`diptych.html`), so development can continue in Claude Code without losing anything. Where a decision came from a specific request, the reason is noted, because many "odd" rules are deliberate.
+This document records every decision made while building the current version (built from `src/` into `dist/diptych.html`), so development can continue in Claude Code without losing anything. Where a decision came from a specific request, the reason is noted, because many "odd" rules are deliberate.
 
 The owner tests mostly on a phone. Mobile behavior is a first-class concern.
 
@@ -22,7 +22,7 @@ The owner tests mostly on a phone. Mobile behavior is a first-class concern.
 
 ## 2. Architecture (current build)
 
-Single self-contained HTML file, published as a Claude artifact. No build step.
+Published as a single self-contained HTML file (a Claude artifact). The source is split into files under `src/` and `build.py` inlines them back into `dist/diptych.html` (see CLAUDE.md for the layout).
 
 - **DSP engine:** one JavaScript class, `MorphEngine`, containing all audio code and the maths shared with the UI (`denorm`, `bend`, `fft`, `analyze`, `interp`, `frameAt`, `synth`, `seqEval`, and so on).
 - **Audio thread:** the class source is stringified and loaded into an **AudioWorklet** via a Blob URL (falls back to a `data:` URL, then to a main-thread `ScriptProcessorNode` "compatibility mode"). The page's content-security policy is why modules can't be loaded from files.
@@ -34,6 +34,8 @@ Single self-contained HTML file, published as a Claude artifact. No build step.
 
 ### Suggested structure for Claude Code
 Split into modules (engine core, voices, effects, sequencer, UI knobs, editors, randomization, persistence), keeping a build step that bundles the engine into a single string for the AudioWorklet (or use a real worklet module file when hosted outside the artifact sandbox). Keep a single-file build target so it can still be published as an artifact.
+
+Status: the UI side is split by feature. The engine is still one `MorphEngine` class in `src/engine/engine.js` (the worklet stringifies that one class, and `fx()` is a single 350-line method), so splitting voices and effects into separate units is left for the slot rebuild, where the FX slots need each effect as its own unit anyway.
 
 ---
 
