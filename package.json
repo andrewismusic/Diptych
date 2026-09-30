@@ -1,0 +1,13 @@
+{
+  "name": "diptych",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "python3 build.py",
+    "test": "python3 build.py && playwright test",
+    "test:ui": "python3 build.py && playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

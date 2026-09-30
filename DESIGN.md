@@ -178,12 +178,18 @@ Every launch: Randomize all, new sequences (16 steps), tempo 85 to 135 bpm. **Un
 
 ---
 
-## 11. Testing approach used so far
+## 11. Testing
 
-- Headless Chromium (Playwright). Real audio checked by patching `AudioNode.prototype.connect` to tap an AnalyserNode before the destination, then measuring RMS after pressing keys or starting the sequencer.
-- Offline engine tests: instantiate `MorphEngine` in the page, render blocks, measure RMS/peak per effect setting, check for NaN, measure CPU time per second of audio, count sample-to-sample jumps while sweeping (to catch clicks).
-- Statistical tests for randomization rules (hundreds of runs) and determinism tests for the sequence morph.
-- These should become a proper test suite in the new project.
+`npm test` builds the page and runs the Playwright suite in `tests/` against `dist/diptych.html` in headless Chromium (about 15 s). `Math.random` is seeded in every test, so results are repeatable, including the statistical ones.
+
+- `smoke`: the page loads with no errors; real audio comes out of the AudioWorklet from the sequencer and the computer keyboard (measured by patching `AudioNode.prototype.connect` to tap an AnalyserNode before the destination); at phone width (390 px, touch) there's no sideways scroll, the bottom panel and morph slider stay on screen, rows hold at most four knobs, tapping the slider moves the morph, and both editors open and close.
+- `levels`: every effect against the fully bypassed sound, with a sustained chord, a dark and a bright patch, tolerance ±1.5 dB. `LEVELS_REPORT=1 npm test -- levels` prints every measurement.
+- `engine`: no NaN and no output above full scale across random patches with morph sweeps; CPU under 50% of real time with 8 notes and every effect (11% measured); no clicks when effect switches toggle or the morph jumps (a pure sine's largest sample-to-sample step is the reference).
+- `randomize`: the section 9 rules over 400 seeded runs; locks respected; randomizing one side never changes the rendered sound at the other end; section dice stay inside their section; Randomize linked only moves linked knobs.
+- `sequencer`: at 0% and 100% the evaluated sequence is exactly A or B (400 random pattern pairs, Walk and Swap); switch points are rebuilt identically; the engine plays B note for note at 100% with no overlapping notes.
+- `persistence`: Undo after a relaunch restores the previous session exactly; locked values survive a relaunch; parameters are matched by id; v8 patches migrate; a corrupt save falls back to defaults.
+
+Known deviations are marked as expected failures (`test.fail`) with the measured values in the test. If one gets fixed, its test reports "expected to fail but passed"; remove the marker then.
 
 ---
 
@@ -193,6 +199,10 @@ Every launch: Randomize all, new sequences (16 steps), tempo 85 to 135 bpm. **Un
 - OTT at 100% Depth still raises peaks about 5 dB (average level steady). Possible next step: match loudness on peaks as well.
 - Drive's oversampling fixed harshness; no oversampling elsewhere (FM will need attention).
 - The design is mobile-first; the bottom panel takes about a third of a phone screen. A collapse handle was suggested but not built.
+- **Found by the test suite (2026-09-30), open for decision.** Each has an expected-failure test:
+  - Level matching, at full or high settings: Formant at full mix +3 to +7 dB; Modulation at full mix -2.6 dB (chorus), about -5 dB (flanger), -3 dB (phaser); Reverb at 100% mix with Size 0% +4 dB and at 30 to 50% mix down to -2.8 dB; Delay at full mix without ping-pong +2.1 dB; Drive 100% -2 to -3 dB (-4.4 to -5.4 dB with Shape 100%), Drive 75% with Shape 100% -1.5 to -2.5 dB. Everything else is within 1.5 dB.
+  - Zipper steps: parameters are smoothed once per 16-sample sub-block and the output gain (Level, Pan) is held flat within each sub-block, so a fast Level change arrives as a staircase (1.7x a sine's own steepest step when the morph jumps). Effect switches crossfade cleanly.
+  - The 15% rule conflicts with rules that depend on landing at 0: it re-rolls near-equal values, which lowers Glide under 100 ms to 88% (rule says 95%), Unison off to 31% (40%), Vibrato within 30 cents to 76% (85%), Rate fade 0 to 33% (50%) and Mode pure low-pass to 36% (50%). Exempting those five from the 15% rule restores the stated rates.
 
 ---
 

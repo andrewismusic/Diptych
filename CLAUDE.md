@@ -9,6 +9,9 @@ A browser synth where every parameter has an A value, a B value and a morph curv
 - Commit `dist/diptych.html` together with the `src/` change that produced it, so the repo always holds a publishable page.
 - Next task: the assignable-slot rebuild described in `DESIGN.md` section 13 (4 oscillator slots with Wavetable / FM / Physical / Sampler / Sub engines, two shared filters, 4 FX slots with OTT as an ordinary effect).
 
+## Tests
+`npm test` rebuilds and runs the Playwright suite (`tests/`, about 15 s, see DESIGN.md section 11). Run it before every commit. `tests/helpers.js` opens the page with a seeded `Math.random` and installs `window.T`, an offline harness that renders a fresh `MorphEngine` (`T.render`, `T.flat`, `T.patch`, level and click measurements). Known deviations are `test.fail` entries; when a change fixes one, remove its marker. When adding a rule or a migration, add a test.
+
 ## Source layout
 `src/index.html` is the page template (markup plus an ordered list of `@include` lines). The JS files are concatenated into **one classic `<script>`**, not ES modules: they share one global scope and run in the order the template lists them. Top-level code in a file can only use things defined in earlier files (function declarations hoist across all files). Keep that order in mind when moving code.
 
@@ -30,5 +33,5 @@ A browser synth where every parameter has an A value, a B value and a morph curv
 ## Suggested first steps in Claude Code
 1. ~~Put `diptych.html` under git as the baseline.~~ Done (first commit).
 2. ~~Split it into modules with a build step that outputs the single-file version.~~ Done: the build output matched the original byte for byte apart from banner comments, and rendered identical audio.
-3. Turn the checks in DESIGN.md section 11 into an automated test suite (Playwright + headless Chromium).
+3. ~~Turn the checks in DESIGN.md section 11 into an automated test suite.~~ Done: `npm test`. It found the open items listed in DESIGN.md section 12.
 4. Then start the slot rebuild.
