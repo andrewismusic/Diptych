@@ -5,20 +5,26 @@ import { openSynth } from './helpers.js';
 
 const KEY = 'diptych-v3';
 const snapshot = page => page.evaluate(() => JSON.stringify({ A: state.A, B: state.B, C: state.C, links: state.links, locks: state.locks,
-  tA: tables.A.frames.map(f => Array.from(f.slice(0, 64), x => Math.round(x * 3000))), tB: tables.B.name, seq: state.seq, bpm: state.bpm }));
+  tables: { A: tables.A.name, B: tables.B.name, nA: tables.A.frames.length, nB: tables.B.frames.length }, seq: state.seq, bpm: state.bpm }));
+const frames = page => page.evaluate(() => [...tables.A.frames, ...tables.B.frames].map(f => Array.from(f)));
 const waitForSave = page => page.waitForTimeout(700);   // saves are debounced by 400 ms
 
 test('Undo after a relaunch restores the previous session exactly', async ({ page }) => {
   await openSynth(page, { seed: 31, storage: {} });
   await page.evaluate(() => { state.links.reso = true; state.locks.fatk = true; save(); });
   await waitForSave(page);
-  const before = await snapshot(page);
+  const before = await snapshot(page), framesBefore = await frames(page);
   await page.reload(); await page.evaluate(() => 0);
   expect(await snapshot(page)).not.toEqual(before);   // every launch randomizes
   await page.click('#undo');
   const after = JSON.parse(await snapshot(page)), want = JSON.parse(before);
   delete after.bpm; delete want.bpm;   // tempo is re-rolled at launch and is not part of Undo
   expect(after).toEqual(want);
+  // wavetables are saved as 16-bit samples, so they come back within one 16-bit step
+  const framesAfter = await frames(page);
+  expect(framesAfter.length).toBe(framesBefore.length);
+  let worst = 0; framesBefore.forEach((f, j) => f.forEach((x, n) => { worst = Math.max(worst, Math.abs(x - framesAfter[j][n])); }));
+  expect(worst).toBeLessThanOrEqual(1 / 32767 + 1e-7);
 });
 
 test('locked parameters keep their value across a relaunch', async ({ page }) => {

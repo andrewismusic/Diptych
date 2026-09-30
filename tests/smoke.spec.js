@@ -31,10 +31,12 @@ test('loads without errors', async ({ page }) => {
 test('sequencer plays real audio through the AudioWorklet', async ({ page }) => {
   await openSynth(page, { tapAudio: true });
   await startAudio(page);
-  expect(await outputLevel(page)).toBeLessThan(-80);   // silent before anything plays
+  const idle = await outputLevel(page);   // not always silent: Lo-fi noise plays even with no notes
   await page.click('#play');
   await page.waitForTimeout(800);
-  expect(await outputLevel(page)).toBeGreaterThan(-50);
+  const playing = await outputLevel(page);
+  expect(playing).toBeGreaterThan(-50);
+  expect(playing - idle).toBeGreaterThan(30);
   await page.click('#play');
 });
 

@@ -147,7 +147,7 @@ Bottom panel switch **Keys / Seq** (sliding panes; the launch view is Seq; tappi
 
 ### Main buttons (shaped)
 - Values come from per-parameter functions (`RND`), in musically useful ranges.
-- **15% rule:** a side's new value lands at least 15% of the knob's throw away from the other side's, so morphs are dramatic. Exempt: Noise mix, OTT band gains, Formant/Modulation/Delay/Reverb mixes, Wow, Flutter, Codec, Dropouts (their chance of landing at zero matters more).
+- **15% rule:** a side's new value lands at least 15% of the knob's throw away from the other side's, so morphs are dramatic. Exempt: Noise mix, OTT band gains, Formant/Modulation/Delay/Reverb mixes, Wow, Flutter, Codec, Dropouts, Glide, Unison, Vibrato depth, Rate fade, filter Mode (their chance of landing at zero, or low, matters more; both sides at 0 is fine). The last five were added after the test suite showed the rule was re-rolling away their stated odds.
 - **Effect mixes:** Formant mix is 0 in 66% of generations; Modulation, Delay and Reverb mixes are 0 in 40%. Delay mix mostly 0 to 35%, rarely above 50%. Reverb mix mostly 0 to 35%. Across Formant, Modulation, Delay and Reverb: at most two above 50%, at most one above 90%.
 - **Other effects:** full range (Drive, shapes, rates, times, sizes). Delay Cut/Spill is randomized 50/50 by Randomize all and the Delay dice.
 - **Lo-fi:** Wow, Flutter and Codec at minimum in 66% of generations; Dropouts in 90%; otherwise leaning low (squared). Character leans low. Noise mix mostly 0 to 15%, never above 35%.
@@ -202,7 +202,7 @@ Known deviations are marked as expected failures (`test.fail`) with the measured
 - **Found by the test suite (2026-09-30), open for decision.** Each has an expected-failure test:
   - Level matching, at full or high settings: Formant at full mix +3 to +7 dB; Modulation at full mix -2.6 dB (chorus), about -5 dB (flanger), -3 dB (phaser); Reverb at 100% mix with Size 0% +4 dB and at 30 to 50% mix down to -2.8 dB; Delay at full mix without ping-pong +2.1 dB; Drive 100% -2 to -3 dB (-4.4 to -5.4 dB with Shape 100%), Drive 75% with Shape 100% -1.5 to -2.5 dB. Everything else is within 1.5 dB.
   - Zipper steps: parameters are smoothed once per 16-sample sub-block and the output gain (Level, Pan) is held flat within each sub-block, so a fast Level change arrives as a staircase (1.7x a sine's own steepest step when the morph jumps). Effect switches crossfade cleanly.
-  - The 15% rule conflicts with rules that depend on landing at 0: it re-rolls near-equal values, which lowers Glide under 100 ms to 88% (rule says 95%), Unison off to 31% (40%), Vibrato within 30 cents to 76% (85%), Rate fade 0 to 33% (50%) and Mode pure low-pass to 36% (50%). Exempting those five from the 15% rule restores the stated rates.
+  - ~~The 15% rule conflicted with rules that depend on landing at 0~~ (Glide, Unison, Vibrato, Rate fade, Mode). Fixed: those five are now exempt.
 
 ---
 

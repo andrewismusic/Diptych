@@ -2083,8 +2083,10 @@ const RND = {
 const TABLE_CHOICES = Object.keys(PRESETS).filter(n => n !== 'Sine');
 const rv = (d, side) => quant(d, clamp(norm(d, RND[d.id](side))));
 // Keep morphs dramatic: a side's new value lands at least 15% of the knob's throw away from the other side.
-// Parameters whose chance of landing at 0 matters more than the A/B gap skip the 15% rule.
-const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop']);
+// Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
+// both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
+const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.id)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }

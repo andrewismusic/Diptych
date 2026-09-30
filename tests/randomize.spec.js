@@ -83,16 +83,16 @@ test.describe('Randomize all (shaped)', () => {
     for (const s of sides()) expect(s.asus).toBeGreaterThanOrEqual(0.2 - 1e-9);
   });
 
-  // Known conflict: the 15% rule re-rolls a value that lands near the other side's, which suppresses
-  // the chance of landing at 0 (or near it) for these. Measured over 4000 sides when written, with the rule
-  // vs. with these parameters exempt: glide < 100 ms 88% vs 95%, unison off 31% vs 39%, vibrato within
-  // 30 cents 76% vs 85%, rate fade 0 33% vs 50%, filter mode pure low-pass 36% vs 50%.
-  const CONFLICT = 'the 15% rule suppresses this rate (see comment)';
-  test('glide under 100 ms in 95%', () => { test.fail(true, CONFLICT); expect(share(sides(), s => s.glide < 0.1)).toBeGreaterThan(0.93); });
-  test('unison off 40%', () => { test.fail(true, CONFLICT); expect(share(sides(), s => s.unison === 0)).toBeGreaterThan(0.35); });
-  test('vibrato depth within 30 cents about 85%', () => { test.fail(true, CONFLICT); expect(share(sides(), s => s.vdepth <= 0.3)).toBeGreaterThan(0.8); });
-  test('rate fade 0 half the time', () => { test.fail(true, CONFLICT); expect(share(sides(), s => s.vrfade === 0)).toBeGreaterThan(0.44); });
-  test('filter mode pure low-pass half the time', () => { test.fail(true, CONFLICT); expect(share(sides(), s => s.mode === 0)).toBeGreaterThan(0.44); });
+  // These five are exempt from the 15% rule, so their stated odds hold and both sides may sit at 0.
+  test('glide under 100 ms in 95%', () => { expect(share(sides(), s => s.glide < 0.1)).toBeGreaterThan(0.93); });
+  test('unison off 40%', () => { const z = share(sides(), s => s.unison === 0); expect(z).toBeGreaterThan(0.34); expect(z).toBeLessThan(0.46); });
+  test('vibrato depth within 30 cents about 85%', () => { const z = share(sides(), s => s.vdepth <= 0.3); expect(z).toBeGreaterThan(0.8); expect(z).toBeLessThan(0.9); });
+  test('rate fade 0 half the time', () => { const z = share(sides(), s => s.vrfade === 0); expect(z).toBeGreaterThan(0.44); expect(z).toBeLessThan(0.56); });
+  test('filter mode pure low-pass half the time', () => { const z = share(sides(), s => s.mode === 0); expect(z).toBeGreaterThan(0.44); expect(z).toBeLessThan(0.56); });
+  test('glide, unison, rate fade and mode can be 0 on both sides', () => {
+    for (const id of ['glide', 'unison', 'vrfade', 'mode']) expect(share(S, r => r.sides.A[id] === 0 && r.sides.B[id] === 0), id).toBeGreaterThan(0.1);
+  });
+
   test('linked Octave and Fine: 0 about 70% of the time', () => {
     const o = share(S, r => r.octave === 0), f = share(S, r => r.fine === 0);
     expect(o).toBeGreaterThan(0.62); expect(o).toBeLessThan(0.78);
