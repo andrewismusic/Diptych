@@ -460,6 +460,7 @@ class MorphEngine {
     const sp = () => [new Float32Array(513), new Float32Array(513)];
     this.fa = sp(); this.fb = sp(); this.fr = sp();
     this.bankReady = false; this.xf = 1; this.xfInc = 0; this.since = 1e9; this.lastKey = '';
+    this.gL = -1; this.gR = -1;   // output gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
     for (let v = 0; v < 8; v++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0,
       aSt:0, aLv:0, fSt:0, fLv:0, ph:new Float64Array(7), l1:0, l2:0, r1:0, r2:0, vAge:0, vPh:0 });
@@ -1188,6 +1189,10 @@ class MorphEngine {
         const fInc = 1 / (v[I.fatk] * sr), fD = Math.exp(-5 / (v[I.fdec] * sr)), fS = v[I.fsus], fR = Math.exp(-6.9 / (v[I.frel] * sr));
         const pa = (v[I.pan] + 1) * Math.PI / 4;
         const gl = Math.cos(pa) * Math.SQRT2 * v[I.level] * 0.2, gr = Math.sin(pa) * Math.SQRT2 * v[I.level] * 0.2;
+        // Level and Pan glide per sample from the last sub-block's gain, so changes never step every 16 samples
+        if (this.gL < 0) { this.gL = gl; this.gR = gr; }
+        const gl0 = this.gL, gr0 = this.gR, glI = (gl - gl0) / len, grI = (gr - gr0) / len;
+        this.gL = gl; this.gR = gr;
         const xf0 = this.xf, xfI = this.xfInc;
         const uL = this.uL, uR = this.uR, uDt = this.uDt, uLev = this.uLev, uJ = this.uJ;
 
@@ -1232,7 +1237,7 @@ class MorphEngine {
             r1 = 2 * v1 - r1; r2 = 2 * v2 - r2;
             const oR = wl * v2 + wb * v1 * bpG + wh * (sr2 - k * v1 - v2);
             const amp = aLv * vel;
-            L[p + s] += oL * amp * gl; R[p + s] += oR * amp * gr;
+            L[p + s] += oL * amp * (gl0 + glI * (s + 1)); R[p + s] += oR * amp * (gr0 + grI * (s + 1));
           }
           vc.aSt = aSt; vc.aLv = aLv; vc.fSt = fSt; vc.fLv = fLv; vc.l1 = l1; vc.l2 = l2; vc.r1 = r1; vc.r2 = r2;
           if (aSt === 3 && aLv < 3e-4) vc.active = false;

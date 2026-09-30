@@ -43,15 +43,13 @@ const clickCheck = async (page, over, events, windows) => page.evaluate(({ SINE,
   return { steady, change, ratio: change / steady };
 }, { SINE, over, events, windows });
 
-test('morph slider jumping from A to B does not click', async ({ page }) => {
-  // Known: parameters are smoothed once per 16-sample sub-block, and the output gain (Level, Pan)
-  // is held flat within each sub-block, so a fast Level change arrives as a small staircase.
-  // Measured 1.7x the sine's own steepest step when written.
-  test.fail(true, 'Level/Pan gain steps every 16 samples instead of per sample (engine fx(), output gain)');
+test('morph slider jumping from A to B does not click (Level and Pan)', async ({ page }) => {
+  // Parameters resolve every 16 samples; the output gain must still glide per sample.
   await openSynth(page);
-  const r = await clickCheck(page, { level: [0.2, 1] }, { 300: { type:'morph', v:1 } },
-    { steady: [[500, 700]], change: [[300, 340]] });
-  expect(r.ratio).toBeLessThan(1.1);
+  for (const over of [{ level: [0.2, 1] }, { level: [1, 0.2] }, { pan: [-1, 1] }, { pan: [0.8, -0.8], level: [0.4, 1] }]) {
+    const r = await clickCheck(page, over, { 300: { type:'morph', v:1 } }, { steady: [[100, 290], [500, 700]], change: [[300, 340]] });
+    expect(r.ratio, JSON.stringify(over)).toBeLessThan(1.1);
+  }
 });
 
 test('effect On/Off switches crossfade without clicks', async ({ page }) => {

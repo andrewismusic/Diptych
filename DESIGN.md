@@ -45,7 +45,7 @@ Status: the UI side is split by feature. The engine is still one `MorphEngine` c
 - Parameters are defined once in a registry, `DEFS`, with `id`, `label`, `group`, `min`, `max`, `curve` (`lin`, `log`, `int`, `pow2`), defaults `a` and `b`, and optional `single` ('A' or 'B': belongs to one side only, never morphs).
 - **Resolved value** = `lerp(A, B, bend(morph, C))`, where `bend(m, c) = m ^ (6 ^ -c)`. Positive c moves early, negative moves late. Because values are normalized, log parameters (cutoff, times) morph evenly by ear.
 - **Stepped parameters** (`int`: Octave, delay Time) interpolate then round, so they walk through every value between A and B. A `snap` option (flip at 50%) exists for things that truly can't step.
-- The engine resolves every 16 samples and smooths continuous values (coefficient 0.08 per block). Stepped values change immediately.
+- The engine resolves every 16 samples and smooths continuous values (coefficient 0.08 per block). Stepped values change immediately. The output gain (Level, Pan) is additionally interpolated per sample within each 16-sample block.
 
 ### Knobs
 - One knob per parameter. Ring: 270° sweep. **Blue handle = A value, pink handle = B value.** Drag a handle (relative vertical/horizontal drag). Double-tap resets.
@@ -201,7 +201,7 @@ Known deviations are marked as expected failures (`test.fail`) with the measured
 - The design is mobile-first; the bottom panel takes about a third of a phone screen. A collapse handle was suggested but not built.
 - **Found by the test suite (2026-09-30), open for decision.** Each has an expected-failure test:
   - Level matching, at full or high settings: Formant at full mix +3 to +7 dB; Modulation at full mix -2.6 dB (chorus), about -5 dB (flanger), -3 dB (phaser); Reverb at 100% mix with Size 0% +4 dB and at 30 to 50% mix down to -2.8 dB; Delay at full mix without ping-pong +2.1 dB; Drive 100% -2 to -3 dB (-4.4 to -5.4 dB with Shape 100%), Drive 75% with Shape 100% -1.5 to -2.5 dB. Everything else is within 1.5 dB.
-  - Zipper steps: parameters are smoothed once per 16-sample sub-block and the output gain (Level, Pan) is held flat within each sub-block, so a fast Level change arrives as a staircase (1.7x a sine's own steepest step when the morph jumps). Effect switches crossfade cleanly.
+  - ~~Zipper steps on Level and Pan~~ Fixed: the output gain now glides per sample across each 16-sample sub-block (a morph jump measured 1.7x a sine's steepest step for Level and 3.2x for Pan before, 1.0x or less after). Other settings (filter cutoff, envelope times, effect amounts) still resolve every 16 samples; they have not been click-tested yet.
   - ~~The 15% rule conflicted with rules that depend on landing at 0~~ (Glide, Unison, Vibrato, Rate fade, Mode). Fixed: those five are now exempt.
 
 ---
