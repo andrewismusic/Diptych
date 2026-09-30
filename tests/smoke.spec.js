@@ -68,7 +68,8 @@ test('patch buttons: Copy, Swap, Reset, Undo and the dice work without errors', 
   await page.click('#undo');
   expect(await snap()).toEqual(before);
   await page.locator('#wtA0').click();
-  await page.evaluate(() => {   // the full-screen editor covers the picker, so change it directly document.querySelector('section[data-group="Osc 1"] .typesel').value = 'sub'; document.querySelector('section[data-group="Osc 1"] .typesel').dispatchEvent(new Event('change', { bubbles: true })); });
+  // the full-screen editor covers the picker, so change it directly
+  await page.evaluate(() => { const sel = document.querySelector('section[data-group="Osc 1"] .typesel'); sel.value = 'sub'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
   await expect(page.locator('#ed')).not.toHaveClass(/open/);   // the wavetable editor closes when its slot stops being a Wavetable
   expect(errors).toEqual([]);
 });
