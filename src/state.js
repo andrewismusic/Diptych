@@ -6,7 +6,7 @@ const state = {
   C: DEFS.map(() => 0),
   morph: 0,
   spectral: true,
-  locks: { level: true, pan: true, pattern: true, ottdepth: true, ottout: true },
+  locks: { level: true, pan: true, pattern: true, ottdepth: true, ottout: true, wave: true },
   secLocks: {},
   linkMem: {},
   mono: false,
@@ -59,6 +59,10 @@ try {
     if (saved.locks && saved.locks.tables) { state.secLocks.Wavetables = true; delete state.locks.tables; }
     if (!(saved.ver >= 7)) ['ottdepth', 'ottout'].forEach(id => { state.locks[id] = true; });   // OTT Depth and Output start locked
     if (!(saved.ver >= 8)) ['otttime', 'ottlo', 'otthi', 'ottgl', 'ottgm', 'ottgh'].forEach(id => { delete state.locks[id]; });   // the rest of OTT starts unlocked
+    if (!(saved.ver >= 9)) {   // Wave starts locked at full range (A 0%, B 100%, even curve), so each end hears only its own table
+      state.locks.wave = true;
+      const i = IX.wave; state.A[i] = defaultNorm('A', i); state.B[i] = defaultNorm('B', i); state.C[i] = 0;
+    }
     if (!(saved.ver >= 6)) {   // OTT Depth and Output start linked, at 13% and 0 dB
       state.links.ottdepth = true; state.links.ottout = true;
       ['ottdepth', 'ottout'].forEach(id => { const i = IX[id]; state.A[i] = state.B[i] = defaultNorm('A', i); });
@@ -83,7 +87,7 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORE, JSON.stringify({ ...state, ver: 8, ids: DEFS.map(d => d.id),
+      localStorage.setItem(STORE, JSON.stringify({ ...state, ver: 9, ids: DEFS.map(d => d.id),
         tables: { A: { name: tables.A.name, frames: tables.A.frames.map(enc) }, B: { name: tables.B.name, frames: tables.B.frames.map(enc) } } }));
     } catch (e) {}
   }, 400);

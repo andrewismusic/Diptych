@@ -59,7 +59,7 @@ Status: the UI side is split by feature. The engine is still one `MorphEngine` c
 - **Padlock:** randomize skips this parameter.
 - **Chain (link):** A and B share one value; the knob shows one dark handle and the whole knob drags it; no curve. Linking snaps both sides to the value currently heard. **Unlinking restores each side's previous value** (stored in `state.linkMem`), so you can audition linked vs unlinked.
 - Position A and Position B have only a padlock (they are single-side by nature).
-- Defaults: **locked** Level, Pan, Pattern, OTT Depth, OTT Output. **Linked** Octave, Fine tune, OTT Depth, OTT Output.
+- Defaults: **locked** Level, Pan, Pattern, Wave, OTT Depth, OTT Output. **Linked** Octave, Fine tune, OTT Depth, OTT Output.
 
 ### Section headings
 Every section heading has: **blue dice** (randomize side A of this section), **pink dice** (side B), **plain dice** (both sides, including linked knobs), a **section padlock**, and on effects an **On/Off** bypass switch.
@@ -155,7 +155,7 @@ Bottom panel switch **Keys / Seq** (sliding panes; the launch view is Seq; tappi
 - **Oscillator:** Octave 0 about 70% of the time (else ±1); Fine 0 about 70%; Unison off 40%; **Glide 0 in 50% of generations, under 100 ms in 95%**; Vibrato depth within ±30 cents about 85% of the time; Rate fade 0 half the time.
 - **Filter/envelopes:** cutoff 150 Hz to 12 kHz; resonance leans low; Mode pure low-pass half the time; Env amount usually positive; attacks lean short; amp sustain 20% or more.
 - **Sine guard:** if a side's wave is nearly a pure sine, its cutoff moves to the open end (above about 1 kHz for low-pass modes, below about 280 Hz for high-pass modes) so it can't go silent.
-- Wave and Pattern usually sit at their ends; each side's wavetable is replaced by a random built-in table unless the Wavetables section is locked.
+- Pattern usually sits at its ends (A 0 to 40%, B 60 to 100%, at the exact end 60% of the time). **Wave is locked at full range (A 0%, B 100%) by default** so each end of the morph hears only its own wavetable, and randomizing one side can never change the sound at the other end. With Wave unlocked the old rule applies (same as Pattern), and an A Wave above 0% means full A plays part of table B, so randomizing B changes it; that is correct behavior, just not the default; each side's wavetable is replaced by a random built-in table unless the Wavetables section is locked.
 - **Randomize linked:** only unlocked linked knobs, one new value shared by both sides.
 
 ### Section dice (raw)
@@ -172,7 +172,7 @@ Every launch: Randomize all, new sequences (16 steps), tempo 85 to 135 bpm. **Un
 
 ## 10. Persistence
 
-- `localStorage` key `diptych-v3`, with `ver` (currently 8) and `ids` (parameters are matched by name, so patches survive new knobs). Migrations run by version: e.g. v4 linked Octave/Fine, v5 locked Pattern, v6 linked OTT Depth/Output, v7/v8 OTT lock changes; sequences carry their own flags (`v2`, `v3`, `v4`) for rate-list changes.
+- `localStorage` key `diptych-v3`, with `ver` (currently 9) and `ids` (parameters are matched by name, so patches survive new knobs). Migrations run by version: e.g. v4 linked Octave/Fine, v5 locked Pattern, v6 linked OTT Depth/Output, v7/v8 OTT lock changes, v9 locks Wave and resets it to A 0% / B 100% with an even curve; sequences carry their own flags (`v2`, `v3`, `v4`) for rate-list changes.
 - Wavetables are stored as base64 int16 frames.
 - Stored: A, B, C, morph, locks, section locks, links, link memory, tables, sequences, tempo, Walk/Swap, Cut/Spill, effect on/off, mono.
 
@@ -235,7 +235,7 @@ Generated from the code. Values shown with their display formatting.
 | Knob | id | Range | Curve | Default A | Default B | Notes |
 |---|---|---|---|---|---|---|
 | Position A | `posA` | 0 to 1 | lin | 67% | 67% | belongs to side A only, never morphs |
-| Wave | `wave` | 0 to 1 | lin | All A | All B |  |
+| Wave | `wave` | 0 to 1 | lin | All A | All B | locked by default |
 | Position B | `posB` | 0 to 1 | lin | 30% | 30% | belongs to side B only, never morphs |
 
 #### Oscillator
