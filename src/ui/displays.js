@@ -58,9 +58,9 @@ function plotSet(c, fn, n) {
   c.g.globalAlpha = 1;
 }
 function label(c, text, x, y, align) { c.g.fillStyle = css('--muted'); c.g.font = '11px "Barlow Semi Condensed", sans-serif'; c.g.textAlign = align; c.g.fillText(text, x, y); }
-function drawFilterViz() {
-  const c = prep($('vzF')); if (!c) return;
-  const cut = trio('cutoff'), res = trio('reso'), md = trio('mode');
+function drawFilterViz(k) {
+  const c = prep($('vzF' + (k + 1))); if (!c) return;
+  const f = `f${k + 1}.`, cut = trio(f + 'cutoff'), res = trio(f + 'reso'), md = trio(f + 'mode');
   const top = 24, bot = -36, yOf = db => 6 + (top - Math.max(bot, Math.min(top, db))) / (top - bot) * (c.h - 12);
   c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
   c.g.beginPath(); c.g.moveTo(0, yOf(0)); c.g.lineTo(c.w, yOf(0)); c.g.stroke();
@@ -93,13 +93,15 @@ function drawEnvViz(id, pre) {
   label(c, time(T), c.w - 5, 12, 'right');
 }
 /* OTT: where the bands split, and each band's level going in (outline) and coming out (filled) */
-let ottLive = null, ottQueued = false;
-function drawOttViz() {
-  const c = prep($('vzOT')); if (!c) return;
+const ottLive = [null, null, null, null];
+let ottQueued = false;
+function drawOttViz(slot) {
+  if (state.fxType[slot] !== 'ott') return;
+  const c = prep($('vzOT' + slot)); if (!c) return;
+  const val = key => MorphEngine.denorm(DEFS[xi(slot, key)], resolveNorm(xi(slot, key)));
   const fx = f => Math.log(f / 20) / Math.log(1000) * c.w, yOf = db => c.h - 4 - (Math.max(-72, Math.min(0, db)) + 72) / 72 * (c.h - 34);
-  const lo = MorphEngine.denorm(DEFS[IX.ottlo], resolveNorm(IX.ottlo)), hi = MorphEngine.denorm(DEFS[IX.otthi], resolveNorm(IX.otthi));
-  const gains = ['ottgl', 'ottgm', 'ottgh'].map(id => MorphEngine.denorm(DEFS[IX[id]], resolveNorm(IX[id])));
-  const edges = [0, fx(lo), fx(hi), c.w], col = mixColor(state.morph);
+  const lo = val('ottlo'), hi = val('otthi'), gains = ['ottgl', 'ottgm', 'ottgh'].map(val);
+  const edges = [0, fx(lo), fx(hi), c.w], col = mixColor(state.morph), live = ottLive[slot];
   c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
   [fx(lo), fx(hi)].forEach(x => { c.g.beginPath(); c.g.moveTo(x, 0); c.g.lineTo(x, c.h); c.g.stroke(); });
   for (let b = 0; b < 3; b++) {
@@ -108,28 +110,32 @@ function drawOttViz() {
       // fill: the band's gain setting, from nearly empty at -12 dB to full at +12 dB
       const top = 30, fh = (c.h - 4 - top) * Math.max(0.04, (gains[b] + 12) / 24);
       c.g.fillStyle = col; c.g.globalAlpha = 0.5; c.g.fillRect(x0, c.h - 4 - fh, w, fh); c.g.globalAlpha = 1;
-      if (ottLive) { const inDb = ottLive.lv[b]; c.g.strokeStyle = css('--ink'); c.g.lineWidth = 1.5; c.g.strokeRect(x0 + 0.75, yOf(inDb), w - 1.5, c.h - 4 - yOf(inDb)); }   // outline: live level
+      if (live) { const inDb = live.lv[b]; c.g.strokeStyle = css('--ink'); c.g.lineWidth = 1.5; c.g.strokeRect(x0 + 0.75, yOf(inDb), w - 1.5, c.h - 4 - yOf(inDb)); }   // outline: live level
     }
     label(c, (gains[b] > 0 ? '+' : '') + gains[b].toFixed(1) + ' dB', edges[b] + (edges[b + 1] - edges[b]) / 2, 12, 'center');
   }
   label(c, Math.round(lo) + ' Hz', fx(lo) + 3, 25, 'left');
   label(c, (hi / 1000).toFixed(1) + ' kHz', fx(hi) + 3, 25, 'left');
 }
-function onOtt(d) { ottLive = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttViz(); }); } }
+const drawOttAll = () => { for (let s = 0; s < 4; s++) drawOttViz(s); };
+function onOtt(d) { ottLive[d.slot] = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttAll(); }); } }
 let wavesQueued = false;
 function drawWaves() {
   if (wavesQueued) return; wavesQueued = true;
   requestAnimationFrame(() => {
     wavesQueued = false;
     const sp = state.spectral;
-    MorphEngine.frameAt(spec.A, state.A[IX.posA], sp, W.fa[0], W.fa[1]);
-    drawWave($('cvA'), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
-    MorphEngine.frameAt(spec.B, state.A[IX.posB], sp, W.fb[0], W.fb[1]);
-    drawWave($('cvB'), synthDisplay(W.fb[0], W.fb[1]), css('--b'), { fit:true });
-    MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(IX.wave), sp, W.fr[0], W.fr[1]);
-    drawWave($('cvH'), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
-    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
-    $('nmA').textContent = tables.A.name; $('nmB').textContent = tables.B.name;
+    for (let s = 0; s < 4; s++) {
+      if (state.oscType[s] !== 'wt' || state.folded[`Osc ${s + 1}`]) continue;
+      MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
+      drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
+      MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], sp, W.fb[0], W.fb[1]);
+      drawWave($('cvB' + s), synthDisplay(W.fb[0], W.fb[1]), css('--b'), { fit:true });
+      MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(oi(s, 'wave')), sp, W.fr[0], W.fr[1]);
+      drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
+      $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
+    }
+    drawFilterViz(0); drawFilterViz(1); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttAll(); drawLanes();
   });
 }
 function updateBlendUI() {}

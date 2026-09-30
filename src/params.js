@@ -1,77 +1,86 @@
 /* =====================================================================
    PARAMETER REGISTRY
    curve: 'lin' | 'log' | 'int' | 'pow2'   snap: switch instead of blending
+   single: 'A' | 'B' belongs to one side only and never morphs
+
+   Oscillator and FX slots hold every parameter of every type, so each slot
+   remembers all its types' settings. Ids: global 'glide', filters
+   'f1.cutoff', slots 'o1.<key>' and 'x1.<key>'. `key` is the parameter's
+   own name; formats (FMT) and randomize rules (RND) are looked up by key.
+   kind: 'osc' | 'fx' | 'flt' with slot (0-based); eng: the type it belongs
+   to (null = every type of that slot).
    ===================================================================== */
-const DEFS = [
-  { id:'posA',     label:'Position A', group:'Wavetables',      min:0,     max:1,     curve:'lin',  single:'A', a:0.667, b:0.667 },
-  { id:'wave',     label:'Wave',       group:'Wavetables',      min:0,     max:1,     curve:'lin',  a:0, b:1 },
-  { id:'posB',     label:'Position B', group:'Wavetables',      min:0,     max:1,     curve:'lin',  single:'B', a:0.3, b:0.3 },
-  { id:'octave',   label:'Octave',     group:'Oscillator',      min:-2,    max:2,     curve:'int',  a:0, b:0 },
-  { id:'fine',     label:'Fine tune',  group:'Oscillator',      min:-100,  max:100,   curve:'lin',  a:0, b:0 },
-  { id:'unison',   label:'Unison',     group:'Oscillator',      min:0,     max:1,     curve:'lin',  a:0, b:0.35 },
-  { id:'glide',    label:'Glide',      group:'Oscillator',      min:0,     max:2,     curve:'pow2', a:0, b:0 },
-  { id:'vdepth',   label:'Vibrato',    group:'Oscillator',      min:0,     max:1,     curve:'pow2', a:0, b:0 },
-  { id:'vfade',    label:'Fade in',    group:'Oscillator',      min:0,     max:5,     curve:'pow2', a:0.6, b:0.6 },
-  { id:'vrate',    label:'Vib rate',   group:'Oscillator',      min:0.5,   max:12,    curve:'log',  a:5.5, b:5.5 },
-  { id:'vrfade',   label:'Rate fade',  group:'Oscillator',      min:-10,   max:10,    curve:'lin',  a:0, b:0 },
-  { id:'vrtime',   label:'Rate settle',group:'Oscillator',      min:0,     max:5,     curve:'pow2', a:1, b:1 },
-  { id:'cutoff',   label:'Cutoff',     group:'Filter',          min:30,    max:18000, curve:'log',  a:700, b:2500 },
-  { id:'reso',     label:'Resonance',  group:'Filter',          min:0,     max:1,     curve:'lin',  a:0.25, b:0.45 },
-  { id:'mode',     label:'Mode',       group:'Filter',          min:0,     max:1,     curve:'lin',  a:0, b:0.25 },
-  { id:'envamt',   label:'Env amount', group:'Filter',          min:-1,    max:1,     curve:'lin',  a:0.5, b:0.25 },
-  { id:'keytrack', label:'Key track',  group:'Filter',          min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
-  { id:'fatk',     label:'Attack',     group:'Filter envelope', min:0.001, max:10,    curve:'log',  a:0.003, b:0.4 },
-  { id:'fdec',     label:'Decay',      group:'Filter envelope', min:0.005, max:10,    curve:'log',  a:0.35, b:1.2 },
-  { id:'fsus',     label:'Sustain',    group:'Filter envelope', min:0,     max:1,     curve:'lin',  a:0.15, b:0.4 },
-  { id:'frel',     label:'Release',    group:'Filter envelope', min:0.005, max:10,    curve:'log',  a:0.3, b:1.5 },
-  { id:'aatk',     label:'Attack',     group:'Amp envelope',    min:0.001, max:10,    curve:'log',  a:0.003, b:0.25 },
-  { id:'adec',     label:'Decay',      group:'Amp envelope',    min:0.005, max:10,    curve:'log',  a:0.6, b:1 },
-  { id:'asus',     label:'Sustain',    group:'Amp envelope',    min:0,     max:1,     curve:'lin',  a:0.7, b:0.85 },
-  { id:'arel',     label:'Release',    group:'Amp envelope',    min:0.005, max:10,    curve:'log',  a:0.3, b:1.6 },
-  { id:'level',    label:'Level',      group:'Output',          min:0,     max:1,     curve:'lin',  a:0.8, b:0.8 },
-  { id:'pan',      label:'Pan',        group:'Output',          min:-1,    max:1,     curve:'lin',  a:0, b:0 },
-  { id:'drive',    label:'Drive',      group:'Drive',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'dshape',   label:'Shape',      group:'Drive',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'dmix',     label:'Mix',        group:'Drive',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'fvowel',   label:'Vowel',      group:'Formant filter',  min:0,     max:1,     curve:'lin',  a:0, b:1 },
-  { id:'fshift',   label:'Shift',      group:'Formant filter',  min:-12,   max:12,    curve:'lin',  a:0, b:0 },
-  { id:'freso',    label:'Resonance',  group:'Formant filter',  min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
-  { id:'fmix',     label:'Mix',        group:'Formant filter',  min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'mtype',    label:'Type',       group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'mrate',    label:'Rate',       group:'Modulation',      min:0.02,  max:10,    curve:'log',  a:0.4, b:0.4 },
-  { id:'mdepth',   label:'Depth',      group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
-  { id:'mfb',      label:'Feedback',   group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0.3, b:0.3 },
-  { id:'mmix',     label:'Mix',        group:'Modulation',      min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'dltime',   label:'Time',       group:'Delay',           min:0,     max:11,    curve:'int',  a:7, b:7 },
-  { id:'dlfb',     label:'Feedback',   group:'Delay',           min:0,     max:0.95,  curve:'lin',  a:0.4, b:0.4 },
-  { id:'dlpp',     label:'Ping-pong',  group:'Delay',           min:0,     max:1,     curve:'lin',  a:0.6, b:0.6 },
-  { id:'dltone',   label:'Tone',       group:'Delay',           min:0,     max:1,     curve:'lin',  a:0.5, b:0.5 },
-  { id:'dlmix',    label:'Mix',        group:'Delay',           min:0,     max:1,     curve:'lin',  a:0, b:0.3 },
-  { id:'rvsize',   label:'Size',       group:'Reverb',          min:0,     max:1,     curve:'lin',  a:0.5, b:0.7 },
-  { id:'rvdecay',  label:'Decay',      group:'Reverb',          min:0.2,   max:20,    curve:'log',  a:1.5, b:3 },
-  { id:'rvdamp',   label:'Damping',    group:'Reverb',          min:0,     max:1,     curve:'lin',  a:0.5, b:0.4 },
-  { id:'rvmix',    label:'Mix',        group:'Reverb',          min:0,     max:1,     curve:'lin',  a:0.12, b:0.3 },
-  { id:'lwow',     label:'Wow',        group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'lflut',    label:'Flutter',    group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'lchar',    label:'Character',  group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'lnoise',   label:'Noise',      group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'lnmix',    label:'Noise mix',  group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'ldrop',    label:'Dropouts',   group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'lcodec',   label:'Codec',      group:'Lo-fi',           min:0,     max:1,     curve:'lin',  a:0, b:0 },
-  { id:'ottdepth', label:'Depth',      group:'OTT',             min:0,     max:1,     curve:'lin',  a:0.13, b:0.13 },
-  { id:'otttime',  label:'Time',       group:'OTT',             min:0.1,   max:4,     curve:'log',  a:1, b:1 },
-  { id:'ottlo',    label:'Low split',  group:'OTT',             min:40,    max:500,   curve:'log',  a:120, b:120 },
-  { id:'otthi',    label:'High split', group:'OTT',             min:600,   max:10000, curve:'log',  a:2500, b:2500 },
-  { id:'ottgl',    label:'Low gain',   group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
-  { id:'ottgm',    label:'Mid gain',   group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
-  { id:'ottgh',    label:'High gain',  group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
-  { id:'ottout',   label:'Output',     group:'OTT',             min:-12,   max:12,    curve:'lin',  a:0, b:0 },
-  { id:'pattern',  label:'Pattern',    group:'Sequencer',       min:0,     max:1,     curve:'lin',  a:0, b:1 },
+const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['sub', 'Sub']];
+const FX_TYPES = [['drive', 'Drive'], ['formant', 'Formant filter'], ['mod', 'Modulation'], ['delay', 'Delay'], ['reverb', 'Reverb'], ['lofi', 'Lo-fi'], ['ott', 'OTT']];
+const typeName = (list, t) => (list.find(x => x[0] === t) || [t, t])[1];
+const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
+const OSC_COMMON = [
+  P_('olevel', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('opan', 'Pan', -1, 1, 'lin', 0, 0),
+  P_('flt', 'Filter', 0, 1, 'lin', 0, 0), P_('byp', 'Bypass', 0, 1, 'lin', 0, 0),
 ];
+const OSC_ENG = {
+  wt: [
+    P_('posA', 'Position A', 0, 1, 'lin', 0.667, 0.667, { single:'A' }), P_('wave', 'Wave', 0, 1, 'lin', 0, 1),
+    P_('posB', 'Position B', 0, 1, 'lin', 0.3, 0.3, { single:'B' }),
+    P_('pitch', 'Pitch', -24, 24, 'int', 0, 0), P_('fine', 'Fine', -100, 100, 'lin', 0, 0), P_('unison', 'Unison', 0, 1, 'lin', 0, 0.35),
+  ],
+  sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
+};
+const VOICE = [
+  P_('glide', 'Glide', 0, 2, 'pow2', 0, 0), P_('vdepth', 'Vibrato', 0, 1, 'pow2', 0, 0), P_('vfade', 'Fade in', 0, 5, 'pow2', 0.6, 0.6),
+  P_('vrate', 'Vib rate', 0.5, 12, 'log', 5.5, 5.5), P_('vrfade', 'Rate fade', -10, 10, 'lin', 0, 0), P_('vrtime', 'Rate settle', 0, 5, 'pow2', 1, 1),
+];
+const FILTER = [
+  [P_('cutoff', 'Cutoff', 30, 18000, 'log', 700, 2500), P_('reso', 'Resonance', 0, 1, 'lin', 0.25, 0.45), P_('mode', 'Mode', 0, 1, 'lin', 0, 0.25),
+   P_('envamt', 'Env amount', -1, 1, 'lin', 0.5, 0.25), P_('keytrack', 'Key track', 0, 1, 'lin', 0.5, 0.5)],
+  [P_('cutoff', 'Cutoff', 30, 18000, 'log', 1500, 6000), P_('reso', 'Resonance', 0, 1, 'lin', 0.2, 0.35), P_('mode', 'Mode', 0, 1, 'lin', 0, 0),
+   P_('envamt', 'Env amount', -1, 1, 'lin', 0.3, 0.2), P_('keytrack', 'Key track', 0, 1, 'lin', 0.5, 0.5)],
+];
+const ENVS = [
+  ['Filter envelope', [P_('fatk', 'Attack', 0.001, 10, 'log', 0.003, 0.4), P_('fdec', 'Decay', 0.005, 10, 'log', 0.35, 1.2),
+    P_('fsus', 'Sustain', 0, 1, 'lin', 0.15, 0.4), P_('frel', 'Release', 0.005, 10, 'log', 0.3, 1.5)]],
+  ['Amp envelope', [P_('aatk', 'Attack', 0.001, 10, 'log', 0.003, 0.25), P_('adec', 'Decay', 0.005, 10, 'log', 0.6, 1),
+    P_('asus', 'Sustain', 0, 1, 'lin', 0.7, 0.85), P_('arel', 'Release', 0.005, 10, 'log', 0.3, 1.6)]],
+  ['Output', [P_('level', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('pan', 'Pan', -1, 1, 'lin', 0, 0)]],
+];
+const FX_ENG = {
+  drive: [P_('drive', 'Drive', 0, 1, 'lin', 0, 0), P_('dshape', 'Shape', 0, 1, 'lin', 0, 0), P_('dmix', 'Mix', 0, 1, 'lin', 0, 0)],
+  formant: [P_('fvowel', 'Vowel', 0, 1, 'lin', 0, 1), P_('fshift', 'Shift', -12, 12, 'lin', 0, 0), P_('freso', 'Resonance', 0, 1, 'lin', 0.5, 0.5), P_('fmix', 'Mix', 0, 1, 'lin', 0, 0)],
+  mod: [P_('mtype', 'Type', 0, 1, 'lin', 0, 0), P_('mrate', 'Rate', 0.02, 10, 'log', 0.4, 0.4), P_('mdepth', 'Depth', 0, 1, 'lin', 0.5, 0.5),
+    P_('mfb', 'Feedback', 0, 1, 'lin', 0.3, 0.3), P_('mmix', 'Mix', 0, 1, 'lin', 0, 0)],
+  delay: [P_('dltime', 'Time', 0, 11, 'int', 7, 7), P_('dlfb', 'Feedback', 0, 0.95, 'lin', 0.4, 0.4), P_('dlpp', 'Ping-pong', 0, 1, 'lin', 0.6, 0.6),
+    P_('dltone', 'Tone', 0, 1, 'lin', 0.5, 0.5), P_('dlmix', 'Mix', 0, 1, 'lin', 0, 0.3)],
+  reverb: [P_('rvsize', 'Size', 0, 1, 'lin', 0.5, 0.7), P_('rvdecay', 'Decay', 0.2, 20, 'log', 1.5, 3), P_('rvdamp', 'Damping', 0, 1, 'lin', 0.5, 0.4), P_('rvmix', 'Mix', 0, 1, 'lin', 0.12, 0.3)],
+  lofi: [P_('lwow', 'Wow', 0, 1, 'lin', 0, 0), P_('lflut', 'Flutter', 0, 1, 'lin', 0, 0), P_('lchar', 'Character', 0, 1, 'lin', 0, 0),
+    P_('lnoise', 'Noise', 0, 1, 'lin', 0, 0), P_('lnmix', 'Noise mix', 0, 1, 'lin', 0, 0), P_('ldrop', 'Dropouts', 0, 1, 'lin', 0, 0), P_('lcodec', 'Codec', 0, 1, 'lin', 0, 0)],
+  ott: [P_('ottdepth', 'Depth', 0, 1, 'lin', 0.13, 0.13), P_('otttime', 'Time', 0.1, 4, 'log', 1, 1), P_('ottlo', 'Low split', 40, 500, 'log', 120, 120),
+    P_('otthi', 'High split', 600, 10000, 'log', 2500, 2500), P_('ottgl', 'Low gain', -12, 12, 'lin', 0, 0), P_('ottgm', 'Mid gain', -12, 12, 'lin', 0, 0),
+    P_('ottgh', 'High gain', -12, 12, 'lin', 0, 0), P_('ottout', 'Output', -12, 12, 'lin', 0, 0)],
+};
+const DEFS = [];
+for (let s = 0; s < 4; s++) {
+  const group = `Osc ${s + 1}`, add = (p, eng) => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
+  OSC_COMMON.forEach(p => add(p, null));
+  Object.entries(OSC_ENG).forEach(([eng, ps]) => ps.forEach(p => add(p, eng)));
+}
+VOICE.forEach(p => DEFS.push({ ...p, id: p.key, group:'Voice' }));
+FILTER.forEach((ps, k) => ps.forEach(p => DEFS.push({ ...p, id: `f${k + 1}.${p.key}`, group: `Filter ${k + 1}`, kind:'flt', slot:k })));
+ENVS.forEach(([group, ps]) => ps.forEach(p => DEFS.push({ ...p, id: p.key, group })));
+for (let s = 0; s < 4; s++) Object.entries(FX_ENG).forEach(([eng, ps]) => ps.forEach(p => DEFS.push({ ...p, id: `x${s + 1}.${p.key}`, group: `FX ${s + 1}`, kind:'fx', slot:s, eng })));
+DEFS.push({ ...P_('pattern', 'Pattern', 0, 1, 'lin', 0, 1), id:'pattern', group:'Sequencer' });
 const IX = {}; DEFS.forEach((d, i) => { IX[d.id] = i; });
+// index of a slot parameter: oi(0, 'wave') -> IX['o1.wave'], xi(3, 'ottdepth') -> IX['x4.ottdepth'], fi(1, 'cutoff') -> IX['f2.cutoff']
+const oi = (s, key) => IX[`o${s + 1}.${key}`], xi = (s, key) => IX[`x${s + 1}.${key}`], fi = (k, key) => IX[`f${k + 1}.${key}`];
+// Is this parameter part of the sound right now? (its slot's current type, or a global)
+const isActive = d => d.kind === 'osc' ? state.oscType[d.slot] !== 'off' && (!d.eng || d.eng === state.oscType[d.slot])
+  : d.kind === 'fx' ? d.eng === state.fxType[d.slot] : true;
 const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' s');
 const pct = v => Math.round(v * 100) + '%';
 const FMT = {
+  olevel: pct, opan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
+  flt: v => (v < 0.005 ? 'Filter 1' : v > 0.995 ? 'Filter 2' : Math.round(v * 100) + '% F2'), byp: v => (v < 0.005 ? 'Off' : pct(v)),
+  pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
+  sshape: v => (v < 0.02 ? 'Sine' : Math.abs(v - 0.5) < 0.02 ? 'Triangle' : v > 0.98 ? 'Square' : pct(v)), sdrive: pct,
   posA: pct, posB: pct,
   drive: pct, dshape: pct, dmix: pct,
   fvowel: v => { const n = 'AEIOU', x = v * 4, i = Math.round(x); return Math.abs(x - i) < 0.08 ? n[i] : n[Math.floor(x)] + '–' + n[Math.min(4, Math.floor(x) + 1)]; },
@@ -90,7 +99,6 @@ const FMT = {
   ottdepth: pct, otttime: v => v.toFixed(2) + '×', ottout: v => (v > 0 ? '+' : '') + v.toFixed(1) + ' dB',
   pattern: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
   wave: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
-  octave: v => (v > 0 ? '+' + v : String(v)),
   fine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`,
   unison: v => (v < 0.005 ? 'Off' : pct(v)),
   glide: v => (v < 0.001 ? 'Off' : time(v)),

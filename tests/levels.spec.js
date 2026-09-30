@@ -1,12 +1,12 @@
 // Effects must stay level-matched to the dry sound (DESIGN.md sections 1, 6 and 11).
-// Each case renders a sustained three-note chord through one effect with the others bypassed,
-// and compares its average level (0.8 s to 2.5 s) with the fully bypassed sound.
+// Each case renders a sustained three-note chord through one effect in FX slot 1 with the other slots
+// switched off, and compares its average level (0.8 s to 2.5 s) with all four slots off.
 // Run with LEVELS_REPORT=1 to print every measurement.
 import { test, expect } from '@playwright/test';
 import { openSynth } from './helpers.js';
 
 const TOL = 1.5;   // dB
-const FX = { drive: 0, formant: 1, modulation: 2, delay: 3, reverb: 4, lofi: 5, ott: 6 };
+const FX = { drive: 'drive', formant: 'formant', modulation: 'mod', delay: 'delay', reverb: 'reverb', lofi: 'lofi', ott: 'ott' };
 
 // Known deviations, measured when this suite was written. Each is an expected failure:
 // when the effect gets fixed, its test will start "unexpectedly passing" and this entry should be removed.
@@ -42,16 +42,15 @@ for (const signal of ['dark', 'bright']) {
       test(name, async ({ page }) => {
         if (KNOWN[name]) test.fail(true, KNOWN[name]);
         await openSynth(page);
-        const rows = await page.evaluate(({ k, settings, bright }) => {
-          const base = { rvmix: 0, ...(bright ? { cutoff: 18000, reso: 0, envamt: 0 } : {}) };
+        const rows = await page.evaluate(({ type, settings, bright }) => {
+          const base = bright ? { 'f1.cutoff': 18000, 'f1.reso': 0, 'f1.envamt': 0 } : {};
           const notes = [[48, 0, 9999], [55, 0, 9999], [63, 0, 9999]];
-          const lvl = (over, on) => {
-            const fxOn = [0, 0, 0, 0, 0, 0, 0]; if (on) fxOn[k] = 1;
-            return T.db(T.stereoRms(T.render({ patch: T.flat({ ...base, ...over }), notes, blocks: 940, fxOn }), 0.8, 2.5));
-          };
+          const slot1 = o => Object.fromEntries(Object.entries(o).map(([k, v]) => ['x1.' + k, v]));
+          const lvl = (over, on) => T.db(T.stereoRms(T.render({ patch: T.flat({ ...base, ...slot1(over) }), notes, blocks: 940,
+            fx: [type, 'drive', 'drive', 'drive'], fxOn: [on ? 1 : 0, 0, 0, 0] }), 0.8, 2.5));
           const dry = lvl({}, false);
           return settings.map(s => ({ s, d: lvl(s, true) - dry }));
-        }, { k: FX[fx], settings, bright: signal === 'bright' });
+        }, { type: FX[fx], settings, bright: signal === 'bright' });
         if (process.env.LEVELS_REPORT) rows.forEach(r => console.log(`${signal} ${name} ${JSON.stringify(r.s)}: ${r.d.toFixed(2)} dB`));
         for (const r of rows) expect(Math.abs(r.d), `${JSON.stringify(r.s)} is ${r.d.toFixed(2)} dB from dry`).toBeLessThanOrEqual(TOL);
       });
@@ -63,7 +62,7 @@ test('OTT at default Depth barely moves peaks', async ({ page }) => {
   await openSynth(page);
   const d = await page.evaluate(() => {
     const notes = [[48, 0, 200], [55, 300, 500], [63, 600, 900]];   // gaps between notes, where OTT could spike
-    const pk = on => { const r = T.render({ patch: T.flat({ rvmix: 0, ottdepth: 0.13 }), notes, blocks: 1000, fxOn: [0, 0, 0, 0, 0, 0, on] });
+    const pk = on => { const r = T.render({ patch: T.flat({ 'x1.ottdepth': 0.13 }), notes, blocks: 1000, fx: ['ott', 'drive', 'drive', 'drive'], fxOn: [on, 0, 0, 0] });
       return Math.max(T.peak(r.L), T.peak(r.R)); };
     return T.db(pk(1)) - T.db(pk(0));
   });

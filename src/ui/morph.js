@@ -11,7 +11,7 @@ function updateMorphUI() {
 morphEl.addEventListener('input', () => {
   state.morph = morphEl.value / 1000;
   updateMorphUI();
-  DEFS.forEach((_, i) => updateKnob(i));
+  DEFS.forEach((d, i) => { if (isActive(d)) updateKnob(i); });
   if (ready) send({ type:'morph', v: state.morph });
   save();
 });

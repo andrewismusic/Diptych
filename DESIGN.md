@@ -26,16 +26,17 @@ Published as a single self-contained HTML file (a Claude artifact). The source i
 
 - **DSP engine:** one JavaScript class, `MorphEngine`, containing all audio code and the maths shared with the UI (`denorm`, `bend`, `fft`, `analyze`, `interp`, `frameAt`, `synth`, `seqEval`, and so on).
 - **Audio thread:** the class source is stringified and loaded into an **AudioWorklet** via a Blob URL (falls back to a `data:` URL, then to a main-thread `ScriptProcessorNode` "compatibility mode"). The page's content-security policy is why modules can't be loaded from files.
-- **Messages** from UI to engine: `state` (A, B, C arrays and morph), `param`, `curve`, `morph`, `table`, `blend`, `on`, `off`, `panic`, `mono`, `seq`, `seqPlay`, `bpm`, `walk`, `dlmode`, `bypass`.
+- **Messages** from UI to engine: `state` (A, B, C arrays and morph), `param`, `curve`, `morph`, `slots` (oscillator and FX types), `table` (slot, side), `blend`, `on`, `off`, `panic`, `mono`, `seq`, `seqPlay`, `bpm`, `walk`, `dlmode` (FX slot), `bypass` (FX slot).
+- **Engine classes** (all stringified into the worklet): `MorphEngine` (voices, slots, filters, render), `WtBank` (one per Wavetable slot), `OscSub`, and one class per effect (`FxDrive`, `FxFormant`, `FxModulation`, `FxDelay`, `FxReverb`, `FxLofi`, `FxOtt`), each with `process(L, R, p, len, v, P)`. The list lives in `ENGINE_CLASSES` in `audio.js`.
 - **Reports** from engine to UI: a queue (`reports`) drained every render block: `pos` (sequencer playhead) and `ott` (band levels and gains).
-- **Rendering:** 16-sample sub-blocks. Each sub-block: resolve parameters, run the sequencer, rebuild wavetables if needed, render voices, run the effects chain. A final `tanh` soft clip protects the output.
+- **Rendering:** 16-sample sub-blocks. Each sub-block: resolve the parameters of each slot's current type, run the sequencer, handle type switches, rebuild wavetables if needed, render voices (slots -> filter 1 / filter 2 / around -> amp envelope -> master Level and Pan), run the four FX slots in order. A final `tanh` soft clip protects the output. Slot gains and routing are ramped per sample within each sub-block.
 - **Audio unlock (mobile):** every `pointerdown`, `pointerup`, `touchstart`, `touchend`, `mousedown`, `click` and `keydown` tries to create/resume the AudioContext, and plays a one-sample silent buffer. `navigator.audioSession.type = 'playback'` lets iPhones play with the ringer switch on silent. The top-right button shows "Tap to start audio" whenever the context isn't running.
-- **CPU:** measured at roughly 10 to 17% of one desktop core with 8 notes and effects on.
+- **CPU:** measured at roughly 10 to 17% of one desktop core with 8 notes and effects on (fixed chain); 12.7% with 8 notes, four oscillators (three Wavetables at full Unison and a Sub) and four effects in the slot build.
 
 ### Suggested structure for Claude Code
 Split into modules (engine core, voices, effects, sequencer, UI knobs, editors, randomization, persistence), keeping a build step that bundles the engine into a single string for the AudioWorklet (or use a real worklet module file when hosted outside the artifact sandbox). Keep a single-file build target so it can still be published as an artifact.
 
-Status: the UI side is split by feature. The engine is still one `MorphEngine` class in `src/engine/engine.js` (the worklet stringifies that one class, and `fx()` is a single 350-line method), so splitting voices and effects into separate units is left for the slot rebuild, where the FX slots need each effect as its own unit anyway.
+Status: done. The UI side is split by feature, and since the slot build the engine is split too: core, oscillators and one class per effect (see Section 2).
 
 ---
 
@@ -135,7 +136,7 @@ Bottom panel switch **Keys / Seq** (sliding panes; the launch view is Seq; tappi
 
 - Header (scrolls away): title, audio button, Copy A to B / Copy B to A / Swap. **Copy covers the sound only**; sequences and the Pattern knob stay. Swap exchanges everything including sequences.
 - Randomize bar: **Randomize sound: A / Linked / All / B** and **Randomize sequence: A / Both / B**, plus **Undo** (30 levels; covers randomize, copy, swap, reset, link toggles, sequence edits).
-- Wavetables section (cards for A, the live blend, B; Position A / Wave / Position B knobs underneath), then Oscillator, Filter, Filter envelope, Amp envelope, Output, effects.
+- Sections, each foldable (fold state is saved): Osc 1 to 4 (engine picker in the heading; a Wavetable slot shows cards for A, the live blend and B, then its knobs, then the slot's Level, Pan, Filter and Bypass), Voice (Glide, vibrato), Filter 1, Filter 2, Filter envelope, Amp envelope, Output, FX 1 to 4 (effect picker and On/Off in the heading).
 - **Four knobs per row maximum**; visualizers match that width.
 - **Bottom panel (always visible, sticky):** morph slider (thumb filled with the morph color), then Keys/Seq bar, then the keyboard or sequencer pane (both panes the same height).
 - Keyboard: one octave plus a note, octave shift, Latch, Mono/Poly; computer keys A to K, Z/X octave; space plays/stops in sequencer mode.
@@ -147,14 +148,15 @@ Bottom panel switch **Keys / Seq** (sliding panes; the launch view is Seq; tappi
 
 ### Main buttons (shaped)
 - Values come from per-parameter functions (`RND`), in musically useful ranges.
-- **15% rule:** a side's new value lands at least 15% of the knob's throw away from the other side's, so morphs are dramatic. Exempt: Noise mix, OTT band gains, Formant/Modulation/Delay/Reverb mixes, Wow, Flutter, Codec, Dropouts, Glide, Unison, Vibrato depth, Rate fade, filter Mode (their chance of landing at zero, or low, matters more; both sides at 0 is fine). The last five were added after the test suite showed the rule was re-rolling away their stated odds.
+- **15% rule:** a side's new value lands at least 15% of the knob's throw away from the other side's, so morphs are dramatic. Exempt: Noise mix, OTT band gains, Formant/Modulation/Delay/Reverb mixes, Wow, Flutter, Codec, Dropouts, Glide, Unison, Vibrato depth, Rate fade, filter Mode (their chance of landing at zero, or low, matters more; both sides at 0 is fine). The last five were added after the test suite showed the rule was re-rolling away their stated odds. Slot Pan, Filter, Bypass and Sub Octave are exempt too.
 - **Effect mixes:** Formant mix is 0 in 66% of generations; Modulation, Delay and Reverb mixes are 0 in 40%. Delay mix mostly 0 to 35%, rarely above 50%. Reverb mix mostly 0 to 35%. Across Formant, Modulation, Delay and Reverb: at most two above 50%, at most one above 90%.
 - **Other effects:** full range (Drive, shapes, rates, times, sizes). Delay Cut/Spill is randomized 50/50 by Randomize all and the Delay dice.
 - **Lo-fi:** Wow, Flutter and Codec at minimum in 66% of generations; Dropouts in 90%; otherwise leaning low (squared). Character leans low. Noise mix mostly 0 to 15%, never above 35%.
 - **OTT:** band gains within ±3 dB with a mix of boosts and cuts on each side; Low split 40 to 500 Hz, High split 600 Hz to 10 kHz.
 - **Oscillator:** Octave 0 about 70% of the time (else ±1); Fine 0 about 70%; Unison off 40%; **Glide 0 in 50% of generations, under 100 ms in 95%**; Vibrato depth within ±30 cents about 85% of the time; Rate fade 0 half the time.
 - **Filter/envelopes:** cutoff 150 Hz to 12 kHz; resonance leans low; Mode pure low-pass half the time; Env amount usually positive; attacks lean short; amp sustain 20% or more.
-- **Sine guard:** if a side's wave is nearly a pure sine, its cutoff moves to the open end (above about 1 kHz for low-pass modes, below about 280 Hz for high-pass modes) so it can't go silent.
+- **Sine guard:** if a side's wave is nearly a pure sine, the filter it feeds leaves the band-pass zone (Mode 35 to 65% becomes a low-pass mode, 0 to 30%) and its cutoff moves to the open end (above about 1 kHz for low-pass modes, below about 280 Hz for high-pass modes) so it can't go silent. The band-pass case was added after the test suite found a near-silent launch patch.
+- **Loudness guard:** after the shaped randomize, each side's harmonics (middle C plus each slot's Pitch) are run through its routing and both filters at the filter envelope's peak and at sustain. If less than 1% of the power (-20 dB) gets through at both, that side's filters are re-rolled (up to 10 times), then Filter 1 opens as a low-pass as a last resort. Added after the test suite found near-silent launch patches (a band-pass pushed far above a low note by Env amount; about 1 in 75 patches before).
 - Pattern usually sits at its ends (A 0 to 40%, B 60 to 100%, at the exact end 60% of the time). **Wave is locked at full range (A 0%, B 100%) by default** so each end of the morph hears only its own wavetable, and randomizing one side can never change the sound at the other end. With Wave unlocked the old rule applies (same as Pattern), and an A Wave above 0% means full A plays part of table B, so randomizing B changes it; that is correct behavior, just not the default; each side's wavetable is replaced by a random built-in table unless the Wavetables section is locked.
 - **Randomize linked:** only unlocked linked knobs, one new value shared by both sides.
 
@@ -172,9 +174,9 @@ Every launch: Randomize all, new sequences (16 steps), tempo 85 to 135 bpm. **Un
 
 ## 10. Persistence
 
-- `localStorage` key `diptych-v3`, with `ver` (currently 9) and `ids` (parameters are matched by name, so patches survive new knobs). Migrations run by version: e.g. v4 linked Octave/Fine, v5 locked Pattern, v6 linked OTT Depth/Output, v7/v8 OTT lock changes, v9 locks Wave and resets it to A 0% / B 100% with an even curve; sequences carry their own flags (`v2`, `v3`, `v4`) for rate-list changes.
+- `localStorage` key `diptych-v4` (slot build), with `ver` (currently 1) and `ids` (parameters are matched by id, so patches survive new knobs). Patches from the fixed-chain version (`diptych-v3`, whose migrations ran up to v9) are ignored by decision. Sequences carry their own flags (`v2`, `v3`, `v4`) for rate-list changes.
 - Wavetables are stored as base64 int16 frames.
-- Stored: A, B, C, morph, locks, section locks, links, link memory, tables, sequences, tempo, Walk/Swap, Cut/Spill, effect on/off, mono.
+- Stored: A, B, C, morph, locks, section locks, links, link memory, oscillator and FX slot types, tables per oscillator slot, sequences, tempo, Walk/Swap, Cut/Spill per FX slot, FX On/Off, folded sections, mono.
 
 ---
 
@@ -228,6 +230,30 @@ Known deviations are marked as expected failures (`test.fail`) with the measured
 - Default patch: OTT in the last slot.
 - Section tools (three dice, section lock, On/Off) apply per slot.
 
+### Build plan and decisions (2026-09-30)
+Decided with the owner:
+- **Old patches start fresh.** The slot build uses a new storage key (`diptych-v4`, `ver` 1) and ignores `diptych-v3`.
+- **Oscillator slots have an Off type.** Default patch: slot 1 Wavetable, slots 2 to 4 Off. An Off slot costs no CPU.
+- **Every slot is its own collapsible section** (Osc 1 to 4, FX 1 to 4). Folding is remembered.
+
+Phases, each tested and committed on its own:
+1. **Slot framework:** oscillator slots with Off / Wavetable / Sub; two filters; FX slots holding any of today's seven effects; new save format; tests updated.
+2. FM engine. 3. Sampler (samples stored in IndexedDB, too big for localStorage). 4. Physical engine.
+
+Phase 1 design:
+- **Parameter ids.** Global parameters keep their plain ids (`glide`, `aatk`, `level`, `pattern`). Filters are `f1.cutoff`, `f2.reso` and so on. Slot parameters are `o1.<key>` and `x1.<key>`, where the key is the parameter's own name (`o1.wave`, `o2.soct`, `x3.dlmix`). Keys are unique within a slot, so formats, randomize rules and exemptions are looked up by key.
+- **Every slot remembers the settings of every type** (all types' parameters exist and are saved), for oscillators as well as effects. Only the current type's parameters are resolved by the engine, shown, or randomized.
+- **Oscillator slot:** Level (default 80%, linked and locked; 80% is unity), Pan, Filter (0% = filter 1, 100% = filter 2, a blend between), Bypass (amount that goes around both filters). Everything morphs.
+- **Wavetable:** each Wavetable slot has its own tables A and B, and Position A, Wave (locked at full range by default), Position B, Pitch (-24 to +24 semitones, stepped, linked by default), Fine (linked by default), Unison.
+- **Sub:** follows slot 1's pitch (its Pitch and Fine when slot 1 is a Wavetable). Octave (-1 or -2, stepped), Shape (sine to triangle to square, continuous, band-limited square), Drive. Its Level and filter bypass are the slot's own Level and Bypass.
+- **Voice section** (global): Glide and the vibrato controls. The old global Octave and Fine tune are replaced by each engine's Pitch and Fine.
+- **Filters:** two TPT state-variable filters per voice, each with Cutoff, Resonance, Mode, Env amount, Key track. They share one filter envelope and one amp envelope. Slots feed them in parallel.
+- **FX slots:** each holds one of Drive, Formant filter, Modulation, Delay, Reverb, Lo-fi, OTT, running in slot order, each with its own On/Off. Default: Drive, Delay, Reverb, OTT. Delay Cut/Spill is per slot.
+- **Switching a type never clicks:** an oscillator slot fades out over about 8 ms, switches, and fades back in; an FX slot fades linearly to dry over 15 ms, switches, and glides back in (a 4 ms fade measured a slight click in testing). Switching an FX type builds the new effect on the audio thread, which allocates memory (Delay is the largest); watch for dropouts on slow phones.
+- **Randomize** (proposed by Claude, easy to change): types are shared, so only Randomize all and launch change them, and a locked section keeps its type. Slot 1 stays Wavetable; slot 2 is Sub 40%, Wavetable 20%, Off 40%; slots 3 and 4 are Wavetable 20%, otherwise Off. FX slots 1 to 3 get three different effects from Drive, Formant, Modulation, Delay, Reverb, Lo-fi, kept in that order; slot 4 stays OTT. Side randomize and section dice change values only. New rules: slot Filter lands on filter 1 60% of the time, Bypass is 0 80% of the time; Sub Octave is -1 60% of the time; slot Pan, Filter, Bypass and Sub Octave are exempt from the 15% rule.
+
+**Phase 1 status (2026-09-30): built.** A single Wavetable slot through Filter 1, and every effect in an FX slot, match the fixed-chain engine to within float rounding (checked sample by sample). Found and fixed while building: the loudness guard (Section 9).
+
 ### After the slots
 1. **Morph sources** per parameter: the chain icon cycles **Main / Linked / Own**. Own = the parameter morphs on its own; the live dot becomes a draggable handle along the arc between A and B (larger touch area).
 2. **Section sliders:** a toggle beside a section heading reveals a slim slider under it; that section's Main-source parameters follow it. Precedence: Own, then section slider, then main slider. Each parameter's curve applies to whichever slider drives it.
@@ -236,9 +262,9 @@ Known deviations are marked as expected failures (`test.fail`) with the measured
 
 ---
 
-## 14. Parameter reference (as of this version)
+## 14. Parameter reference (fixed-chain version)
 
-Generated from the code. Values shown with their display formatting.
+Generated from the fixed-chain code, kept for the ranges, curves and defaults, which carried over unchanged. In the slot build the same parameters live in slots: oscillator knobs are `o1.<key>` to `o4.<key>` (the old Octave and Fine tune became each Wavetable's Pitch, -24 to +24 semitones, and Fine), filter knobs are `f1.<key>` and `f2.<key>`, effect knobs are `x1.<key>` to `x4.<key>`; see `src/params.js` for the full list, including the new slot and Sub parameters.
 
 #### Wavetables
 

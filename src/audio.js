@@ -1,30 +1,37 @@
-const spec = { A: null, B: null };
-function analyzeTable(side) {
-  const t = tables[side];
-  spec[side] = { k: t.frames.length, re: [], im: [] };
-  t.frames.forEach(f => { const a = MorphEngine.analyze(f); spec[side].re.push(a.re); spec[side].im.push(a.im); });
+const spec = [0, 1, 2, 3].map(() => ({ A: null, B: null }));   // spectra per oscillator slot and side
+function analyzeTable(slot, side) {
+  const t = tables[slot][side], sp = spec[slot][side] = { k: t.frames.length, re: [], im: [] };
+  t.frames.forEach(f => { const a = MorphEngine.analyze(f); sp.re.push(a.re); sp.im.push(a.im); });
 }
-function analyzeFrame(side, j) {
-  const a = MorphEngine.analyze(tables[side].frames[j]);
-  spec[side].re[j] = a.re; spec[side].im[j] = a.im;
+function analyzeFrame(slot, side, j) {
+  const a = MorphEngine.analyze(tables[slot][side].frames[j]);
+  spec[slot][side].re[j] = a.re; spec[slot][side].im[j] = a.im;
 }
-analyzeTable('A'); analyzeTable('B');
+const analyzeAll = () => { for (let s = 0; s < 4; s++) { analyzeTable(s, 'A'); analyzeTable(s, 'B'); } };
+analyzeAll();
 
 /* ---------- audio startup ---------- */
+// Everything the audio thread runs: the engine plus its oscillator and effect classes (stringified into the worklet).
+const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
 let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
 const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
 const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });
-const postTable = side => send({ type:'table', side, re: spec[side].re.slice(), im: spec[side].im.slice() });
-const sendTableNow = side => { if (ready) postTable(side); };
+const sendSlots = () => { if (ready) send({ type:'slots', osc: state.oscType, fx: state.fxType }); };
+const postTable = (slot, side) => send({ type:'table', slot, side, re: spec[slot][side].re.slice(), im: spec[slot][side].im.slice() });
 const tableTimers = {};
-function sendTable(side) {
-  if (tableTimers[side]) return;
-  tableTimers[side] = setTimeout(() => { tableTimers[side] = null; sendTableNow(side); }, 50);
+function sendTable(slot, side) {
+  const k = slot + side;
+  if (tableTimers[k]) return;
+  tableTimers[k] = setTimeout(() => { tableTimers[k] = null; if (ready) postTable(slot, side); }, 50);
 }
-function sendAll() {
-  sendState(); postTable('A'); postTable('B');   // runs during startup, before ready is set
+function sendAll() {   // runs during startup, before ready is set
+  sendState();
+  for (let s = 0; s < 4; s++) { postTable(s, 'A'); postTable(s, 'B'); }
   send({ type:'blend', v: state.spectral });
-  send({ type:'dlmode', v: state.dlSpill }); send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono }); state.fxOn.forEach((on, i) => send({ type:'bypass', i, on })); send({ type:'dlmode', v: state.dlSpill });
+  state.fxOn.forEach((on, i) => send({ type:'bypass', i, on }));
+  state.dlSpill.forEach((v, i) => send({ type:'dlmode', i, v }));
+  send({ type:'slots', osc: state.oscType, fx: state.fxType });
+  send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono });
   if (typeof buildSeq === 'function') { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); }
 }
 
@@ -47,10 +54,10 @@ function ensureAudio() {
   ctx.onstatechange = updateAudioBtn;
   kick();
   starting = (async () => {
-    const defs = DEFS.map(({ id, min, max, curve, snap }) => ({ id, min, max, curve, snap: !!snap }));
+    const defs = DEFS.map(({ id, key, min, max, curve, snap, kind, slot, eng }) => ({ id, key, min, max, curve, snap: !!snap, kind, slot, eng }));
     let kind = null;
     if (ctx.audioWorklet) {
-      const src = `${MorphEngine.toString()}
+      const src = `${ENGINE_CLASSES.map(c => c.toString()).join('\n')}
 class MorphProcessor extends AudioWorkletProcessor {
   constructor(o){ super(); this.e = new MorphEngine(sampleRate, o.processorOptions.defs); this.port.onmessage = ev => this.e.handle(ev.data); }
   process(inputs, outputs){ const o = outputs[0]; const L = o[0], R = o[1]; L.fill(0); R.fill(0); this.e.render(L, R, L.length); const q = this.e.reports; for (let k = 0; k < q.length; k++) this.port.postMessage(q[k]); q.length = 0; return true; }

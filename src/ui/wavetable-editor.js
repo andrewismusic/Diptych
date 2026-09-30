@@ -2,7 +2,7 @@
    WAVETABLE EDITOR
    ===================================================================== */
 const ed = $('ed'), edCv = $('edCanvas');
-let edSide = 'A', edFrame = 0, tool = 'draw', harm = null, stroke = null;
+let edSlot = 0, edSide = 'A', edFrame = 0, tool = 'draw', harm = null, stroke = null;
 const HN = 32;
 const NOTES = {
   draw: 'Draw directly on the wave. Edits play live, so hold or latch a note to hear them.',
@@ -14,18 +14,19 @@ presetSel.innerHTML = '<option value="">Choose…</option>' + Object.keys(PRESET
 
 new ResizeObserver(() => document.documentElement.style.setProperty('--kbh', $('kb').offsetHeight + 'px')).observe($('kb'));
 
-function openEditor(side) {
-  edSide = side; edFrame = Math.min(edFrame, tables[side].frames.length - 1);
+function openEditor(slot, side) {
+  edSlot = slot; edSide = side; edFrame = Math.min(edFrame, tab().frames.length - 1);
   ed.classList.toggle('b', side === 'B');
-  $('edTitle').textContent = `Wavetable ${side}: ${tables[side].name}`;
+  $('edTitle').textContent = edTitle();
   ed.classList.add('open');
   if (tool === 'harm') loadHarm();
   renderStrip(); drawEditor(); setTool(tool);
   $('edDone').focus({ preventScroll:true });
 }
-function closeEditor() { ed.classList.remove('open'); $('wt' + edSide).focus({ preventScroll:true }); }
-$('wtA').addEventListener('click', () => openEditor('A'));
-$('wtB').addEventListener('click', () => openEditor('B'));
+function closeEditor() { ed.classList.remove('open'); const b = $('wt' + edSide + edSlot); if (b && b.offsetParent) b.focus({ preventScroll:true }); }
+const tab = () => tables[edSlot][edSide];
+const edTitle = () => `Osc ${edSlot + 1} wavetable ${edSide}: ${tab().name}`;
+document.addEventListener('click', e => { const b = e.target.closest('[data-wt]'); if (b) openEditor(+b.dataset.wt, b.dataset.side); });
 $('edDone').addEventListener('click', closeEditor);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ed.classList.contains('open')) closeEditor(); });
 
@@ -39,15 +40,15 @@ function setTool(t) {
 document.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
 function loadHarm() {
-  const s = spec[edSide]; harm = new Float32Array(HN + 1);
+  const s = spec[edSlot][edSide]; harm = new Float32Array(HN + 1);
   let mx = 0;
   for (let h = 1; h <= HN; h++) { harm[h] = Math.hypot(s.re[edFrame][h], s.im[edFrame][h]); mx = Math.max(mx, harm[h]); }
   if (mx > 1e-6) for (let h = 1; h <= HN; h++) harm[h] /= mx;   // bars show the balance; the frame is always normalized
 }
-function frame() { return tables[edSide].frames[edFrame]; }
+function frame() { return tab().frames[edFrame]; }
 function frameChanged(structure) {
-  if (structure) analyzeTable(edSide); else analyzeFrame(edSide, edFrame);
-  sendTable(edSide); drawEditor(); structure ? renderStrip() : drawThumb(edFrame); drawWaves(); save();
+  if (structure) analyzeTable(edSlot, edSide); else analyzeFrame(edSlot, edSide, edFrame);
+  sendTable(edSlot, edSide); drawEditor(); structure ? renderStrip() : drawThumb(edFrame); drawWaves(); save();
 }
 function drawEditor() {
   const side = css(edSide === 'A' ? '--a' : '--b');
@@ -65,10 +66,10 @@ function drawEditor() {
 }
 function drawThumb(j) {
   const c = $('edStrip').children[j];
-  if (c) drawWave(c, tables[edSide].frames[j], css(edSide === 'A' ? '--a' : '--b'), { pad:3, lw:1.3 });
+  if (c) drawWave(c, tab().frames[j], css(edSide === 'A' ? '--a' : '--b'), { pad:3, lw:1.3 });
 }
 function renderStrip() {
-  const st = $('edStrip'), fr = tables[edSide].frames;
+  const st = $('edStrip'), fr = tab().frames;
   st.innerHTML = '';
   fr.forEach((_, j) => {
     const c = document.createElement('canvas');
@@ -83,7 +84,7 @@ function renderStrip() {
   fr.forEach((_, j) => drawThumb(j));
   $('edCount').textContent = `Frame ${edFrame + 1} of ${fr.length}`;
   $('edAdd').disabled = fr.length >= MAXF; $('edDel').disabled = fr.length <= 1;
-  $('edTitle').textContent = `Wavetable ${edSide}: ${tables[edSide].name}`;
+  $('edTitle').textContent = edTitle();
 }
 
 /* drawing */
@@ -105,7 +106,7 @@ function setHarmAt(p, last) {
   else harm[k] = v;
   const f = additive(harm); let pk = 0; for (const x of f) pk = Math.max(pk, Math.abs(x));
   if (pk > 1e-6) for (let n = 0; n < NS; n++) f[n] /= pk;
-  tables[edSide].frames[edFrame] = f;
+  tab().frames[edFrame] = f;
   return { k, v };
 }
 edCv.addEventListener('pointerdown', e => {
@@ -141,20 +142,20 @@ $('edSmooth').addEventListener('click', () => {
 });
 $('edNorm').addEventListener('click', () => { normalizeFrame(frame()); afterTool(); });
 $('edInv').addEventListener('click', () => { const f = frame(); for (let n = 0; n < NS; n++) f[n] = -f[n]; afterTool(); });
-$('edClear').addEventListener('click', () => { tables[edSide].frames[edFrame] = PRESETS['Sine']()[0]; afterTool(); });
+$('edClear').addEventListener('click', () => { tab().frames[edFrame] = PRESETS['Sine']()[0]; afterTool(); });
 $('edAdd').addEventListener('click', () => {
-  const fr = tables[edSide].frames; if (fr.length >= MAXF) return;
+  const fr = tab().frames; if (fr.length >= MAXF) return;
   fr.splice(edFrame + 1, 0, frame().slice()); edFrame++;
   if (tool === 'harm') loadHarm(); frameChanged(true);
 });
 $('edDel').addEventListener('click', () => {
-  const fr = tables[edSide].frames; if (fr.length <= 1) return;
+  const fr = tab().frames; if (fr.length <= 1) return;
   fr.splice(edFrame, 1); edFrame = Math.min(edFrame, fr.length - 1);
   if (tool === 'harm') loadHarm(); frameChanged(true);
 });
 presetSel.addEventListener('change', () => {
   if (!presetSel.value) return;
-  tables[edSide] = makeTable(presetSel.value); presetSel.value = ''; edFrame = 0;
+  tables[edSlot][edSide] = makeTable(presetSel.value); presetSel.value = ''; edFrame = 0;
   if (tool === 'harm') loadHarm(); frameChanged(true);
 });
 $('edLoad').addEventListener('click', () => $('edFile').click());
@@ -174,7 +175,7 @@ $('edFile').addEventListener('change', async () => {
       for (let n = 0; n < NS; n++) { const x = n * L / NS, i = Math.floor(x), fr = x - i; f[n] = d[i % L] + ((d[(i + 1) % L]) - d[i % L]) * fr; }
       frames = [f];
     }
-    tables[edSide] = { name: file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Loaded', frames: frames.map(f => normalizeFrame(Float32Array.from(f))) };
+    tables[edSlot][edSide] = { name: file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Loaded', frames: frames.map(f => normalizeFrame(Float32Array.from(f))) };
     edFrame = 0; if (tool === 'harm') loadHarm(); frameChanged(true);
     $('edNote').textContent = frames.length > 1 ? `Loaded ${frames.length} frames.` : 'Loaded as a single cycle. Files made of 2048-sample frames load as multi-frame tables.';
   } catch (err) {

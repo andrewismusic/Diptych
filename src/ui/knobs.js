@@ -1,7 +1,7 @@
 /* =====================================================================
    KNOBS
    ===================================================================== */
-const VIZ = { 'Filter':'vzF', 'Filter envelope':'vzFE', 'Amp envelope':'vzAE', 'OTT':'vzOT' };
+const VIZ = { 'Filter 1':'vzF1', 'Filter 2':'vzF2', 'Filter envelope':'vzFE', 'Amp envelope':'vzAE' };
 const lockIcon = on => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="${on ? 'M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7' : 'M5.2 7V5.2a2.8 2.8 0 0 1 5.5-.8'}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const iconBtn = (id, label, single) => `<span class="icons"><button type="button" class="lock" data-plock="${id}" aria-pressed="false" aria-label="Lock ${label}"></button>${single ? '' : `<button type="button" class="lock" data-plink="${id}" aria-pressed="false" aria-label="Link ${label}"></button>`}</span>`;
 const linkIcon = on => `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${on
@@ -30,27 +30,51 @@ const knobSVG = (d, i) => `<svg viewBox="0 0 80 80" aria-hidden="false">
 </svg>`;
 
 const groupsEl = document.getElementById('groups');
-let groupBox = null, lastGroup = null;
-DEFS.forEach((d, i) => {
-  if (d.group !== lastGroup && d.group === 'Wavetables') { lastGroup = d.group; groupBox = document.getElementById('wtKnobs'); }
-  if (d.group !== lastGroup && d.group === 'Sequencer') { lastGroup = d.group; groupBox = document.getElementById('seqKnob'); }
-  if (d.group !== lastGroup) {
-    lastGroup = d.group;
-    const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
-    const viz = VIZ[d.group];
-    g.innerHTML = `<h2>${d.group}</h2>${viz ? `<canvas class="viz" id="${viz}" aria-label="${d.group}: A, B and current shape"></canvas>` : ''}<div class="knobs"></div>`;
-    groupsEl.appendChild(g); groupBox = g.querySelector('.knobs');
-  }
-  groupBox.insertAdjacentHTML('beforeend', `<div class="kn">
+const knobHTML = (d, i) => `<div class="kn">
     <div class="kname">${d.label}</div>
     <div class="kwrap"><div class="knob" id="k${i}">${knobSVG(d, i)}</div>${iconBtn(d.id, d.label, d.single)}</div>
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
-  </div>`);
+  </div>`;
+const wtCards = s => `<div class="wt">
+    <button class="wtcard a" id="wtA${s}" data-wt="${s}" data-side="A" type="button" aria-label="Edit wavetable A of Osc ${s + 1}">
+      <canvas id="cvA${s}"></canvas><span class="wtlabel"><span class="nm" id="nmA${s}"></span><span class="ac">Edit A</span></span></button>
+    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm">What you hear</span></span></div>
+    <button class="wtcard b" id="wtB${s}" data-wt="${s}" data-side="B" type="button" aria-label="Edit wavetable B of Osc ${s + 1}">
+      <canvas id="cvB${s}"></canvas><span class="wtlabel"><span class="nm" id="nmB${s}"></span><span class="ac">Edit B</span></span></button>
+  </div>`;
+const options = list => list.map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
+/* One section per group. Oscillator and FX slot sections hold a container per type (data-eng),
+   and only the current type's is shown; '*' holds the knobs every oscillator type shares. */
+const sections = {};
+function makeSection(d) {
+  const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
+  let head = `<h2><button type="button" class="fold" aria-expanded="true"><span class="chev" aria-hidden="true"></span>${d.group}</button>`;
+  if (d.kind === 'osc') head += `<select class="typesel" data-osc="${d.slot}" aria-label="${d.group} engine">${options(OSC_TYPES)}</select>`;
+  if (d.kind === 'fx') head += `<select class="typesel" data-fxsel="${d.slot}" aria-label="${d.group} effect">${options(FX_TYPES)}</select>`;
+  head += '</h2>';
+  let body;
+  if (d.kind === 'osc') body = Object.keys(OSC_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'wt' ? wtCards(d.slot) : ''}<div class="knobs"></div></div>`).join('')
+    + '<div class="eng" data-eng="*"><div class="knobs"></div></div>';
+  else if (d.kind === 'fx') body = Object.keys(FX_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'ott'
+    ? `<canvas class="viz" id="vzOT${d.slot}" aria-label="OTT bands: split points, gain settings and live levels"></canvas>` : ''}<div class="knobs"></div></div>`).join('');
+  else { const viz = VIZ[d.group]; body = `${viz ? `<canvas class="viz" id="${viz}" aria-label="${d.group}: A, B and current shape"></canvas>` : ''}<div class="knobs"></div>`; }
+  g.innerHTML = head + `<div class="gbody">${body}</div>`;
+  groupsEl.appendChild(g);
+  return g;
+}
+DEFS.forEach((d, i) => {
+  let box;
+  if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
+  else {
+    const g = sections[d.group] || (sections[d.group] = makeSection(d));
+    box = d.kind === 'osc' || d.kind === 'fx' ? g.querySelector(`.eng[data-eng="${d.eng || '*'}"] .knobs`) : g.querySelector('.knobs');
+  }
+  box.insertAdjacentHTML('beforeend', knobHTML(d, i));
 });
 
 const $ = id => document.getElementById(id);
-const valText = (i, x) => FMT[DEFS[i].id](MorphEngine.denorm(DEFS[i], x));
+const valText = (i, x) => FMT[DEFS[i].key](MorphEngine.denorm(DEFS[i], x));
 const editing = {};   // i -> 'A' | 'B' | 'C' while a knob is being dragged
 
 function setArc(el, from, to) {
@@ -122,7 +146,7 @@ function updateKnob(i) {
   hB.setAttribute('aria-valuenow', Math.round(b * 100)); hB.setAttribute('aria-valuetext', valText(i, b));
   cc.setAttribute('aria-valuenow', Math.round(c * 100)); cc.setAttribute('aria-valuetext', fmtCurve(c));
 }
-function refreshAll() { DEFS.forEach((_, i) => updateKnob(i)); updateMorphUI(); }
+function refreshAll() { DEFS.forEach((d, i) => { if (isActive(d)) updateKnob(i); }); updateMorphUI(); }   // hidden knobs update when their type is shown
 function setParam(side, i, x) {
   x = clamp(x);
   if (isLinked(i)) {   // linked or single-side: both sides always hold the same value

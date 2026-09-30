@@ -43,14 +43,15 @@ export async function openSynth(page, { seed = 1, storage = null, tapAudio = fal
    window.T.render(opts) returns interleaved-free { L, R } Float32Arrays. */
 function installHarness() {
   const seeded = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
-  const defs = () => DEFS.map(({ id, min, max, curve, snap }) => ({ id, min, max, curve, snap: !!snap }));
+  const defs = () => DEFS.map(({ id, key, min, max, curve, snap, kind, slot, eng }) => ({ id, key, min, max, curve, snap: !!snap, kind, slot, eng }));
   const specOf = t => { const re = [], im = []; t.frames.forEach(f => { const a = MorphEngine.analyze(f); re.push(a.re); im.push(a.im); }); return { re, im }; };
   window.T = {
-    // Normalized A/B arrays at every parameter's default, with overrides in real units: { cutoff: 2000 } or { cutoff: [500, 4000] }
+    // Normalized A/B arrays at every parameter's default, with overrides by id in real units: { 'f1.cutoff': 2000 } or { level: [0.2, 1] }
     patch(over = {}) {
       const A = DEFS.map((_, i) => defaultNorm('A', i)), B = DEFS.map((_, i) => defaultNorm('B', i)), C = DEFS.map(() => 0);
       for (const [id, v] of Object.entries(over)) {
-        const i = IX[id], [a, b] = Array.isArray(v) ? v : [v, v];
+        const i = IX[id]; if (i === undefined) throw new Error('unknown parameter ' + id);
+        const [a, b] = Array.isArray(v) ? v : [v, v];
         A[i] = norm(DEFS[i], a); B[i] = norm(DEFS[i], b);
       }
       return { A, B, C };
@@ -61,8 +62,9 @@ function installHarness() {
       DEFS.forEach((d, i) => { if (!(d.id in over)) p.B[i] = p.A[i]; });
       return p;
     },
-    /* opts: patch {A,B,C}, morph, tables {A,B} (preset names or table objects), notes [[midi, startBlock, endBlock]],
-       blocks (128-sample blocks), sr, fxOn, dlSpill, events: { [block]: message | message[] }, seed, setup(engine) */
+    /* opts: patch {A,B,C}, morph, osc (4 types), fx (4 types), fxOn (4), dlSpill (4),
+       tables: {A,B} for every slot or an array of {A,B} per slot (preset names or table objects),
+       notes [[midi, startBlock, endBlock]], blocks (128-sample blocks), sr, bpm, events: { [block]: message | message[] }, seed, setup(engine) */
     render(o = {}) {
       const real = Math.random; Math.random = seeded(o.seed || 7);
       try {
@@ -71,10 +73,15 @@ function installHarness() {
         const p = o.patch || T.flat();
         e.handle({ type:'state', A: p.A, B: p.B, C: p.C, morph: o.morph || 0 });
         const tab = x => typeof x === 'string' ? makeTable(x) : x;
-        const tA = specOf(tab(o.tables?.A || 'Basic shapes')), tB = specOf(tab(o.tables?.B || 'Basic shapes'));
-        e.handle({ type:'table', side:'A', ...tA }); e.handle({ type:'table', side:'B', ...tB });
-        e.handle({ type:'blend', v:true }); e.handle({ type:'bpm', v: o.bpm || 120 }); e.handle({ type:'dlmode', v: !!o.dlSpill });
-        (o.fxOn || [1, 1, 1, 1, 1, 1, 1]).forEach((on, i) => e.handle({ type:'bypass', i, on: !!on }));
+        for (let s = 0; s < 4; s++) {
+          const t = Array.isArray(o.tables) ? o.tables[s] || {} : o.tables || {};
+          e.handle({ type:'table', slot:s, side:'A', ...specOf(tab(t.A || 'Basic shapes')) });
+          e.handle({ type:'table', slot:s, side:'B', ...specOf(tab(t.B || 'Basic shapes')) });
+        }
+        e.handle({ type:'blend', v:true }); e.handle({ type:'bpm', v: o.bpm || 120 });
+        (o.dlSpill || [0, 0, 0, 0]).forEach((v, i) => e.handle({ type:'dlmode', i, v: !!v }));
+        (o.fxOn || [1, 1, 1, 1]).forEach((on, i) => e.handle({ type:'bypass', i, on: !!on }));
+        e.handle({ type:'slots', osc: o.osc || ['wt', 'off', 'off', 'off'], fx: o.fx || ['drive', 'delay', 'reverb', 'ott'] });
         const blocks = o.blocks || 750, N = 128, L = new Float32Array(blocks * N), R = new Float32Array(blocks * N);
         const bl = new Float32Array(N), br = new Float32Array(N), notes = o.notes || [[48, 0, blocks]];
         const t0 = performance.now();
@@ -85,6 +92,11 @@ function installHarness() {
         }
         return { L, R, sr, ms: performance.now() - t0 };
       } finally { Math.random = real; }
+    },
+    // the page's current sound, as render() options
+    current() {
+      return { patch: { A: state.A.slice(), B: state.B.slice(), C: state.C.slice() }, morph: state.morph, osc: state.oscType.slice(), fx: state.fxType.slice(),
+        fxOn: state.fxOn.map(x => +x), dlSpill: state.dlSpill.map(x => +x), tables: tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) })) };
     },
     rms(x, from = 0, to = x.length) { let s = 0; for (let i = from; i < to; i++) s += x[i] * x[i]; return Math.sqrt(s / Math.max(1, to - from)); },
     peak(x, from = 0, to = x.length) { let p = 0; for (let i = from; i < to; i++) p = Math.max(p, Math.abs(x[i])); return p; },

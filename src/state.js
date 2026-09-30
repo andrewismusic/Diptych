@@ -1,23 +1,41 @@
-/* ---------- state + persistence ---------- */
-const STORE = 'diptych-v3';  // patches from before the effects existed load with the new knobs at defaults
+/* ---------- state + persistence ----------
+   The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
+   Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
+const STORE = 'diptych-v4', STORE_VER = 1;
+const DEFAULT_LOCKS = () => {
+  const l = { level: true, pan: true, pattern: true };
+  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  return l;
+};
+const DEFAULT_LINKS = () => {
+  const l = {};
+  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.pitch`] = true; l[`o${s}.fine`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  return l;
+};
+const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
+const DEFAULT_FX = () => ['drive', 'delay', 'reverb', 'ott'];
+const DEFAULT_TABLES = () => [0, 1, 2, 3].map(() => ({ A: makeTable('Basic shapes'), B: makeTable('Vowel formants') }));
 const state = {
   A: DEFS.map((_, i) => defaultNorm('A', i)),
   B: DEFS.map((_, i) => defaultNorm('B', i)),
   C: DEFS.map(() => 0),
   morph: 0,
   spectral: true,
-  locks: { level: true, pan: true, pattern: true, ottdepth: true, ottout: true, wave: true },
+  locks: DEFAULT_LOCKS(),
   secLocks: {},
   linkMem: {},
   mono: false,
-  links: { octave: true, fine: true, ottdepth: true, ottout: true },
-  fxOn: [true, true, true, true, true, true, true],
+  links: DEFAULT_LINKS(),
+  oscType: DEFAULT_OSC(),
+  fxType: DEFAULT_FX(),
+  fxOn: [true, true, true, true],
+  dlSpill: [false, false, false, false],
+  folded: {},
   seq: null,
   bpm: 120,
   walk: true,
-  dlSpill: false,
 };
-const tables = { A: makeTable('Basic shapes'), B: makeTable('Vowel formants') };
+const tables = DEFAULT_TABLES();   // tables[slot].A / .B, one pair per oscillator slot
 
 function enc(f) {
   const i16 = new Int16Array(f.length);
@@ -32,53 +50,28 @@ function dec(b) {
   const i16 = new Int16Array(u8.buffer);
   return Float32Array.from(i16, x => x / 32767);
 }
+const decTable = t => (t && Array.isArray(t.frames) && t.frames.length ? { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) } : null);
+const pickList = (saved, list, n, fallback) => (Array.isArray(saved) && saved.length === n && saved.every(x => list.some(t => t[0] === x)) ? saved.slice() : fallback);
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
-  const old = saved ? null : JSON.parse(localStorage.getItem('diptych-step2') || 'null');
-  if (old && old.tables) ['A', 'B'].forEach(s => {   // keep wavetables from the previous version
-    const t = old.tables[s];
-    if (t && Array.isArray(t.frames) && t.frames.length) tables[s] = { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) };
-  });
-  // Parameters are matched by name, so patches survive new knobs being added.
-  // Patches saved before names were stored are matched against the pre-effects list.
-  const FX = new Set(['drive','dshape','dmix','fvowel','fshift','freso','fmix','mtype','mrate','mdepth','mfb','mmix','dltime','dlfb','dlpp','dltone','dlmix','rvsize','rvdecay','rvdamp','rvmix','ottdepth','otttime','ottup','ottdown','ottout']);
-  const ids = saved && saved.A ? (saved.ids || (saved.A.length === DEFS.length ? DEFS.map(d => d.id) : DEFS.filter(d => !FX.has(d.id)).map(d => d.id))) : null;
-  if (saved && ids && ids.length === saved.A.length && saved.B.length === saved.A.length) {
-    ids.forEach((id, k) => {
+  if (saved && Array.isArray(saved.ids) && Array.isArray(saved.A) && saved.ids.length === saved.A.length && saved.B.length === saved.A.length) {
+    saved.ids.forEach((id, k) => {
       const i = IX[id]; if (i === undefined) return;
       state.A[i] = clamp(+saved.A[k]); state.B[i] = clamp(+saved.B[k]);
       if (saved.C) state.C[i] = clampC(+saved.C[k] || 0);
     });
     state.morph = clamp(+saved.morph || 0);
-    if (saved.locks && typeof saved.locks === 'object') state.locks = saved.locks;
-    if (saved.links && typeof saved.links === 'object') state.links = saved.links;
-    if (!(saved.ver >= 5)) state.locks.pattern = true;   // Pattern starts locked from this version
-    if (saved.secLocks && typeof saved.secLocks === 'object') state.secLocks = saved.secLocks;
-    if (saved.linkMem && typeof saved.linkMem === 'object') state.linkMem = saved.linkMem;
+    for (const k of ['locks', 'links', 'secLocks', 'linkMem', 'folded']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
     state.mono = !!saved.mono;
-    if (saved.locks && saved.locks.tables) { state.secLocks.Wavetables = true; delete state.locks.tables; }
-    if (!(saved.ver >= 7)) ['ottdepth', 'ottout'].forEach(id => { state.locks[id] = true; });   // OTT Depth and Output start locked
-    if (!(saved.ver >= 8)) ['otttime', 'ottlo', 'otthi', 'ottgl', 'ottgm', 'ottgh'].forEach(id => { delete state.locks[id]; });   // the rest of OTT starts unlocked
-    if (!(saved.ver >= 9)) {   // Wave starts locked at full range (A 0%, B 100%, even curve), so each end hears only its own table
-      state.locks.wave = true;
-      const i = IX.wave; state.A[i] = defaultNorm('A', i); state.B[i] = defaultNorm('B', i); state.C[i] = 0;
-    }
-    if (!(saved.ver >= 6)) {   // OTT Depth and Output start linked, at 13% and 0 dB
-      state.links.ottdepth = true; state.links.ottout = true;
-      ['ottdepth', 'ottout'].forEach(id => { const i = IX[id]; state.A[i] = state.B[i] = defaultNorm('A', i); });
-    }
-    if (Array.isArray(saved.fxOn) && saved.fxOn.length === 7) state.fxOn = saved.fxOn.map(Boolean);
-    if (!(saved.ver >= 4)) {   // Octave and Fine tune start at 0 and linked
-      state.links.octave = true; state.links.fine = true;
-      ['octave', 'fine'].forEach(id => { const i = IX[id]; state.A[i] = state.B[i] = defaultNorm('A', i); });
-    }
+    state.oscType = pickList(saved.oscType, OSC_TYPES, 4, state.oscType);
+    state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType);
+    if (Array.isArray(saved.fxOn) && saved.fxOn.length === 4) state.fxOn = saved.fxOn.map(Boolean);
+    if (Array.isArray(saved.dlSpill) && saved.dlSpill.length === 4) state.dlSpill = saved.dlSpill.map(Boolean);
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;
-    state.dlSpill = !!saved.dlSpill;
-    ['A', 'B'].forEach(s => {
-      const t = saved.tables && saved.tables[s];
-      if (t && Array.isArray(t.frames) && t.frames.length) tables[s] = { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) };
+    if (Array.isArray(saved.tables)) saved.tables.slice(0, 4).forEach((t, s) => {
+      ['A', 'B'].forEach(side => { const d = t && decTable(t[side]); if (d) tables[s][side] = d; });
     });
   }
 } catch (e) {}
@@ -87,9 +80,8 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORE, JSON.stringify({ ...state, ver: 9, ids: DEFS.map(d => d.id),
-        tables: { A: { name: tables.A.name, frames: tables.A.frames.map(enc) }, B: { name: tables.B.name, frames: tables.B.frames.map(enc) } } }));
+      localStorage.setItem(STORE, JSON.stringify({ ...state, ver: STORE_VER, ids: DEFS.map(d => d.id),
+        tables: tables.map(t => ({ A: { name: t.A.name, frames: t.A.frames.map(enc) }, B: { name: t.B.name, frames: t.B.frames.map(enc) } })) }));
     } catch (e) {}
   }, 400);
 }
-

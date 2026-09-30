@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Diptych: morph synth, step 2</title>
+<title>Diptych</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
@@ -50,24 +50,6 @@
       <button type="button" id="undo" disabled>Undo</button>
     </div>
   </div>
-  <section class="group wide" data-group="Wavetables">
-    <h2>Wavetables</h2>
-    <div class="wt">
-      <button class="wtcard a" id="wtA" type="button" aria-label="Edit wavetable A">
-        <canvas id="cvA"></canvas>
-        <span class="wtlabel"><span class="nm" id="nmA"></span><span class="ac">Edit A</span></span>
-      </button>
-      <div class="wtcard">
-        <canvas id="cvH"></canvas>
-        <span class="wtlabel"><span class="nm">What you hear</span></span>
-      </div>
-      <button class="wtcard b" id="wtB" type="button" aria-label="Edit wavetable B">
-        <canvas id="cvB"></canvas>
-        <span class="wtlabel"><span class="nm" id="nmB"></span><span class="ac">Edit B</span></span>
-      </button>
-    </div>
-    <div class="wtknobs" id="wtKnobs"></div>
-  </section>
 </main>
 
 <div class="foot">
@@ -223,6 +205,10 @@
 
 <script>
 // @include engine/engine.js
+// @include engine/oscillators.js
+// @include engine/fx-tone.js
+// @include engine/fx-time.js
+// @include engine/fx-color.js
 // @include params.js
 // @include wavetables.js
 // @include state.js
@@ -235,6 +221,7 @@
 // @include ui/locks.js
 // @include ui/wavetable-editor.js
 // @include ui/section-tools.js
+// @include ui/slots.js
 // @include ui/keyboard.js
 // @include sequencer/model.js
 // @include sequencer/transport.js

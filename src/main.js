@@ -1,6 +1,7 @@
 
 labelOct();
 updateIcons();
+updateSlotsUI();
 refreshAll();
 updateBlendUI();
 // Every launch starts from a fresh random patch and fresh 16-step sequences. Undo brings back the last session.
