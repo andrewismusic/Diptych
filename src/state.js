@@ -1,7 +1,7 @@
 /* ---------- state + persistence ----------
    The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v4', STORE_VER = 2;
+const STORE = 'diptych-v4', STORE_VER = 3;
 const DEFAULT_LOCKS = () => {
   const l = { level: true, pan: true, pattern: true };
   for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
@@ -9,7 +9,7 @@ const DEFAULT_LOCKS = () => {
 };
 const DEFAULT_LINKS = () => {
   const l = {};
-  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine', 'fmpitch', 'fmfine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
   return l;
 };
 const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
@@ -30,7 +30,6 @@ const state = {
   fxType: DEFAULT_FX(),
   fxOn: [true, true, true, true],
   dlSpill: [false, false, false, false],
-  folded: {},
   seq: null,
   bpm: 120,
   walk: true,
@@ -51,7 +50,8 @@ function dec(b) {
   return Float32Array.from(i16, x => x / 32767);
 }
 const decTable = t => (t && Array.isArray(t.frames) && t.frames.length ? { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) } : null);
-const pickList = (saved, list, n, fallback) => (Array.isArray(saved) && saved.length === n && saved.every(x => list.some(t => t[0] === x)) ? saved.slice() : fallback);
+// a saved type that no longer exists (FM, moved to its own page in ver 3) becomes the given stand-in
+const pickList = (saved, list, n, fallback, standIn) => (Array.isArray(saved) && saved.length === n ? saved.map(x => (list.some(t => t[0] === x) ? x : standIn)) : fallback);
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
   if (saved && Array.isArray(saved.ids) && Array.isArray(saved.A) && saved.ids.length === saved.A.length && saved.B.length === saved.A.length) {
@@ -65,11 +65,10 @@ try {
       if (saved.C) state.C[i] = clampC(+saved.C[k] || 0);
     });
     state.morph = clamp(+saved.morph || 0);
-    for (const k of ['locks', 'links', 'secLocks', 'linkMem', 'folded']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
-    if (!(saved.ver >= 2)) for (let s = 1; s <= 4; s++) { state.links[`o${s}.fmpitch`] = true; state.links[`o${s}.fmfine`] = true; }   // FM arrived in ver 2
+    for (const k of ['locks', 'links', 'secLocks', 'linkMem']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
     state.mono = !!saved.mono;
-    state.oscType = pickList(saved.oscType, OSC_TYPES, 4, state.oscType);
-    state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType);
+    state.oscType = pickList(saved.oscType, OSC_TYPES, 4, state.oscType, 'off');
+    state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType, 'drive');
     if (Array.isArray(saved.fxOn) && saved.fxOn.length === 4) state.fxOn = saved.fxOn.map(Boolean);
     if (Array.isArray(saved.dlSpill) && saved.dlSpill.length === 4) state.dlSpill = saved.dlSpill.map(Boolean);
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;

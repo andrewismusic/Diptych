@@ -50,7 +50,7 @@
 .rbar{display:flex;align-items:center;gap:6px;padding:8px 0 2px;flex-wrap:nowrap}
 .rgrp{display:inline-flex;align-items:center;gap:3px}
 .rgrp + .rgrp{margin-left:4px}
-.ricon{display:inline-flex;color:var(--muted);margin-right:1px}
+.rlab{color:var(--muted);font-size:.85rem;margin-right:2px}
 .rbar button{min-height:32px;padding:2px 8px;font-size:.88rem}
 .rbar .ra{color:var(--a)} .rbar .rb{color:var(--b)}
 .rbar .undo{margin-left:auto;padding:2px 8px;display:inline-flex;align-items:center}

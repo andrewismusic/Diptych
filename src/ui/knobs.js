@@ -1,7 +1,8 @@
 /* =====================================================================
    KNOBS
    ===================================================================== */
-const VIZ = { 'Filter': [['vzF', 'Filter response'], ['vzFE', 'Filter envelope']], 'Amp envelope': [['vzAE', 'Amp envelope']] };
+// Sections with pictures. A section can be split into sub-blocks (parameters with a matching `sub`), each with its own picture.
+const VIZ = { 'Filter': [{ viz: 'vzF', name: 'Filter response' }, { sub: 'env', title: 'Envelope', viz: 'vzFE', name: 'Filter envelope' }], 'Amp envelope': [{ viz: 'vzAE', name: 'Amp envelope' }] };
 const lockIcon = on => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="${on ? 'M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7' : 'M5.2 7V5.2a2.8 2.8 0 0 1 5.5-.8'}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const iconBtn = (id, label, single) => `<span class="icons"><button type="button" class="lock" data-plock="${id}" aria-pressed="false" aria-label="Lock ${label}"></button>${single ? '' : `<button type="button" class="lock" data-plink="${id}" aria-pressed="false" aria-label="Link ${label}"></button>`}</span>`;
 const linkIcon = on => `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${on
@@ -50,7 +51,7 @@ const options = list => list.map(([k, n]) => `<option value="${k}">${n}</option>
 const sections = {};
 function makeSection(d) {
   const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
-  let head = `<h2><button type="button" class="fold" aria-expanded="true"><span class="chev" aria-hidden="true"></span>${d.group}</button>`;
+  let head = `<h2><span class="gname">${d.group}</span>`;
   if (d.kind === 'osc') head += `<select class="typesel" data-osc="${d.slot}" aria-label="${d.group} engine">${options(OSC_TYPES)}</select>`;
   if (d.kind === 'fx') head += `<select class="typesel" data-fxsel="${d.slot}" aria-label="${d.group} effect">${options(FX_TYPES)}</select>`;
   head += '</h2>';
@@ -59,7 +60,8 @@ function makeSection(d) {
     + '<div class="eng" data-eng="*"><div class="knobs"></div></div>';
   else if (d.kind === 'fx') body = Object.keys(FX_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'ott'
     ? `<canvas class="viz" id="vzOT${d.slot}" aria-label="OTT bands: split points, gain settings and live levels"></canvas>` : ''}<div class="knobs"></div></div>`).join('');
-  else body = (VIZ[d.group] || []).map(([id, name]) => `<canvas class="viz" id="${id}" aria-label="${name}: A, B and current shape"></canvas>`).join('') + '<div class="knobs"></div>';
+  else if (VIZ[d.group]) body = VIZ[d.group].map(b => `<div class="sub">${b.title ? `<div class="subh">${b.title}</div>` : ''}<canvas class="viz" id="${b.viz}" aria-label="${b.name}: A, B and current shape"></canvas><div class="knobs"${b.sub ? ` data-sub="${b.sub}"` : ''}></div></div>`).join('');
+  else body = '<div class="knobs"></div>';
   if (d.kind) g.dataset.kind = d.kind;
   g.innerHTML = head + `<div class="gbody">${body}</div>`;
   groupsEl.appendChild(g);
@@ -70,7 +72,7 @@ DEFS.forEach((d, i) => {
   if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
   else {
     const g = sections[d.group] || (sections[d.group] = makeSection(d));
-    box = d.kind === 'osc' || d.kind === 'fx' ? g.querySelector(`.eng[data-eng="${d.eng || '*'}"] .knobs`) : g.querySelector('.knobs');
+    box = d.kind === 'osc' || d.kind === 'fx' ? g.querySelector(`.eng[data-eng="${d.eng || '*'}"] .knobs`) : g.querySelector(d.sub ? `.knobs[data-sub="${d.sub}"]` : '.knobs:not([data-sub])');
   }
   box.insertAdjacentHTML('beforeend', knobHTML(d, i));
 });

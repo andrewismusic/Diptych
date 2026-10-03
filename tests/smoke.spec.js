@@ -67,6 +67,7 @@ test('patch buttons: Copy, Swap, Reset, Undo and the dice work without errors', 
   expect(await page.evaluate(() => ({ osc: state.oscType, fx: state.fxType }))).toEqual({ osc: ['wt', 'off', 'off', 'off'], fx: ['drive', 'delay', 'reverb', 'ott'] });
   await page.click('#undo');
   expect(await snap()).toEqual(before);
+  await page.evaluate(() => { const sel = sections['Osc 1'].querySelector('.typesel'); sel.value = 'wt'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
   await page.locator('#wtA0').click();
   // the full-screen editor covers the picker, so change it directly
   await page.evaluate(() => { const sel = document.querySelector('section[data-group="Osc 1"] .typesel'); sel.value = 'sub'; sel.dispatchEvent(new Event('change', { bubbles: true })); });
@@ -122,7 +123,7 @@ test.describe('phone', () => {
     }
   });
 
-  test('slot pickers switch what is shown, and headings fold', async ({ page }) => {
+  test('slot pickers switch what is shown', async ({ page }) => {
     await openSynth(page);
     const osc2 = page.locator('section[data-group="Osc 2"]');
     await osc2.locator('.typesel').selectOption('sub');
@@ -135,10 +136,6 @@ test.describe('phone', () => {
     const fx1 = page.locator('section[data-group="FX 1"]');
     await fx1.locator('.typesel').selectOption('reverb');
     await expect(fx1.locator('.eng[data-eng="reverb"]')).toBeVisible();
-    await fx1.locator('.fold').tap();
-    await expect(fx1.locator('.gbody')).toBeHidden();
-    await fx1.locator('.fold').tap();
-    await expect(fx1.locator('.gbody')).toBeVisible();
     // headings with a picker, dice, padlock and On/Off still fit at phone width
     expect(await page.evaluate(() => [...document.querySelectorAll('.group h2')].every(h => h.scrollWidth <= h.clientWidth + 1 && h.getBoundingClientRect().right <= innerWidth))).toBe(true);
   });
@@ -171,5 +168,8 @@ test.describe('phone', () => {
     await page.locator('#rndAll').tap();
     await page.locator('#rsBoth').tap();
     await expect(page.locator('#undo')).toBeEnabled();
+    // copy a sequence to the other side
+    await page.locator('#seqAB').tap();
+    expect(await page.evaluate(() => JSON.stringify(state.seq.A) === JSON.stringify(state.seq.B))).toBe(true);
   });
 });

@@ -171,3 +171,7 @@ function randAllSide(s) { randRate(s); roomForNotes(s); randArpSettings(); genFr
 $('rzAll').addEventListener('click', () => editSeq(randAllSide));
 $('sqOther').addEventListener('click', () => { pushUndo(); state.seq[sqSide === 'A' ? 'B' : 'A'] = cloneSeq(cur()); seqChanged(); });
 
+// copy a whole sequence to the other side (from the bottom pane); the scale is shared anyway
+const copySeq = (from, to) => { pushUndo(); state.seq[to] = cloneSeq(state.seq[from]); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); };
+$('seqAB').addEventListener('click', () => copySeq('A', 'B'));
+$('seqBA').addEventListener('click', () => copySeq('B', 'A'));

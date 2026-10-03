@@ -1,6 +1,6 @@
 /* =====================================================================
    SLOTS
-   Engine and effect pickers, folding sections, and showing only the
+   Engine and effect pickers, fixed slot heights, and showing only the
    current type's controls. Types are shared by both sides.
    ===================================================================== */
 // which type containers a slot of type t shows: its own, plus '*' (Level, Pan, Bypass) on any oscillator that isn't Off
@@ -17,11 +17,6 @@ function updateSlotsUI() {
     fsec.querySelector('.typesel').value = f;
     fsec.querySelectorAll('.eng').forEach(e => { e.hidden = e.dataset.eng !== f; });
   }
-  for (const [g, sec] of Object.entries(sections)) {
-    const f = !!state.folded[g];
-    sec.classList.toggle('folded', f);
-    sec.querySelector('.fold').setAttribute('aria-expanded', !f);
-  }
 }
 /* Slots sit in fixed positions: each slot's body is as tall as the largest type it can hold, measured on the
    page (so it follows the screen width), and switching type never moves anything below it. */
@@ -30,8 +25,7 @@ function fixSlotHeights() {
   for (const sec of Object.values(sections)) {
     const kind = sec.dataset.kind; if (kind !== 'osc' && kind !== 'fx') continue;
     const body = sec.querySelector('.gbody'), engs = [...body.querySelectorAll('.eng')], was = engs.map(e => e.hidden);
-    const folded = sec.classList.contains('folded');
-    sec.classList.remove('folded'); body.style.minHeight = '';
+    body.style.minHeight = '';
     let max = 0;
     for (const [t] of kind === 'osc' ? OSC_TYPES : FX_TYPES) {
       engs.forEach(e => { e.hidden = kind === 'osc' ? !engShown(e.dataset.eng, t) : e.dataset.eng !== t; });
@@ -39,7 +33,6 @@ function fixSlotHeights() {
     }
     engs.forEach((e, k) => { e.hidden = was[k]; });
     body.style.minHeight = max + 'px';
-    if (folded) sec.classList.add('folded');
   }
 }
 let fixTimer = null;
@@ -60,10 +53,4 @@ document.addEventListener('change', e => {
     updateSlotsUI(); refreshSlot('fx', s);
   }
   sendSlots(); drawWaves(); save();
-});
-document.addEventListener('click', e => {
-  const b = e.target.closest('.fold'); if (!b) return;
-  const g = b.closest('.group').dataset.group;
-  state.folded[g] = !state.folded[g]; if (!state.folded[g]) delete state.folded[g];
-  updateSlotsUI(); drawWaves(); save();
 });

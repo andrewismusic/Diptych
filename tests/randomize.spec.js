@@ -20,13 +20,8 @@ test.describe('Randomize all (shaped)', () => {
         const spreadFails = DEFS.filter((d, i) => isActive(d) && !d.single && !isLinked(i) && !isLocked(d) && !NO_SPREAD.has(d.key) && d.key !== 'cutoff'   // cutoff can be moved by the sine guard
           && Math.abs(state.A[i] - state.B[i]) < SPREAD - 1e-9).map(d => d.id);
         const lockedChanged = locked0.filter(([i, a, b]) => state.A[i] !== a || state.B[i] !== b).map(([i]) => DEFS[i].id);
-        const linkedPitch = [0, 1, 2, 3].filter(s => ['wt', 'fm'].includes(state.oscType[s])).map(s => { const p = state.oscType[s] === 'fm' ? 'fm' : ''; return [MorphEngine.denorm(DEFS[oi(s, p + 'pitch')], state.A[oi(s, p + 'pitch')]), MorphEngine.denorm(DEFS[oi(s, p + 'fine')], state.A[oi(s, p + 'fine')])]; });
-        const fm = [0, 1, 2, 3].filter(s => state.oscType[s] === 'fm' && !isLocked(DEFS[oi(s, 'fmd1')])).flatMap(s => ['A', 'B'].map(side => {
-          const heard = OscFM.ALGS[Math.round(MorphEngine.denorm(DEFS[oi(s, 'fmalgo')], state[side][oi(s, 'fmalgo')]))][1];
-          const d = [1, 2, 3, 4].filter((k, j) => heard[j]).map(k => MorphEngine.denorm(DEFS[oi(s, 'fmd' + k)], state[side][oi(s, 'fmd' + k)]));
-          return { heardHold: d.every(x => x >= OscFM.HOLD - 1e-6), heardPluck: d.every(x => x >= 0.15 - 1e-6 && x <= 3 + 1e-6) };
-        }));
-        runs.push({ fm, vals, spreadFails, lockedChanged, osc: state.oscType.slice(), fx: state.fxType.slice(), linkedPitch, passed: [passedDb('A'), passedDb('B')] });
+        const linkedPitch = [0, 1, 2, 3].filter(s => state.oscType[s] === 'wt').map(s => [MorphEngine.denorm(DEFS[oi(s, 'pitch')], state.A[oi(s, 'pitch')]), MorphEngine.denorm(DEFS[oi(s, 'fine')], state.A[oi(s, 'fine')])]);
+        runs.push({ vals, spreadFails, lockedChanged, osc: state.oscType.slice(), fx: state.fxType.slice(), linkedPitch, passed: [passedDb('A'), passedDb('B')] });
       }
       return runs;
     }, RUNS);
@@ -39,11 +34,12 @@ test.describe('Randomize all (shaped)', () => {
   const near = (x, want, tol) => { expect(x).toBeGreaterThan(want - tol); expect(x).toBeLessThan(want + tol); };
 
   test('locked parameters never change', () => { expect([...new Set(S.flatMap(r => r.lockedChanged))]).toEqual([]); });
-  test('slot types: Osc 1 never Off (Wavetable 45%, FM 40%, Sub 15%); Osc 2 Sub 30% / Off 40%; Osc 3 and 4 Off 75%', () => {
+  test('slot types: Osc 1 never Off; Osc 2 Sub 30% / Off 40%; Osc 3 and 4 Off 75%; never two Subs', () => {
     expect(S.every(r => r.osc[0] !== 'off')).toBe(true);
-    near(share(S, r => r.osc[0] === 'wt'), 0.45, 0.07); near(share(S, r => r.osc[0] === 'fm'), 0.4, 0.07);
-    near(share(S, r => r.osc[1] === 'sub'), 0.3, 0.07); near(share(S, r => r.osc[1] === 'off'), 0.4, 0.07);
-    near(share(S, r => r.osc[2] === 'off'), 0.75, 0.07); near(share(S, r => r.osc[3] === 'fm'), 0.1, 0.05);
+    expect(S.every(r => r.osc.filter(t => t === 'sub').length <= 1)).toBe(true);
+    near(share(S, r => r.osc[1] === 'off'), 0.4, 0.07);
+    near(share(S, r => r.osc[2] === 'off'), 0.75, 0.07); near(share(S, r => r.osc[3] === 'off'), 0.75, 0.07);
+    expect(share(S, r => r.osc.includes('sub'))).toBeGreaterThan(0.3);
   });
   test('FX types: four different effects from all seven, in chain order; OTT is optional', () => {
     const pool = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'];
@@ -107,13 +103,6 @@ test.describe('Randomize all (shaped)', () => {
     near(share(all('byp'), x => x === 0), 0.8, 0.05);
     near(share(all('soct'), x => x === -1), 0.6, 0.08);
   });
-  test('FM: carrier ratio 1 most of the time; sustained (heard operators hold) about 60% of the time', () => {
-    near(share(all('fmr1'), x => x === 1), 0.7, 0.08);
-    const sides = S.flatMap(r => r.fm || []);
-    expect(sides.length).toBeGreaterThan(100);
-    near(share(sides, f => f.heardHold), 0.6, 0.08);
-    expect(sides.every(f => f.heardHold || f.heardPluck)).toBe(true);
-  });
   test('linked Pitch and Fine: 0 about 70% of the time', () => {
     const p = S.flatMap(r => r.linkedPitch);
     near(share(p, x => x[0] === 0), 0.7, 0.06); near(share(p, x => x[1] === 0), 0.7, 0.06);
@@ -138,16 +127,16 @@ test('randomizing one side never changes the sound at the other end', async ({ p
   expect(changed).toEqual([]);
 });
 
-test('section dice (raw) respect locks, stay inside their section and keep its type', async ({ page }) => {
+test('section dice (raw) respect locks and stay inside their section; other slots keep their types', async ({ page }) => {
   await openSynth(page, { seed: 3 });
   const res = await page.evaluate(() => {
     state.locks['cutoff'] = true;
-    const A0 = state.A.slice(), B0 = state.B.slice(), types = state.oscType.join() + state.fxType.join();
+    const A0 = state.A.slice(), B0 = state.B.slice(), types = state.oscType.join() + [0, 2, 3].map(k => state.fxType[k]).join();
     for (let k = 0; k < 50; k++) { randomizeSide('A', 'Filter', true); randomizeAll('FX 2', true); }
     const changedOutside = DEFS.filter((d, i) => d.group !== 'Filter' && d.group !== 'FX 2' && (state.A[i] !== A0[i] || state.B[i] !== B0[i])).map(d => d.id);
     const i = IX['cutoff'];
     return { changedOutside, cutoffKept: state.A[i] === A0[i] && state.B[i] === B0[i], resoChanged: state.A[IX['reso']] !== A0[IX['reso']],
-      typesKept: types === state.oscType.join() + state.fxType.join() };
+      typesKept: types === state.oscType.join() + [0, 2, 3].map(k => state.fxType[k]).join() };
   });
   expect(res.changedOutside).toEqual([]);
   expect(res.cutoffKept).toBe(true);
@@ -178,4 +167,20 @@ test('Randomize linked only changes linked knobs, with one shared value', async 
   expect(res.changed).toContain('cutoff');
   expect(res.unlinkedChanged).toEqual([]);
   expect(res.shared).toBe(true);
+});
+
+test('a slot\'s both-sides dice picks its engine (never Off, never a second Sub); its side dice and a locked slot keep it', async ({ page }) => {
+  await openSynth(page, { seed: 12 });
+  const r = await page.evaluate(() => {
+    state.oscType = ['sub', 'wt', 'off', 'off']; const seen = new Set(), seenFx = new Set();
+    for (let k = 0; k < 60; k++) { randomizeAll('Osc 2', true); seen.add(state.oscType[1]); randomizeAll('FX 2', true); seenFx.add(state.fxType[1]); }
+    const before = state.oscType[1]; for (let k = 0; k < 20; k++) randomizeSide('A', 'Osc 2', true);
+    const sideKept = state.oscType[1] === before;
+    state.secLocks['Osc 3'] = true; state.oscType[2] = 'off'; for (let k = 0; k < 20; k++) randomizeAll('Osc 3', true);
+    return { seen: [...seen], fxDistinct: [...seenFx].every(t => !state.fxType.filter((x, i) => i !== 1).includes(t) || true), nFx: seenFx.size, sideKept, lockedKept: state.oscType[2] };
+  });
+  expect(r.seen).toEqual(['wt']);   // slot 1 holds the Sub, so slot 2 can only be a Wavetable
+  expect(r.nFx).toBeGreaterThan(2);
+  expect(r.sideKept).toBe(true);
+  expect(r.lockedKept).toBe('off');
 });

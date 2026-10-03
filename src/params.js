@@ -10,7 +10,7 @@
    kind: 'osc' | 'fx' with slot (0-based); eng: the type it belongs
    to (null = every type of that slot).
    ===================================================================== */
-const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['fm', 'FM'], ['sub', 'Sub']];
+const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['sub', 'Sub']];
 const FX_TYPES = [['drive', 'Drive'], ['formant', 'Formant filter'], ['mod', 'Modulation'], ['delay', 'Delay'], ['reverb', 'Reverb'], ['lofi', 'Lo-fi'], ['ott', 'OTT']];
 const typeName = (list, t) => (list.find(x => x[0] === t) || [t, t])[1];
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
@@ -23,14 +23,6 @@ const OSC_ENG = {
     P_('posB', 'Position B', 0, 1, 'lin', 0.3, 0.3, { single:'B' }),
     P_('pitch', 'Pitch', -24, 24, 'int', 0, 0), P_('fine', 'Fine', -100, 100, 'lin', 0, 0), P_('unison', 'Unison', 0, 1, 'lin', 0, 0.35),
   ],
-  // FM: Algorithm morphs continuously between neighbouring routings; one column per operator below it
-  fm: [
-    P_('fmalgo', 'Algorithm', 0, 7, 'lin', 0, 4), P_('fmfb', 'Feedback', 0, 1, 'lin', 0, 0),
-    P_('fmpitch', 'Pitch', -24, 24, 'int', 0, 0), P_('fmfine', 'Fine', -100, 100, 'lin', 0, 0),
-    ...[1, 2, 3, 4].map(k => P_('fmr' + k, 'Ratio ' + k, 0, 16, 'int', [1, 1, 3, 2][k - 1], [1, 2, 4, 1][k - 1])),
-    ...[1, 2, 3, 4].map(k => P_('fml' + k, 'Level ' + k, 0, 1, 'lin', [1, 0.5, 0.35, 0.25][k - 1], [1, 0.6, 0.3, 0.2][k - 1])),
-    ...[1, 2, 3, 4].map(k => P_('fmd' + k, 'Decay ' + k, 0.005, 30, 'log', [30, 1.2, 0.6, 0.3][k - 1], [30, 0.4, 2, 0.15][k - 1])),
-  ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
 };
 const VOICE = [
@@ -39,8 +31,8 @@ const VOICE = [
 ];
 const FILTER = [P_('cutoff', 'Cutoff', 30, 18000, 'log', 700, 2500), P_('reso', 'Resonance', 0, 1, 'lin', 0.25, 0.45), P_('mode', 'Mode', 0, 1, 'lin', 0, 0.25),
   P_('envamt', 'Env amount', -1, 1, 'lin', 0.5, 0.25), P_('keytrack', 'Key track', 0, 1, 'lin', 0.5, 0.5),
-  P_('fatk', 'Attack', 0.001, 10, 'log', 0.003, 0.4), P_('fdec', 'Decay', 0.005, 10, 'log', 0.35, 1.2),
-  P_('fsus', 'Sustain', 0, 1, 'lin', 0.15, 0.4), P_('frel', 'Release', 0.005, 10, 'log', 0.3, 1.5)];   // the filter envelope lives with the filter
+  ...[P_('fatk', 'Attack', 0.001, 10, 'log', 0.003, 0.4), P_('fdec', 'Decay', 0.005, 10, 'log', 0.35, 1.2),
+  P_('fsus', 'Sustain', 0, 1, 'lin', 0.15, 0.4), P_('frel', 'Release', 0.005, 10, 'log', 0.3, 1.5)].map(p => ({ ...p, sub: 'env' }))];   // the filter envelope lives with the filter
 const ENVS = [
   ['Amp envelope', [P_('aatk', 'Attack', 0.001, 10, 'log', 0.003, 0.25), P_('adec', 'Decay', 0.005, 10, 'log', 0.6, 1),
     P_('asus', 'Sustain', 0, 1, 'lin', 0.7, 0.85), P_('arel', 'Release', 0.005, 10, 'log', 0.3, 1.6)]],
@@ -83,9 +75,6 @@ const FMT = {
   olevel: pct, opan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
   byp: v => (v < 0.005 ? 'Off' : pct(v)),
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
-  fmalgo: v => { const i = Math.floor(v + 1e-6), f = v - i; return f < 0.02 ? 'Algo ' + (i + 1) : f > 0.98 ? 'Algo ' + (i + 2) : `${i + 1}→${i + 2} ${Math.round(f * 100)}%`; },
-  fmfb: pct, fmpitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', fmfine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`,
-  ...Object.fromEntries([1, 2, 3, 4].flatMap(k => [['fmr' + k, v => '×' + OscFM.RATIOS[v]], ['fml' + k, pct], ['fmd' + k, v => (v >= OscFM.HOLD ? 'Hold' : time(v))]])),
   sshape: v => (v < 0.02 ? 'Sine' : Math.abs(v - 0.5) < 0.02 ? 'Triangle' : v > 0.98 ? 'Square' : pct(v)), sdrive: pct,
   posA: pct, posB: pct,
   drive: pct, dshape: pct, dmix: pct,

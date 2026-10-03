@@ -127,9 +127,6 @@ function slotCycle(s, which) {
   if (t === 'sub') {
     const shape = slotVal(s, 'sshape', which), g = 1 + 7 * slotVal(s, 'sdrive', which), tg = Math.tanh(g);
     for (let n = 0; n < 256; n++) CYC[n] = OscSub.sample(n / 256, 1 / 256, shape, g, tg);
-  } else if (t === 'fm') {
-    OscFM.cycle({ algo: slotVal(s, 'fmalgo', which), fb: slotVal(s, 'fmfb', which), r: [1, 2, 3, 4].map(k => OscFM.RATIOS[slotVal(s, 'fmr' + k, which)]),
-      l: [1, 2, 3, 4].map(k => slotVal(s, 'fml' + k, which)) }, 256, CYC);
   } else CYC.fill(0);
   return CYC;
 }
@@ -141,7 +138,6 @@ function drawWaves() {
     const sp = state.spectral;
     for (let s = 0; s < 4; s++) {
       const t = state.oscType[s];
-      if (state.folded[`Osc ${s + 1}`]) continue;
       if (t === 'wt') {
         MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
         drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
@@ -154,7 +150,7 @@ function drawWaves() {
         drawWave($('cvA' + s), slotCycle(s, 'A'), css('--a'), { fit:true });
         drawWave($('cvB' + s), slotCycle(s, 'B'), css('--b'), { fit:true });
         drawWave($('cvH' + s), slotCycle(s, 'now'), mixColor(state.morph), { fit:true, lw:2.4 });
-        const name = which => t === 'fm' ? FMT.fmalgo(slotVal(s, 'fmalgo', which)) : t === 'sub' ? FMT.sshape(slotVal(s, 'sshape', which)) : 'Off';
+        const name = which => t === 'sub' ? FMT.sshape(slotVal(s, 'sshape', which)) : 'Off';
         $('nmA' + s).textContent = name('A'); $('nmB' + s).textContent = name('B');
       }
     }

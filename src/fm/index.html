@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FM Sketch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* @include fm/style.css */
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FM Sketch <span>4-operator FM</span></h1>
+    <select id="preset" aria-label="Load a preset"></select>
+    <button type="button" id="rand">Randomize</button>
+    <button type="button" id="audio" class="attn">Tap to start audio</button>
+  </header>
+  <div class="top">
+    <div>
+      <h2>Algorithm</h2>
+      <div class="algos" id="algos"></div>
+    </div>
+    <div>
+      <h2>One cycle, and what you hear</h2>
+      <canvas id="cycle" aria-label="One cycle of the sound at full envelope"></canvas>
+      <canvas id="scope" aria-label="Live output"></canvas>
+    </div>
+  </div>
+  <h2>Operators</h2>
+  <div class="ops" id="ops"></div>
+  <div class="top">
+    <div><h2>Global</h2><div class="row panel" id="global"></div></div>
+    <div><h2>Amp envelope and output</h2><div class="row panel" id="amp"></div></div>
+  </div>
+  <p class="note">Level is an operator's output when it is heard, and how hard it modulates otherwise. Decay is exponential when short, linear around 4 s, slower to fall when long, and holds at the top. Drag knobs up or down (Shift for fine), double-click to reset.</p>
+</div>
+<div class="kb">
+  <div class="kbbar"><button type="button" id="octDn" aria-label="Octave down">−</button><span id="oct"></span><button type="button" id="octUp" aria-label="Octave up">+</button><span class="note">Keys A to L play; Z and X change octave.</span></div>
+  <div class="keys" id="keys"></div>
+</div>
+<script>
+// @include fm/osc-fm.js
+// @include fm/engine.js
+// @include fm/app.js
+</script>
+</body>
+</html>

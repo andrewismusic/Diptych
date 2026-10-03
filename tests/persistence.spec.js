@@ -26,16 +26,16 @@ test('Undo after a relaunch restores the previous session exactly, slot types in
   expect(worst).toBeLessThanOrEqual(1 / 32767 + 1e-7);
 });
 
-test('locked parameters, locked sections and folded sections survive a relaunch', async ({ page }) => {
+test('locked parameters and locked sections survive a relaunch', async ({ page }) => {
   await openSynth(page, { seed: 32, storage: {} });
   await page.evaluate(() => {
     state.A[IX.level] = 0.37; state.B[IX.level] = 0.61;
-    state.secLocks['Osc 2'] = true; state.oscType[1] = 'sub'; state.folded['FX 3'] = true; save();
+    state.secLocks['Osc 2'] = true; state.oscType[1] = 'sub'; save();
   });
   await waitForSave(page);
   await page.reload();
-  expect(await page.evaluate(() => ({ lv: [state.A[IX.level], state.B[IX.level]], osc2: state.oscType[1], folded: sections['FX 3'].classList.contains('folded') })))
-    .toEqual({ lv: [0.37, 0.61], osc2: 'sub', folded: true });
+  expect(await page.evaluate(() => ({ lv: [state.A[IX.level], state.B[IX.level]], osc2: state.oscType[1] })))
+    .toEqual({ lv: [0.37, 0.61], osc2: 'sub' });
 });
 
 test('parameters are matched by id: unknown ids are ignored, missing ones get defaults', async ({ page }) => {
@@ -86,9 +86,19 @@ test('ver 1 patches (two filters) migrate: Filter 1 becomes the filter, Filter 2
   await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(saved)]);
   await page.reload();
   await page.click('#undo');
-  const got = await page.evaluate(() => ({ a: state.A[IX.cutoff], b: state.B[IX.cutoff], resoLocked: !!state.locks.reso, fmLinked: !!state.links['o2.fmpitch'] }));
+  const got = await page.evaluate(() => ({ a: state.A[IX.cutoff], b: state.B[IX.cutoff], resoLocked: !!state.locks.reso }));
   expect(got.a).toBeCloseTo(0.42, 6); expect(got.b).toBeCloseTo(0.43, 6);
-  expect(got.resoLocked).toBe(true); expect(got.fmLinked).toBe(true);
+  expect(got.resoLocked).toBe(true);
   await waitForSave(page);
-  expect(JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY)).ver).toBe(2);
+  expect(JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY)).ver).toBe(3);
+});
+
+test('ver 2 patches with FM slots load, with those slots Off', async ({ page }) => {
+  await openSynth(page, { seed: 37, storage: {} });
+  await waitForSave(page);
+  const saved = JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY));
+  saved.ver = 2; saved.oscType = ['fm', 'wt', 'sub', 'fm'];
+  await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(saved)]);
+  await page.reload(); await page.click('#undo');
+  expect(await page.evaluate(() => state.oscType)).toEqual(['off', 'wt', 'sub', 'off']);
 });

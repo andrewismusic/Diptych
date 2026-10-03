@@ -13,9 +13,13 @@ and run in the order listed in the template: top-level code in a later file can
 use anything an earlier file defined, and function declarations hoist across
 all of them, exactly as in the original single file.
 
+There are two pages: src/index.html -> dist/diptych.html (the synth) and
+src/fm/index.html -> dist/fm.html (a standalone FM synth sketch). Include paths
+are always relative to src/.
+
 Usage:
-    python3 build.py            write dist/diptych.html
-    python3 build.py --check    fail if dist/diptych.html is out of date
+    python3 build.py            write both pages to dist/
+    python3 build.py --check    fail if either page in dist/ is out of date
 """
 import os
 import re
@@ -23,7 +27,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, 'src')
-OUT = os.path.join(ROOT, 'dist', 'diptych.html')
+TARGETS = [('index.html', 'diptych.html'), ('fm/index.html', 'fm.html')]
 INCLUDE = re.compile(r'^\s*(?:/\*|//|<!--)\s*@include\s+(\S+?)\s*(?:\*/|-->)?\s*$')
 
 
@@ -32,25 +36,30 @@ def read(path):
         return f.read()
 
 
-def build():
-    used, out = set(), []
-    for line in read(os.path.join(SRC, 'index.html')).splitlines(keepends=True):
+def build(template, used):
+    seen, out = set(), []
+    for line in read(os.path.join(SRC, template)).splitlines(keepends=True):
         m = INCLUDE.match(line)
         if not m:
             out.append(line)
             continue
         rel = m.group(1)
-        if rel in used:
-            sys.exit(f'build: {rel} is included twice')
+        if rel in seen:
+            sys.exit(f'build: {rel} is included twice in {template}')
         path = os.path.join(SRC, rel)
         if not os.path.isfile(path):
-            sys.exit(f'build: missing include {rel}')
+            sys.exit(f'build: missing include {rel} in {template}')
         body = read(path)
         if '</script' in body.lower() and rel.endswith('.js'):
             sys.exit(f'build: {rel} contains "</script", which would end the inline script early')
-        used.add(rel)
+        seen.add(rel); used.add(rel)
         out.append(body if body.endswith('\n') else body + '\n')
+    return ''.join(out)
 
+
+def main():
+    used = set()
+    pages = [(out, build(tpl, used)) for tpl, out in TARGETS]
     orphans = sorted(
         os.path.relpath(os.path.join(d, f), SRC).replace(os.sep, '/')
         for d, _, fs in os.walk(SRC) for f in fs
@@ -58,22 +67,18 @@ def build():
     )
     orphans = [o for o in orphans if o not in used]
     if orphans:
-        sys.exit('build: source files not included by src/index.html: ' + ', '.join(orphans))
-    return ''.join(out)
-
-
-def main():
-    html = build()
-    if '--check' in sys.argv:
-        current = read(OUT) if os.path.isfile(OUT) else None
-        if current != html:
-            sys.exit('build: dist/diptych.html is out of date; run python3 build.py')
-        print('build: dist/diptych.html is up to date')
-        return
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, 'w', encoding='utf-8', newline='') as f:
-        f.write(html)
-    print(f'build: wrote {os.path.relpath(OUT, ROOT)} ({len(html.encode("utf-8")):,} bytes)')
+        sys.exit('build: source files not included by any page: ' + ', '.join(orphans))
+    for name, html in pages:
+        path = os.path.join(ROOT, 'dist', name)
+        if '--check' in sys.argv:
+            if (read(path) if os.path.isfile(path) else None) != html:
+                sys.exit(f'build: dist/{name} is out of date; run python3 build.py')
+            print(f'build: dist/{name} is up to date')
+            continue
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8', newline='') as f:
+            f.write(html)
+        print(f'build: wrote dist/{name} ({len(html.encode("utf-8")):,} bytes)')
 
 
 if __name__ == '__main__':
