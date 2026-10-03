@@ -79,11 +79,6 @@ h1 span{font-weight:400;color:var(--muted)}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
 
 /* ---------- groups + knobs ---------- */
-.patchbar{flex:1 1 100%;display:flex;flex-direction:column;gap:6px;padding:12px 0 0}
-.rrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.rlbl{color:var(--muted);font-size:.92rem;min-width:10.4em}
-.rrow #undo{margin-left:auto}
-.patchbar .ra{color:var(--a)} .patchbar .rb{color:var(--b)}
 main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
 .group{flex:1 1 100%;padding:12px 0 6px}
 .group h2{margin:0 0 6px;font-size:.95rem;font-weight:600;color:var(--muted)}
@@ -136,6 +131,10 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .eng[hidden]{display:none}
 .eng + .eng{margin-top:6px}
 .slotoff .tools{opacity:.35}
+.wtcard:disabled{opacity:1;cursor:default}
+.group[data-kind="osc"]:not([data-type="wt"]) .wtcard .ac{visibility:hidden}
+.group[data-kind="osc"] .wt{margin-bottom:6px}
+.group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* slot knobs keep the same height whatever their values say */
 /* ---------- wavetable panel ---------- */
 .wt{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .wtcard{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:8px;background:var(--surface);border:1px solid var(--line);text-align:left;min-width:0;min-height:0;font-weight:400}
@@ -223,6 +222,13 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .black{position:absolute;top:0;height:62%;width:7.5%;background:var(--keyb);border-radius:0 0 4px 4px;z-index:2}
 .white.on{background:color-mix(in srgb,var(--ink) 20%,var(--key))}
 .black.on{background:var(--muted)}
+.rbar{display:flex;align-items:center;gap:6px;padding:8px 0 2px;flex-wrap:nowrap}
+.rgrp{display:inline-flex;align-items:center;gap:3px}
+.rgrp + .rgrp{margin-left:4px}
+.ricon{display:inline-flex;color:var(--muted);margin-right:1px}
+.rbar button{min-height:32px;padding:2px 8px;font-size:.88rem}
+.rbar .ra{color:var(--a)} .rbar .rb{color:var(--b)}
+.rbar .undo{margin-left:auto;padding:2px 8px;display:inline-flex;align-items:center}
 @media (min-width:640px){
   .seqpane{height:148px} .lanes{grid-template-rows:repeat(3,30px)} .lanes canvas{height:30px} .keys{height:148px}
   .group{flex:0 1 auto} .group.wide{flex:1 1 100%}
@@ -252,20 +258,6 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 </header>
 
 <main id="groups">
-  <div class="patchbar">
-    <div class="rrow"><span class="rlbl">Randomize sound</span>
-      <button type="button" id="rndA" class="ra">A</button>
-      <button type="button" id="rndLinked">Linked</button>
-      <button type="button" id="rndAll">All</button>
-      <button type="button" id="rndB" class="rb">B</button>
-    </div>
-    <div class="rrow"><span class="rlbl">Randomize sequence</span>
-      <button type="button" id="rsA" class="ra">A</button>
-      <button type="button" id="rsBoth">Both</button>
-      <button type="button" id="rsB" class="rb">B</button>
-      <button type="button" id="undo" disabled>Undo</button>
-    </div>
-  </div>
 </main>
 
 <div class="foot">
@@ -367,6 +359,13 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 
 <div class="kb" id="kb">
   <div class="wrap">
+    <div class="rbar" role="group" aria-label="Randomize">
+      <span class="rgrp" role="group" aria-label="Randomize sound"><span class="ricon" title="Randomize sound"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5.3" cy="5.3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="10.7" cy="10.7" r="1.2" fill="currentColor"/></svg></span>
+        <button type="button" id="rndA" class="ra" aria-label="Randomize sound, side A">A</button><button type="button" id="rndLinked" aria-label="Randomize linked knobs">Link</button><button type="button" id="rndAll" aria-label="Randomize all of the sound">All</button><button type="button" id="rndB" class="rb" aria-label="Randomize sound, side B">B</button></span>
+      <span class="rgrp" role="group" aria-label="Randomize sequence"><span class="ricon" title="Randomize sequence"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M6 12.2V3.4l7-1.6v8.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><ellipse cx="4.3" cy="12.3" rx="2" ry="1.6" fill="currentColor"/><ellipse cx="11.3" cy="10.5" rx="2" ry="1.6" fill="currentColor"/></svg></span>
+        <button type="button" id="rsA" class="ra" aria-label="Randomize sequence A">A</button><button type="button" id="rsBoth" aria-label="Randomize both sequences">Both</button><button type="button" id="rsB" class="rb" aria-label="Randomize sequence B">B</button></span>
+      <button type="button" id="undo" class="undo" aria-label="Undo" disabled><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 4.5H10a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.8 2.2L5.3 4.6l2.5 2.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
     <div class="morph">
       <span class="letter a" aria-hidden="true">A</span>
       <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">
@@ -427,9 +426,9 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
    lerp(A, B, bend(morph, curve)); only the parameters of each slot's
    current type are resolved.
 
-   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sub) ->
-   each slot splits between filter 1, filter 2 and around the filters ->
-   amp envelope -> master Level and Pan. Then the 4 FX slots in order,
+   Signal flow per voice: 4 oscillator slots (Off / Wavetable / FM / Sub)
+   -> each slot splits between the filter and around it (Bypass) -> amp
+   envelope -> master Level and Pan. Then the 4 FX slots in order,
    and a final tanh soft clip.
 
    MorphEngine and the classes in the other engine files are stringified
@@ -445,25 +444,28 @@ class MorphEngine {
     this.act = new Uint8Array(n); this.fresh = new Uint8Array(n);
     this.morph = 0; this.first = true; this.clock = 0; this.lastPitch = -1;
     this.I = {}; defs.forEach((d, i) => { this.I[d.id] = i; });
-    // per-slot key -> index maps: oscillator slots, FX slots and the two filters
+    // per-slot key -> index maps: oscillator slots and FX slots
     const keyMap = (kind, slot) => { const m = {}; defs.forEach((d, i) => { if (d.kind === kind && d.slot === slot) m[d.key] = i; }); return m; };
     this.oP = [0, 1, 2, 3].map(s => keyMap('osc', s));
     this.xP = [0, 1, 2, 3].map(s => keyMap('fx', s));
-    this.fP = [0, 1].map(s => keyMap('flt', s));
     // oscillator slots: type, pending type, and a fade used to switch types without clicks
     this.oscType = ['off', 'off', 'off', 'off']; this.oscNext = [null, null, null, null];
     this.oFade = new Float64Array(4);
-    this.cPrev = new Float64Array(24); this.cNext = new Float64Array(24); this.cD = new Float64Array(24);   // per slot: to F1 L/R, F2 L/R, around L/R
+    this.cPrev = new Float64Array(16); this.cNext = new Float64Array(16); this.cD = new Float64Array(16);   // per slot: into the filter L/R, around it L/R
     this.banks = [0, 1, 2, 3].map(() => new WtBank());
     this.uL = new Float32Array(28); this.uR = new Float32Array(28); this.uOff = new Float32Array(28);
     this.uDt = new Float32Array(28); this.uLev = new Int32Array(28); this.uJ = new Int32Array(28); this.uN = new Int32Array(4);
     this.tune = new Float64Array(4); this.sdt = new Float64Array(4);
     this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
+    // FM per slot: routing (6), output weights (4), output gain, and per operator ratio, level, index, decay, curvature
+    this.fmM = new Float64Array(24); this.fmO = new Float64Array(16); this.fmG = new Float64Array(4); this.fmFb = new Float64Array(4);
+    this.fmR = new Float64Array(16); this.fmL = new Float64Array(16); this.fmI = new Float64Array(16); this.fmD = new Float64Array(16); this.fmC = new Float64Array(16);
+    this.fmE0 = new Float64Array(16); this.fmE1 = new Float64Array(16); this.fmSc = new Float64Array(4); this.fmTmpM = new Float64Array(6); this.fmTmpO = new Float64Array(4);
     this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
-      ph:new Float64Array(28), sph:new Float64Array(4), f1:new Float64Array(4), f2:new Float64Array(4), vAge:0, vPh:0 });
+      ph:new Float64Array(28), sph:new Float64Array(4), fph:new Float64Array(16), ffb:new Float64Array(8), flt:new Float64Array(4), vAge:0, vPh:0 });
     // FX slots: instance, type, pending type, On/Off and the crossfade to dry used for On/Off and type switches
     this.fxInst = [null, null, null, null]; this.fxType = [null, null, null, null]; this.fxNext = [null, null, null, null];
     this.fxOn = [true, true, true, true]; this.fxBy = new Float64Array(4); this.dlSpill = [false, false, false, false];
@@ -562,7 +564,7 @@ class MorphEngine {
   }
   swapOsc(s, t) {
     this.oscType[s] = t; this.oscNext[s] = null;
-    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; }
+    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; for (let k = 0; k < 4; k++) v.fph[s * 4 + k] = 0; v.ffb[s * 2] = v.ffb[s * 2 + 1] = 0; }
     this.computeActive();
   }
   makeFx(type, s) { return new (MorphEngine.FX_CLASSES[type])(this.sr, this, s); }
@@ -611,7 +613,7 @@ class MorphEngine {
     }
   }
   startVoice(v, note) {
-    v.aLv = 0; v.fLv = 0; v.f1.fill(0); v.f2.fill(0);
+    v.aLv = 0; v.fLv = 0; v.flt.fill(0); v.fph.fill(0); v.ffb.fill(0);
     for (let j = 0; j < 28; j++) v.ph[j] = Math.random();
     v.sph.fill(0);
     v.pitch = this.val[this.I.glide] > 0.0005 && this.lastPitch >= 0 ? this.lastPitch : note;
@@ -723,7 +725,7 @@ class MorphEngine {
       for (let s = 0; s < 4; s++) {
         if (this.oscNext[s] !== null) {
           let silent = this.oFade[s] <= 0;
-          for (let j = 0; j < 6 && silent; j++) if (this.cPrev[s * 6 + j] !== 0) silent = false;
+          for (let j = 0; j < 4 && silent; j++) if (this.cPrev[s * 4 + j] !== 0) silent = false;
           if (silent) this.swapOsc(s, this.oscNext[s]);
           else this.oFade[s] = Math.max(0, this.oFade[s] - fStep);
         } else if (this.oscType[s] !== 'off') this.oFade[s] = Math.min(1, this.oFade[s] + fStep);
@@ -737,25 +739,23 @@ class MorphEngine {
     for (let i = 0; i < n; i++) { L[i] = Math.tanh(L[i]); R[i] = Math.tanh(R[i]); }
   }
   renderVoices(L, R, p, len) {
-    const sr = this.sr, v = this.val, I = this.I;
+    const sr = this.sr, v = this.val, I = this.I, TAU = 2 * Math.PI;
     // --- slots: mix coefficients (ramped per sample from the last sub-block) and per-engine setup ---
     const C0 = this.cPrev, CN = this.cNext, CD = this.cD, list = this.slList, kind = this.slKind;
-    const P0 = this.oP[0], tune1 = this.oscType[0] === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : 0;   // the Sub follows slot 1
-    let nSl = 0, use1 = false, use2 = false;
+    const P0 = this.oP[0], t0 = this.oscType[0];   // the Sub follows slot 1's pitch
+    const tune1 = t0 === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : t0 === 'fm' ? v[P0.fmpitch] + v[P0.fmfine] / 100 : 0;
+    let nSl = 0;
     for (let s = 0; s < 4; s++) {
-      const t = this.oscType[s], P = this.oP[s], o = s * 6;
+      const t = this.oscType[s], P = this.oP[s], o = s * 4;
       const live = t !== 'off' && !(t === 'wt' && !this.banks[s].ready);
       if (live) {
         const lv = v[P.olevel] / 0.8 * this.oFade[s], pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
-        const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv;
-        const byp = v[P.byp], flt = v[P.flt], r1 = (1 - byp) * (1 - flt), r2 = (1 - byp) * flt;
-        CN[o] = pl * r1; CN[o + 1] = pr * r1; CN[o + 2] = pl * r2; CN[o + 3] = pr * r2; CN[o + 4] = pl * byp; CN[o + 5] = pr * byp;
-      } else for (let j = 0; j < 6; j++) CN[o + j] = 0;
+        const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv, byp = v[P.byp];
+        CN[o] = pl * (1 - byp); CN[o + 1] = pr * (1 - byp); CN[o + 2] = pl * byp; CN[o + 3] = pr * byp;
+      } else for (let j = 0; j < 4; j++) CN[o + j] = 0;
       let any = false;
-      for (let j = 0; j < 6; j++) { CD[o + j] = (CN[o + j] - C0[o + j]) / len; if (C0[o + j] !== 0 || CN[o + j] !== 0) any = true; }
+      for (let j = 0; j < 4; j++) { CD[o + j] = (CN[o + j] - C0[o + j]) / len; if (C0[o + j] !== 0 || CN[o + j] !== 0) any = true; }
       if (!any || !live) continue;
-      if (C0[o] || C0[o + 1] || CN[o] || CN[o + 1]) use1 = true;
-      if (C0[o + 2] || C0[o + 3] || CN[o + 2] || CN[o + 3]) use2 = true;
       list[nSl] = s;
       if (t === 'wt') {
         kind[nSl] = 1;
@@ -776,6 +776,19 @@ class MorphEngine {
         const ug = 1 / Math.sqrt(pw);
         for (let j = 0; j < uni; j++) { this.uL[b + j] *= ug; this.uR[b + j] *= ug; }
         this.uN[s] = uni;
+      } else if (t === 'fm') {
+        kind[nSl] = 3;
+        this.tune[s] = v[P.fmpitch] + v[P.fmfine] / 100;
+        const m = this.fmTmpM, oo = this.fmTmpO;
+        this.fmG[s] = OscFM.algo(v[P.fmalgo], m, oo);
+        for (let k = 0; k < 6; k++) this.fmM[s * 6 + k] = m[k];
+        for (let k = 0; k < 4; k++) {
+          const q = s * 4 + k, D = v[P['fmd' + (k + 1)]];
+          this.fmO[q] = oo[k]; this.fmR[q] = OscFM.RATIOS[Math.round(v[P['fmr' + (k + 1)]])];
+          this.fmL[q] = v[P['fml' + (k + 1)]]; this.fmI[q] = OscFM.index(this.fmL[q]);
+          this.fmD[q] = D; this.fmC[q] = OscFM.curve(D);
+        }
+        this.fmFb[s] = v[P.fmfb] * 3;
       } else {
         kind[nSl] = 2;
         this.tune[s] = tune1 + v[P.soct] * 12;
@@ -795,14 +808,11 @@ class MorphEngine {
       const glide = v[I.glide], gK = glide > 0.0005 ? 1 - Math.exp(-len / (glide * sr / 4)) : 1;
       const aInc = 1 / (v[I.aatk] * sr), aD = Math.exp(-5 / (v[I.adec] * sr)), aS = v[I.asus], aR = Math.exp(-6.9 / (v[I.arel] * sr));
       const fInc = 1 / (v[I.fatk] * sr), fD = Math.exp(-5 / (v[I.fdec] * sr)), fS = v[I.fsus], fR = Math.exp(-6.9 / (v[I.frel] * sr));
-      const flt = this.fP.map(F => {
-        const k = 2 - 1.96 * v[F.reso], md = v[F.mode];
-        let wl, wb, wh;
-        if (md < 0.5) { const t = md * 2; wl = 1 - t; wb = t; wh = 0; } else { const t = (md - 0.5) * 2; wl = 0; wb = 1 - t; wh = t; }
-        return { cutoff: v[F.cutoff], k, bpG: Math.sqrt(k * 2), env: v[F.envamt], kt: v[F.keytrack], wl, wb, wh };
-      });
-      const F1 = flt[0], F2 = flt[1];
+      const cutoff = v[I.cutoff], fk = 2 - 1.96 * v[I.reso], bpG = Math.sqrt(fk * 2), envAmt = v[I.envamt], kt = v[I.keytrack], md = v[I.mode];
+      let wl, wb, wh;
+      if (md < 0.5) { const t = md * 2; wl = 1 - t; wb = t; wh = 0; } else { const t = (md - 0.5) * 2; wl = 0; wb = 1 - t; wh = t; }
       const banks = this.banks, uL = this.uL, uR = this.uR, uDt = this.uDt, uLev = this.uLev, uJ = this.uJ, uN = this.uN;
+      const fmM = this.fmM, fmO = this.fmO, fmR = this.fmR, fmL = this.fmL, fmI = this.fmI, E0 = this.fmE0, E1 = this.fmE1;
 
       for (const vc of this.voices) {
         if (!vc.active) continue;
@@ -812,7 +822,7 @@ class MorphEngine {
         const vRate = Math.max(0.1, v[I.vrate] + v[I.vrfade] * (1 - rEnv));   // Rate fade is in Hz: the rate starts that far off and settles
         const vib = v[I.vdepth] * vEnv * Math.sin(2 * Math.PI * vc.vPh);
         vc.vPh += vRate * len / sr; if (vc.vPh >= 1) vc.vPh -= 1; vc.vAge += len;
-        const base = vc.pitch + vib;
+        const base = vc.pitch + vib, tA = vT, tB = vc.vAge / sr;   // FM envelopes run from the note's start
         for (let a = 0; a < nSl; a++) {
           const s = list[a];
           if (kind[a] === 1) {
@@ -822,23 +832,28 @@ class MorphEngine {
               const lev = Math.ceil(Math.log2(512 * dt / 0.45));
               uLev[b + j] = lev < 0 ? 0 : lev > 9 ? 9 : lev;
             }
-          } else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
+          } else {
+            const f0 = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12);
+            this.sdt[s] = f0 / sr;
+            if (kind[a] === 3) {
+              this.fmSc[s] = Math.min(1, Math.pow(600 / f0, 0.7));   // less modulation on high notes, where wide sidebands would alias
+              for (let k = 0, q = s * 4; k < 4; k++) {   // operator envelopes at this block's ends, interpolated per sample
+                E0[q + k] = OscFM.env(tA, this.fmD[q + k], this.fmC[q + k]); E1[q + k] = OscFM.env(tB, this.fmD[q + k], this.fmC[q + k]);
+              }
+            }
+          }
         }
-        const fc1 = Math.min(sr * 0.45, Math.max(20, F1.cutoff * Math.pow(2, F1.env * 5 * vc.fLv + F1.kt * (vc.pitch - 60) / 12)));
-        const fc2 = Math.min(sr * 0.45, Math.max(20, F2.cutoff * Math.pow(2, F2.env * 5 * vc.fLv + F2.kt * (vc.pitch - 60) / 12)));
-        const g1 = Math.tan(Math.PI * fc1 / sr), p1a = 1 / (1 + g1 * (g1 + F1.k)), p1b = g1 * p1a, p1c = g1 * p1b;
-        const g2 = Math.tan(Math.PI * fc2 / sr), p2a = 1 / (1 + g2 * (g2 + F2.k)), p2b = g2 * p2a, p2c = g2 * p2b;
-        const s1 = vc.f1, s2 = vc.f2;
-        const do1 = use1 || Math.abs(s1[0]) + Math.abs(s1[1]) + Math.abs(s1[2]) + Math.abs(s1[3]) > 1e-9;
-        const do2 = use2 || Math.abs(s2[0]) + Math.abs(s2[1]) + Math.abs(s2[2]) + Math.abs(s2[3]) > 1e-9;
-        let l1 = s1[0], l2 = s1[1], r1 = s1[2], r2 = s1[3], m1 = s2[0], m2 = s2[1], n1 = s2[2], n2 = s2[3];
+        const fc = Math.min(sr * 0.45, Math.max(20, cutoff * Math.pow(2, envAmt * 5 * vc.fLv + kt * (vc.pitch - 60) / 12)));
+        const g = Math.tan(Math.PI * fc / sr), fa1 = 1 / (1 + g * (g + fk)), fa2 = g * fa1, fa3 = g * fa2;
+        const st = vc.flt;
+        let l1 = st[0], l2 = st[1], r1 = st[2], r2 = st[3];
         let aSt = vc.aSt, aLv = vc.aLv, fSt = vc.fSt, fLv = vc.fLv;
-        const ph = vc.ph, sph = vc.sph, vel = vc.vel;
+        const ph = vc.ph, sph = vc.sph, fph = vc.fph, ffb = vc.ffb, vel = vc.vel;
         for (let s = 0; s < len; s++) {
           const t = s + 1;
-          let f1L = 0, f1R = 0, f2L = 0, f2R = 0, dL = 0, dR = 0;
+          let iL = 0, iR = 0, dL = 0, dR = 0;
           for (let a = 0; a < nSl; a++) {
-            const sl = list[a], o = sl * 6;
+            const sl = list[a], o = sl * 4;
             let xl, xr;
             if (kind[a] === 1) {
               const bk = banks[sl], xf = Math.min(1, bk.xf + bk.xfInc * s), b = sl * 7;
@@ -852,40 +867,42 @@ class MorphEngine {
                 xl += x * uL[b + j]; xr += x * uR[b + j];
                 q += uDt[b + j]; if (q >= 1) q -= 1; ph[pj] = q;
               }
+            } else if (kind[a] === 3) {
+              const q = sl * 4, mq = sl * 6, dt = this.sdt[sl], sc = this.fmSc[sl], w = s / len;
+              const e1 = E0[q] + (E1[q] - E0[q]) * w, e2 = E0[q + 1] + (E1[q + 1] - E0[q + 1]) * w, e3 = E0[q + 2] + (E1[q + 2] - E0[q + 2]) * w, e4 = E0[q + 3] + (E1[q + 3] - E0[q + 3]) * w;
+              let p1 = fph[q] + dt * fmR[q], p2 = fph[q + 1] + dt * fmR[q + 1], p3 = fph[q + 2] + dt * fmR[q + 2], p4 = fph[q + 3] + dt * fmR[q + 3];
+              p1 -= Math.floor(p1); p2 -= Math.floor(p2); p3 -= Math.floor(p3); p4 -= Math.floor(p4);
+              fph[q] = p1; fph[q + 1] = p2; fph[q + 2] = p3; fph[q + 3] = p4;
+              const fb = ffb[sl * 2], fb2 = ffb[sl * 2 + 1];
+              const o4 = Math.sin(TAU * p4 + this.fmFb[sl] * (fb + fb2) * 0.5) * e4;
+              ffb[sl * 2 + 1] = fb; ffb[sl * 2] = o4;
+              const i4 = fmI[q + 3] * sc * o4;
+              const o3 = Math.sin(TAU * p3 + fmM[mq] * i4) * e3, i3 = fmI[q + 2] * sc * o3;
+              const o2 = Math.sin(TAU * p2 + fmM[mq + 1] * i4 + fmM[mq + 3] * i3) * e2, i2 = fmI[q + 1] * sc * o2;
+              const o1 = Math.sin(TAU * p1 + fmM[mq + 2] * i4 + fmM[mq + 4] * i3 + fmM[mq + 5] * i2) * e1;
+              xl = xr = (fmO[q] * fmL[q] * o1 + fmO[q + 1] * fmL[q + 1] * o2 + fmO[q + 2] * fmL[q + 2] * o3 + fmO[q + 3] * fmL[q + 3] * o4) * this.fmG[sl];
             } else {
               const dt = this.sdt[sl];
               let q = sph[sl];
               xl = xr = OscSub.sample(q, dt, this.sShape[sl], this.sG[sl], this.sTg[sl]);
               q += dt; if (q >= 1) q -= 1; sph[sl] = q;
             }
-            f1L += xl * (C0[o] + CD[o] * t); f1R += xr * (C0[o + 1] + CD[o + 1] * t);
-            f2L += xl * (C0[o + 2] + CD[o + 2] * t); f2R += xr * (C0[o + 3] + CD[o + 3] * t);
-            dL += xl * (C0[o + 4] + CD[o + 4] * t); dR += xr * (C0[o + 5] + CD[o + 5] * t);
+            iL += xl * (C0[o] + CD[o] * t); iR += xr * (C0[o + 1] + CD[o + 1] * t);
+            dL += xl * (C0[o + 2] + CD[o + 2] * t); dR += xr * (C0[o + 3] + CD[o + 3] * t);
           }
           if (aSt === 1) { aLv += aInc; if (aLv >= 1) { aLv = 1; aSt = 2; } } else if (aSt === 2) aLv = aS + (aLv - aS) * aD; else aLv *= aR;
           if (fSt === 1) { fLv += fInc; if (fLv >= 1) { fLv = 1; fSt = 2; } } else if (fSt === 2) fLv = fS + (fLv - fS) * fD; else fLv *= fR;
-          let oL = dL, oR = dR;
-          if (do1) {
-            let v3 = f1L - l2, v1 = p1a * l1 + p1b * v3, v2 = l2 + p1b * l1 + p1c * v3;
-            l1 = 2 * v1 - l1; l2 = 2 * v2 - l2;
-            oL += F1.wl * v2 + F1.wb * v1 * F1.bpG + F1.wh * (f1L - F1.k * v1 - v2);
-            v3 = f1R - r2; v1 = p1a * r1 + p1b * v3; v2 = r2 + p1b * r1 + p1c * v3;
-            r1 = 2 * v1 - r1; r2 = 2 * v2 - r2;
-            oR += F1.wl * v2 + F1.wb * v1 * F1.bpG + F1.wh * (f1R - F1.k * v1 - v2);
-          }
-          if (do2) {
-            let v3 = f2L - m2, v1 = p2a * m1 + p2b * v3, v2 = m2 + p2b * m1 + p2c * v3;
-            m1 = 2 * v1 - m1; m2 = 2 * v2 - m2;
-            oL += F2.wl * v2 + F2.wb * v1 * F2.bpG + F2.wh * (f2L - F2.k * v1 - v2);
-            v3 = f2R - n2; v1 = p2a * n1 + p2b * v3; v2 = n2 + p2b * n1 + p2c * v3;
-            n1 = 2 * v1 - n1; n2 = 2 * v2 - n2;
-            oR += F2.wl * v2 + F2.wb * v1 * F2.bpG + F2.wh * (f2R - F2.k * v1 - v2);
-          }
+          let v3 = iL - l2, v1 = fa1 * l1 + fa2 * v3, v2 = l2 + fa2 * l1 + fa3 * v3;
+          l1 = 2 * v1 - l1; l2 = 2 * v2 - l2;
+          const oL = dL + wl * v2 + wb * v1 * bpG + wh * (iL - fk * v1 - v2);
+          v3 = iR - r2; v1 = fa1 * r1 + fa2 * v3; v2 = r2 + fa2 * r1 + fa3 * v3;
+          r1 = 2 * v1 - r1; r2 = 2 * v2 - r2;
+          const oR = dR + wl * v2 + wb * v1 * bpG + wh * (iR - fk * v1 - v2);
           const amp = aLv * vel;
           L[p + s] += oL * amp * (gl0 + glI * t); R[p + s] += oR * amp * (gr0 + grI * t);
         }
         vc.aSt = aSt; vc.aLv = aLv; vc.fSt = fSt; vc.fLv = fLv;
-        s1[0] = l1; s1[1] = l2; s1[2] = r1; s1[3] = r2; s2[0] = m1; s2[1] = m2; s2[2] = n1; s2[3] = n2;
+        st[0] = l1; st[1] = l2; st[2] = r1; st[3] = r2;
         if (aSt === 3 && aLv < 3e-4) vc.active = false;
       }
     }
@@ -993,6 +1010,66 @@ class OscSub {
       x = tri + (sq - tri) * (shape - 0.5) * 2;
     }
     return g > 1.0001 ? Math.tanh(g * x) / tg : x;
+  }
+}
+
+/* FM: four sine operators. Eight algorithms, ordered from one long stack to all carriers; Algorithm is
+   continuous and blends the routings of neighbouring algorithms, so morphing it never jumps. Modulation
+   only flows from higher-numbered operators to lower ones. Each operator's Level is its output level when
+   it is a carrier and its modulation index (up to 10 radians, squared response) when it modulates; on high
+   notes the index is scaled down to limit aliasing. Operator 4 has the feedback. */
+class OscFM {
+  static get RATIOS() { return [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]; }
+  static get HOLD() { return 25; }   // Decay at or above this holds (no decay)
+  // routings: [4->3, 4->2, 4->1, 3->2, 3->1, 2->1] and which operators are heard [1, 2, 3, 4]
+  static get ALGS() {
+    return [
+      [[1, 0, 0, 1, 0, 1], [1, 0, 0, 0]],   // 1: 4->3->2->1
+      [[0, 1, 0, 1, 0, 1], [1, 0, 0, 0]],   // 2: (4 + 3)->2->1
+      [[1, 0, 0, 0, 1, 1], [1, 0, 0, 0]],   // 3: (4->3 + 2)->1
+      [[1, 1, 1, 0, 0, 0], [1, 1, 1, 0]],   // 4: 4 -> 3, 2, 1, all three heard
+      [[1, 0, 0, 0, 0, 1], [1, 0, 1, 0]],   // 5: two pairs, 4->3 and 2->1
+      [[1, 0, 0, 1, 0, 0], [1, 1, 0, 0]],   // 6: 4->3->2 stack plus a plain 1
+      [[0, 0, 1, 0, 0, 0], [1, 1, 1, 0]],   // 7: 4->1 plus plain 2 and 3
+      [[0, 0, 0, 0, 0, 0], [1, 1, 1, 1]],   // 8: all four heard (additive)
+    ];
+  }
+  // blended routing for a continuous Algorithm value: m[6] modulation amounts, o[4] output weights, returns output gain
+  static algo(x, m, o) {
+    const A = OscFM.ALGS, i = Math.max(0, Math.min(6, Math.floor(x))), f = Math.max(0, Math.min(1, x - i));
+    for (let k = 0; k < 6; k++) m[k] = A[i][0][k] + (A[i + 1][0][k] - A[i][0][k]) * f;
+    let p = 0;
+    for (let k = 0; k < 4; k++) { o[k] = A[i][1][k] + (A[i + 1][1][k] - A[i][1][k]) * f; p += o[k] * o[k]; }
+    return 1 / Math.sqrt(p);
+  }
+  /* Decay shape follows its time: short decays are exponential (plucks), around 4 s they are linear,
+     and long ones are logarithmic (they hold up, then fall). c is the curvature used by env(). */
+  static curve(D) {
+    const x = Math.log10(D);
+    return x <= -1 ? 8 : x <= 0 ? 8 - 6 * (x + 1) : x <= 0.602 ? 2 - 2 * x / 0.602 : Math.max(-3, -3 * (x - 0.602) / 0.699);
+  }
+  static env(t, D, c) {
+    if (D >= OscFM.HOLD) return 1;
+    const u = t / D;
+    if (u >= 1) return 0;
+    if (Math.abs(c) < 1e-3) return 1 - u;
+    const e = Math.exp(-c); return (Math.exp(-c * u) - e) / (1 - e);
+  }
+  static index(level) { return 10 * level * level; }
+  // one fundamental period at full envelope (for displays and the loudness guard); p: { algo, fb, r[4] ratio values, l[4] }
+  static cycle(p, N, out) {
+    const m = new Float64Array(6), o = new Float64Array(4), g = OscFM.algo(p.algo, m, o), TAU = 2 * Math.PI;
+    const I = p.l.map(OscFM.index), fbA = p.fb * 3;
+    let y1 = 0, y2 = 0;
+    for (let pass = 0; pass < 2; pass++) for (let n = 0; n < N; n++) {   // the first pass settles the feedback
+      const t = n / N;
+      const o4 = Math.sin(TAU * p.r[3] * t + fbA * (y1 + y2) * 0.5); y2 = y1; y1 = o4;
+      const o3 = Math.sin(TAU * p.r[2] * t + m[0] * I[3] * o4);
+      const o2 = Math.sin(TAU * p.r[1] * t + m[1] * I[3] * o4 + m[3] * I[2] * o3);
+      const o1 = Math.sin(TAU * p.r[0] * t + m[2] * I[3] * o4 + m[4] * I[2] * o3 + m[5] * I[1] * o2);
+      if (pass) out[n] = (o[0] * p.l[0] * o1 + o[1] * p.l[1] * o2 + o[2] * p.l[2] * o3 + o[3] * p.l[3] * o4) * g;
+    }
+    return out;
   }
 }
 /* =====================================================================
@@ -1453,19 +1530,18 @@ class FxOtt {
    single: 'A' | 'B' belongs to one side only and never morphs
 
    Oscillator and FX slots hold every parameter of every type, so each slot
-   remembers all its types' settings. Ids: global 'glide', filters
-   'f1.cutoff', slots 'o1.<key>' and 'x1.<key>'. `key` is the parameter's
+   remembers all its types' settings. Ids: global 'glide', 'cutoff',
+   slots 'o1.<key>' and 'x1.<key>'. `key` is the parameter's
    own name; formats (FMT) and randomize rules (RND) are looked up by key.
-   kind: 'osc' | 'fx' | 'flt' with slot (0-based); eng: the type it belongs
+   kind: 'osc' | 'fx' with slot (0-based); eng: the type it belongs
    to (null = every type of that slot).
    ===================================================================== */
-const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['sub', 'Sub']];
+const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['fm', 'FM'], ['sub', 'Sub']];
 const FX_TYPES = [['drive', 'Drive'], ['formant', 'Formant filter'], ['mod', 'Modulation'], ['delay', 'Delay'], ['reverb', 'Reverb'], ['lofi', 'Lo-fi'], ['ott', 'OTT']];
 const typeName = (list, t) => (list.find(x => x[0] === t) || [t, t])[1];
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
 const OSC_COMMON = [
-  P_('olevel', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('opan', 'Pan', -1, 1, 'lin', 0, 0),
-  P_('flt', 'Filter', 0, 1, 'lin', 0, 0), P_('byp', 'Bypass', 0, 1, 'lin', 0, 0),
+  P_('olevel', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('opan', 'Pan', -1, 1, 'lin', 0, 0), P_('byp', 'Bypass', 0, 1, 'lin', 0, 0),
 ];
 const OSC_ENG = {
   wt: [
@@ -1473,21 +1549,25 @@ const OSC_ENG = {
     P_('posB', 'Position B', 0, 1, 'lin', 0.3, 0.3, { single:'B' }),
     P_('pitch', 'Pitch', -24, 24, 'int', 0, 0), P_('fine', 'Fine', -100, 100, 'lin', 0, 0), P_('unison', 'Unison', 0, 1, 'lin', 0, 0.35),
   ],
+  // FM: Algorithm morphs continuously between neighbouring routings; one column per operator below it
+  fm: [
+    P_('fmalgo', 'Algorithm', 0, 7, 'lin', 0, 4), P_('fmfb', 'Feedback', 0, 1, 'lin', 0, 0),
+    P_('fmpitch', 'Pitch', -24, 24, 'int', 0, 0), P_('fmfine', 'Fine', -100, 100, 'lin', 0, 0),
+    ...[1, 2, 3, 4].map(k => P_('fmr' + k, 'Ratio ' + k, 0, 16, 'int', [1, 1, 3, 2][k - 1], [1, 2, 4, 1][k - 1])),
+    ...[1, 2, 3, 4].map(k => P_('fml' + k, 'Level ' + k, 0, 1, 'lin', [1, 0.5, 0.35, 0.25][k - 1], [1, 0.6, 0.3, 0.2][k - 1])),
+    ...[1, 2, 3, 4].map(k => P_('fmd' + k, 'Decay ' + k, 0.005, 30, 'log', [30, 1.2, 0.6, 0.3][k - 1], [30, 0.4, 2, 0.15][k - 1])),
+  ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
 };
 const VOICE = [
   P_('glide', 'Glide', 0, 2, 'pow2', 0, 0), P_('vdepth', 'Vibrato', 0, 1, 'pow2', 0, 0), P_('vfade', 'Fade in', 0, 5, 'pow2', 0.6, 0.6),
   P_('vrate', 'Vib rate', 0.5, 12, 'log', 5.5, 5.5), P_('vrfade', 'Rate fade', -10, 10, 'lin', 0, 0), P_('vrtime', 'Rate settle', 0, 5, 'pow2', 1, 1),
 ];
-const FILTER = [
-  [P_('cutoff', 'Cutoff', 30, 18000, 'log', 700, 2500), P_('reso', 'Resonance', 0, 1, 'lin', 0.25, 0.45), P_('mode', 'Mode', 0, 1, 'lin', 0, 0.25),
-   P_('envamt', 'Env amount', -1, 1, 'lin', 0.5, 0.25), P_('keytrack', 'Key track', 0, 1, 'lin', 0.5, 0.5)],
-  [P_('cutoff', 'Cutoff', 30, 18000, 'log', 1500, 6000), P_('reso', 'Resonance', 0, 1, 'lin', 0.2, 0.35), P_('mode', 'Mode', 0, 1, 'lin', 0, 0),
-   P_('envamt', 'Env amount', -1, 1, 'lin', 0.3, 0.2), P_('keytrack', 'Key track', 0, 1, 'lin', 0.5, 0.5)],
-];
+const FILTER = [P_('cutoff', 'Cutoff', 30, 18000, 'log', 700, 2500), P_('reso', 'Resonance', 0, 1, 'lin', 0.25, 0.45), P_('mode', 'Mode', 0, 1, 'lin', 0, 0.25),
+  P_('envamt', 'Env amount', -1, 1, 'lin', 0.5, 0.25), P_('keytrack', 'Key track', 0, 1, 'lin', 0.5, 0.5),
+  P_('fatk', 'Attack', 0.001, 10, 'log', 0.003, 0.4), P_('fdec', 'Decay', 0.005, 10, 'log', 0.35, 1.2),
+  P_('fsus', 'Sustain', 0, 1, 'lin', 0.15, 0.4), P_('frel', 'Release', 0.005, 10, 'log', 0.3, 1.5)];   // the filter envelope lives with the filter
 const ENVS = [
-  ['Filter envelope', [P_('fatk', 'Attack', 0.001, 10, 'log', 0.003, 0.4), P_('fdec', 'Decay', 0.005, 10, 'log', 0.35, 1.2),
-    P_('fsus', 'Sustain', 0, 1, 'lin', 0.15, 0.4), P_('frel', 'Release', 0.005, 10, 'log', 0.3, 1.5)]],
   ['Amp envelope', [P_('aatk', 'Attack', 0.001, 10, 'log', 0.003, 0.25), P_('adec', 'Decay', 0.005, 10, 'log', 0.6, 1),
     P_('asus', 'Sustain', 0, 1, 'lin', 0.7, 0.85), P_('arel', 'Release', 0.005, 10, 'log', 0.3, 1.6)]],
   ['Output', [P_('level', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('pan', 'Pan', -1, 1, 'lin', 0, 0)]],
@@ -1513,13 +1593,13 @@ for (let s = 0; s < 4; s++) {
   Object.entries(OSC_ENG).forEach(([eng, ps]) => ps.forEach(p => add(p, eng)));
 }
 VOICE.forEach(p => DEFS.push({ ...p, id: p.key, group:'Voice' }));
-FILTER.forEach((ps, k) => ps.forEach(p => DEFS.push({ ...p, id: `f${k + 1}.${p.key}`, group: `Filter ${k + 1}`, kind:'flt', slot:k })));
+FILTER.forEach(p => DEFS.push({ ...p, id: p.key, group:'Filter' }));
 ENVS.forEach(([group, ps]) => ps.forEach(p => DEFS.push({ ...p, id: p.key, group })));
 for (let s = 0; s < 4; s++) Object.entries(FX_ENG).forEach(([eng, ps]) => ps.forEach(p => DEFS.push({ ...p, id: `x${s + 1}.${p.key}`, group: `FX ${s + 1}`, kind:'fx', slot:s, eng })));
 DEFS.push({ ...P_('pattern', 'Pattern', 0, 1, 'lin', 0, 1), id:'pattern', group:'Sequencer' });
 const IX = {}; DEFS.forEach((d, i) => { IX[d.id] = i; });
-// index of a slot parameter: oi(0, 'wave') -> IX['o1.wave'], xi(3, 'ottdepth') -> IX['x4.ottdepth'], fi(1, 'cutoff') -> IX['f2.cutoff']
-const oi = (s, key) => IX[`o${s + 1}.${key}`], xi = (s, key) => IX[`x${s + 1}.${key}`], fi = (k, key) => IX[`f${k + 1}.${key}`];
+// index of a slot parameter: oi(0, 'wave') -> IX['o1.wave'], xi(3, 'ottdepth') -> IX['x4.ottdepth']
+const oi = (s, key) => IX[`o${s + 1}.${key}`], xi = (s, key) => IX[`x${s + 1}.${key}`];
 // Is this parameter part of the sound right now? (its slot's current type, or a global)
 const isActive = d => d.kind === 'osc' ? state.oscType[d.slot] !== 'off' && (!d.eng || d.eng === state.oscType[d.slot])
   : d.kind === 'fx' ? d.eng === state.fxType[d.slot] : true;
@@ -1527,8 +1607,11 @@ const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' 
 const pct = v => Math.round(v * 100) + '%';
 const FMT = {
   olevel: pct, opan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
-  flt: v => (v < 0.005 ? 'Filter 1' : v > 0.995 ? 'Filter 2' : Math.round(v * 100) + '% F2'), byp: v => (v < 0.005 ? 'Off' : pct(v)),
+  byp: v => (v < 0.005 ? 'Off' : pct(v)),
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
+  fmalgo: v => { const i = Math.floor(v + 1e-6), f = v - i; return f < 0.02 ? 'Algo ' + (i + 1) : f > 0.98 ? 'Algo ' + (i + 2) : `${i + 1}→${i + 2} ${Math.round(f * 100)}%`; },
+  fmfb: pct, fmpitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', fmfine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`,
+  ...Object.fromEntries([1, 2, 3, 4].flatMap(k => [['fmr' + k, v => '×' + OscFM.RATIOS[v]], ['fml' + k, pct], ['fmd' + k, v => (v >= OscFM.HOLD ? 'Hold' : time(v))]])),
   sshape: v => (v < 0.02 ? 'Sine' : Math.abs(v - 0.5) < 0.02 ? 'Triangle' : v > 0.98 ? 'Square' : pct(v)), sdrive: pct,
   posA: pct, posB: pct,
   drive: pct, dshape: pct, dmix: pct,
@@ -1614,7 +1697,7 @@ const cloneTable = t => ({ name: t.name, frames: t.frames.map(f => f.slice()) })
 /* ---------- state + persistence ----------
    The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v4', STORE_VER = 1;
+const STORE = 'diptych-v4', STORE_VER = 2;
 const DEFAULT_LOCKS = () => {
   const l = { level: true, pan: true, pattern: true };
   for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
@@ -1622,7 +1705,7 @@ const DEFAULT_LOCKS = () => {
 };
 const DEFAULT_LINKS = () => {
   const l = {};
-  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.pitch`] = true; l[`o${s}.fine`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine', 'fmpitch', 'fmfine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
   return l;
 };
 const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
@@ -1668,6 +1751,10 @@ const pickList = (saved, list, n, fallback) => (Array.isArray(saved) && saved.le
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
   if (saved && Array.isArray(saved.ids) && Array.isArray(saved.A) && saved.ids.length === saved.A.length && saved.B.length === saved.A.length) {
+    // ver 2: back to one filter. Filter 1's ids ('f1.cutoff') become plain ('cutoff'); Filter 2 and the slots' filter blend are dropped.
+    const v1id = id => (!(saved.ver >= 2) && id.startsWith('f1.') ? id.slice(3) : id);
+    if (!(saved.ver >= 2)) for (const k of ['locks', 'links', 'linkMem']) if (saved[k]) saved[k] = Object.fromEntries(Object.entries(saved[k]).map(([id, v]) => [v1id(id), v]));
+    saved.ids = saved.ids.map(v1id);
     saved.ids.forEach((id, k) => {
       const i = IX[id]; if (i === undefined) return;
       state.A[i] = clamp(+saved.A[k]); state.B[i] = clamp(+saved.B[k]);
@@ -1675,6 +1762,7 @@ try {
     });
     state.morph = clamp(+saved.morph || 0);
     for (const k of ['locks', 'links', 'secLocks', 'linkMem', 'folded']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
+    if (!(saved.ver >= 2)) for (let s = 1; s <= 4; s++) { state.links[`o${s}.fmpitch`] = true; state.links[`o${s}.fmfine`] = true; }   // FM arrived in ver 2
     state.mono = !!saved.mono;
     state.oscType = pickList(saved.oscType, OSC_TYPES, 4, state.oscType);
     state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType);
@@ -1712,7 +1800,7 @@ analyzeAll();
 
 /* ---------- audio startup ---------- */
 // Everything the audio thread runs: the engine plus its oscillator and effect classes (stringified into the worklet).
-const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
+const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, OscFM, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
 let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
 const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
 const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });
@@ -1820,7 +1908,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) kick
 /* =====================================================================
    KNOBS
    ===================================================================== */
-const VIZ = { 'Filter 1':'vzF1', 'Filter 2':'vzF2', 'Filter envelope':'vzFE', 'Amp envelope':'vzAE' };
+const VIZ = { 'Filter': [['vzF', 'Filter response'], ['vzFE', 'Filter envelope']], 'Amp envelope': [['vzAE', 'Amp envelope']] };
 const lockIcon = on => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="${on ? 'M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7' : 'M5.2 7V5.2a2.8 2.8 0 0 1 5.5-.8'}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const iconBtn = (id, label, single) => `<span class="icons"><button type="button" class="lock" data-plock="${id}" aria-pressed="false" aria-label="Lock ${label}"></button>${single ? '' : `<button type="button" class="lock" data-plink="${id}" aria-pressed="false" aria-label="Link ${label}"></button>`}</span>`;
 const linkIcon = on => `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${on
@@ -1855,7 +1943,8 @@ const knobHTML = (d, i) => `<div class="kn">
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
   </div>`;
-const wtCards = s => `<div class="wt">
+// A, what you hear, and B for every oscillator slot; on a Wavetable slot the A and B cards open the editor
+const waveCards = s => `<div class="wt">
     <button class="wtcard a" id="wtA${s}" data-wt="${s}" data-side="A" type="button" aria-label="Edit wavetable A of Osc ${s + 1}">
       <canvas id="cvA${s}"></canvas><span class="wtlabel"><span class="nm" id="nmA${s}"></span><span class="ac">Edit A</span></span></button>
     <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm">What you hear</span></span></div>
@@ -1873,11 +1962,12 @@ function makeSection(d) {
   if (d.kind === 'fx') head += `<select class="typesel" data-fxsel="${d.slot}" aria-label="${d.group} effect">${options(FX_TYPES)}</select>`;
   head += '</h2>';
   let body;
-  if (d.kind === 'osc') body = Object.keys(OSC_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'wt' ? wtCards(d.slot) : ''}<div class="knobs"></div></div>`).join('')
+  if (d.kind === 'osc') body = waveCards(d.slot) + Object.keys(OSC_ENG).map(e => `<div class="eng" data-eng="${e}"><div class="knobs"></div></div>`).join('')
     + '<div class="eng" data-eng="*"><div class="knobs"></div></div>';
   else if (d.kind === 'fx') body = Object.keys(FX_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'ott'
     ? `<canvas class="viz" id="vzOT${d.slot}" aria-label="OTT bands: split points, gain settings and live levels"></canvas>` : ''}<div class="knobs"></div></div>`).join('');
-  else { const viz = VIZ[d.group]; body = `${viz ? `<canvas class="viz" id="${viz}" aria-label="${d.group}: A, B and current shape"></canvas>` : ''}<div class="knobs"></div>`; }
+  else body = (VIZ[d.group] || []).map(([id, name]) => `<canvas class="viz" id="${id}" aria-label="${name}: A, B and current shape"></canvas>`).join('') + '<div class="knobs"></div>';
+  if (d.kind) g.dataset.kind = d.kind;
   g.innerHTML = head + `<div class="gbody">${body}</div>`;
   groupsEl.appendChild(g);
   return g;
@@ -2129,9 +2219,9 @@ function plotSet(c, fn, n) {
   c.g.globalAlpha = 1;
 }
 function label(c, text, x, y, align) { c.g.fillStyle = css('--muted'); c.g.font = '11px "Barlow Semi Condensed", sans-serif'; c.g.textAlign = align; c.g.fillText(text, x, y); }
-function drawFilterViz(k) {
-  const c = prep($('vzF' + (k + 1))); if (!c) return;
-  const f = `f${k + 1}.`, cut = trio(f + 'cutoff'), res = trio(f + 'reso'), md = trio(f + 'mode');
+function drawFilterViz() {
+  const c = prep($('vzF')); if (!c) return;
+  const cut = trio('cutoff'), res = trio('reso'), md = trio('mode');
   const top = 24, bot = -36, yOf = db => 6 + (top - Math.max(bot, Math.min(top, db))) / (top - bot) * (c.h - 12);
   c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
   c.g.beginPath(); c.g.moveTo(0, yOf(0)); c.g.lineTo(c.w, yOf(0)); c.g.stroke();
@@ -2190,6 +2280,20 @@ function drawOttViz(slot) {
 }
 const drawOttAll = () => { for (let s = 0; s < 4; s++) drawOttViz(s); };
 function onOtt(d) { ottLive[d.slot] = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttAll(); }); } }
+// one cycle of a slot's sound for side 'A', 'B' or 'now' (what you hear), for the wave cards
+const slotVal = (s, key, which) => { const i = oi(s, key); return MorphEngine.denorm(DEFS[i], which === 'now' ? resolveNorm(i) : state[which][i]); };
+const CYC = new Float32Array(256);
+function slotCycle(s, which) {
+  const t = state.oscType[s];
+  if (t === 'sub') {
+    const shape = slotVal(s, 'sshape', which), g = 1 + 7 * slotVal(s, 'sdrive', which), tg = Math.tanh(g);
+    for (let n = 0; n < 256; n++) CYC[n] = OscSub.sample(n / 256, 1 / 256, shape, g, tg);
+  } else if (t === 'fm') {
+    OscFM.cycle({ algo: slotVal(s, 'fmalgo', which), fb: slotVal(s, 'fmfb', which), r: [1, 2, 3, 4].map(k => OscFM.RATIOS[slotVal(s, 'fmr' + k, which)]),
+      l: [1, 2, 3, 4].map(k => slotVal(s, 'fml' + k, which)) }, 256, CYC);
+  } else CYC.fill(0);
+  return CYC;
+}
 let wavesQueued = false;
 function drawWaves() {
   if (wavesQueued) return; wavesQueued = true;
@@ -2197,16 +2301,25 @@ function drawWaves() {
     wavesQueued = false;
     const sp = state.spectral;
     for (let s = 0; s < 4; s++) {
-      if (state.oscType[s] !== 'wt' || state.folded[`Osc ${s + 1}`]) continue;
-      MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
-      drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
-      MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], sp, W.fb[0], W.fb[1]);
-      drawWave($('cvB' + s), synthDisplay(W.fb[0], W.fb[1]), css('--b'), { fit:true });
-      MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(oi(s, 'wave')), sp, W.fr[0], W.fr[1]);
-      drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
-      $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
+      const t = state.oscType[s];
+      if (state.folded[`Osc ${s + 1}`]) continue;
+      if (t === 'wt') {
+        MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
+        drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
+        MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], sp, W.fb[0], W.fb[1]);
+        drawWave($('cvB' + s), synthDisplay(W.fb[0], W.fb[1]), css('--b'), { fit:true });
+        MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(oi(s, 'wave')), sp, W.fr[0], W.fr[1]);
+        drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
+        $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
+      } else {
+        drawWave($('cvA' + s), slotCycle(s, 'A'), css('--a'), { fit:true });
+        drawWave($('cvB' + s), slotCycle(s, 'B'), css('--b'), { fit:true });
+        drawWave($('cvH' + s), slotCycle(s, 'now'), mixColor(state.morph), { fit:true, lw:2.4 });
+        const name = which => t === 'fm' ? FMT.fmalgo(slotVal(s, 'fmalgo', which)) : t === 'sub' ? FMT.sshape(slotVal(s, 'sshape', which)) : 'Off';
+        $('nmA' + s).textContent = name('A'); $('nmB' + s).textContent = name('B');
+      }
     }
-    drawFilterViz(0); drawFilterViz(1); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttAll(); drawLanes();
+    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttAll(); drawLanes();
   });
 }
 function updateBlendUI() {}
@@ -2289,9 +2402,17 @@ const RND = {
   pattern: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
   // oscillator slots (Level is locked by default)
   olevel: () => 0.5 + rnd() * 0.5, opan: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.6),
-  flt: () => (rnd() < 0.6 ? 0 : rnd()), byp: () => (rnd() < 0.8 ? 0 : rnd() * 0.5),
+  byp: () => (rnd() < 0.8 ? 0 : rnd() * 0.5),
   pitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; },
   fine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
+  // FM: whole-numbered algorithms, ratios leaning on 1-4, the carrier (op 1) usually at 1; op 1 holds half the time
+  fmalgo: () => Math.floor(rnd() * 8), fmfb: () => (rnd() < 0.6 ? 0 : rnd() * 0.7),
+  fmpitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; }, fmfine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
+  ...Object.fromEntries([1, 2, 3, 4].flatMap(k => [
+    ['fmr' + k, () => { if (k === 1 && rnd() < 0.7) return 1; const r = rnd(); return r < 0.05 ? 0 : r < 0.35 ? 1 : r < 0.55 ? 2 : r < 0.67 ? 3 : r < 0.77 ? 4 : r < 0.92 ? 5 + Math.floor(rnd() * 4) : 9 + Math.floor(rnd() * 8); }],
+    ['fml' + k, () => (k === 1 ? 0.6 + rnd() * 0.4 : rnd() ** 1.3)],
+    ['fmd' + k, () => (k === 1 ? (rnd() < 0.5 ? 30 : logr(0.2, 20)) : rnd() < 0.3 ? 30 : logr(0.02, 8))],
+  ])),
   soct: () => (rnd() < 0.6 ? -1 : -2), sshape: () => rnd(), sdrive: () => rnd() ** 2 * 0.8,
   unison: () => (rnd() < 0.4 ? 0 : rnd()),
   glide: () => (rnd() < 0.5 ? 0 : rnd() < 0.9 ? rnd() * 0.1 : 0.1 + rnd() ** 2 * 0.5),   // half off; 95% under 100 ms
@@ -2336,7 +2457,7 @@ const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side))));
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'flt', 'byp', 'opan', 'soct']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'fmfb', 'fmr1', 'fmr2', 'fmr3', 'fmr4', 'fmd1', 'fmd2', 'fmd3', 'fmd4']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -2373,20 +2494,30 @@ function effectMixRules(side, g) {
   let top = shuffle(ix.filter(i => val(i) > 0.9 && free(i)));
   while (ix.filter(i => val(i) > 0.9).length > 1 && top.length) state[side][top.pop()] = 0.5 + rnd() * 0.4;
 }
-// A near-sine wave through a low-pass set low, a high-pass set high, or a band-pass can be close to silent, so when a
-// Wavetable slot's wave is nearly pure, the filter it mostly feeds leaves band-pass for low-pass and its cutoff moves toward the open end.
-function sineGuard(side) {
+/* FM: each side is sustained 60% of the time (every operator heard in that side's algorithm holds) and plucked
+   otherwise (those operators decay in 0.15 to 3 s); modulators keep their own random decays. */
+function fmCarrierRule(side, g) {
   for (let s = 0; s < 4; s++) {
-    if (state.oscType[s] !== 'wt' || state[side][oi(s, 'byp')] > 0.5) continue;
-    const k = state[side][oi(s, 'flt')] < 0.5 ? 0 : 1, ci = fi(k, 'cutoff'), d = DEFS[ci];
-    if (isLocked(d) || state.links[d.id]) continue;
+    if (state.oscType[s] !== 'fm' || !inGroup(DEFS[oi(s, 'fmd1')], g)) continue;
+    const heard = OscFM.ALGS[Math.round(MorphEngine.denorm(DEFS[oi(s, 'fmalgo')], state[side][oi(s, 'fmalgo')]))][1], sustained = rnd() < 0.6;
+    heard.forEach((h, k) => {
+      const i = oi(s, 'fmd' + (k + 1)), d = DEFS[i];
+      if (h && !isLocked(d) && !state.links[d.id]) state[side][i] = norm(d, sustained ? 30 : logr(0.15, 3));
+    });
+  }
+}
+// A near-sine wave through a low-pass set low, a high-pass set high, or a band-pass can be close to silent, so when a
+// Wavetable slot that goes through the filter is nearly pure, the filter leaves band-pass for low-pass and its cutoff moves toward the open end.
+function sineGuard(side) {
+  const ci = IX.cutoff, mi = IX.mode, cd = DEFS[ci], md = DEFS[mi];
+  for (let s = 0; s < 4; s++) {
+    if (state.oscType[s] !== 'wt' || state[side][oi(s, 'byp')] > 0.5 || isLocked(cd) || state.links[cd.id]) continue;
     MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
     MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
     let tot = 0; for (let h = 1; h <= 512; h++) tot += W.fr[0][h] ** 2 + W.fr[1][h] ** 2;
     if ((W.fr[0][1] ** 2 + W.fr[1][1] ** 2) / (tot + 1e-12) <= 0.85) continue;
     // band-passing a pure sine only changes its level, and a band far from its one harmonic silences it: go low-pass instead
-    const mi = fi(k, 'mode'), md = DEFS[mi];
     let mode = MorphEngine.denorm(md, state[side][mi]);
     if (mode >= 0.35 && mode <= 0.65 && !isLocked(md) && !state.links[md.id]) { state[side][mi] = rnd() * 0.3; mode = state[side][mi]; }
     const c = state[side][ci];
@@ -2394,41 +2525,48 @@ function sineGuard(side) {
     else if (mode > 0.65 && c > 0.35) state[side][ci] = rnd() * 0.35;
   }
 }
-/* Loudness guard: filters that pass almost none of the oscillators' harmonics (a band or high-pass far above
-   them, a low-pass shut below them) leave a side near silent. For middle C (plus each slot's pitch), the harmonics
-   of every active slot go through its routing and the two filters, at the filter envelope's peak and at sustain.
-   If less than 1% of the power (-20 dB) gets through at both, that side's filters are re-rolled (up to 10 times),
-   and as a last resort Filter 1 opens up as a low-pass. */
+/* Loudness guard: a filter that passes almost none of the oscillators' harmonics (a band or high-pass far above
+   them, a low-pass shut below them) leaves a side near silent. For middle C (plus each slot's pitch), the harmonics
+   of every active slot go through its Bypass split and the filter, at the filter envelope's peak and at sustain.
+   If less than 1% of the power (-20 dB) gets through at both, that side's filter is re-rolled (up to 10 times),
+   and as a last resort it opens up as a low-pass. */
 function filterMag2(f, fc, reso, mode) {
   const w = f / fc, k = 2 - 1.96 * reso, bpG = Math.sqrt(k * 2);
   const wl = mode < 0.5 ? 1 - mode * 2 : 0, wb = mode < 0.5 ? mode * 2 : 2 - mode * 2, wh = mode < 0.5 ? 0 : mode * 2 - 1;
   const nr = wl - wh * w * w, ni = wb * bpG * w, dr = 1 - w * w, di = k * w;
   return (nr * nr + ni * ni) / (dr * dr + di * di);
 }
+const GUARD_FRAME = new Float32Array(2048);
+// harmonics [frequency, power] of slot s on this side, for a note
+function slotHarmonics(s, side, f0) {
+  const t = state.oscType[s], val = key => MorphEngine.denorm(DEFS[oi(s, key)], state[side][oi(s, key)]), harm = [];
+  let re, im;
+  if (t === 'wt') {
+    MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
+    MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
+    MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
+    re = W.fr[0]; im = W.fr[1];
+  } else if (t === 'fm') {
+    OscFM.cycle({ algo: val('fmalgo'), fb: val('fmfb'), r: [1, 2, 3, 4].map(k => OscFM.RATIOS[val('fmr' + k)]), l: [1, 2, 3, 4].map(k => val('fml' + k)) }, 2048, GUARD_FRAME);
+    ({ re, im } = MorphEngine.analyze(GUARD_FRAME));
+  } else return [[f0, 1]];
+  for (let h = 1; h <= 512 && f0 * h < 20000; h++) harm.push([f0 * h, re[h] ** 2 + im[h] ** 2]);
+  return harm;
+}
 function passedDb(side) {
   const val = i => MorphEngine.denorm(DEFS[i], state[side][i]);
-  const F = [0, 1].map(k => ({ cut: val(fi(k, 'cutoff')), reso: val(fi(k, 'reso')), mode: val(fi(k, 'mode')), env: val(fi(k, 'envamt')), kt: val(fi(k, 'keytrack')) }));
-  const fsus = val(IX.fsus);
+  const cut = val(IX.cutoff), reso = val(IX.reso), mode = val(IX.mode), env = val(IX.envamt), kt = val(IX.keytrack), fsus = val(IX.fsus);
+  const t0 = state.oscType[0], p1 = t0 === 'wt' ? val(oi(0, 'pitch')) : t0 === 'fm' ? val(oi(0, 'fmpitch')) : 0;
+  const slots = [0, 1, 2, 3].filter(s => state.oscType[s] !== 'off').map(s => {
+    const t = state.oscType[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'fm' ? val(oi(s, 'fmpitch')) : p1 + 12 * val(oi(s, 'soct')));
+    return { note, harm: slotHarmonics(s, side, 440 * Math.pow(2, (note - 69) / 12)), lv: val(oi(s, 'olevel')) ** 2, byp: val(oi(s, 'byp')) };
+  });
   let dry = 0, best = 0;
   for (const fLv of [1, fsus]) {
     let wet = 0; dry = 0;
-    for (let s = 0; s < 4; s++) {
-      const t = state.oscType[s]; if (t === 'off') continue;
-      const p1 = state.oscType[0] === 'wt' ? val(oi(0, 'pitch')) : 0;
-      const note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : p1 + 12 * val(oi(s, 'soct'))), f0 = 440 * Math.pow(2, (note - 69) / 12);
-      const harm = [];
-      if (t === 'wt') {
-        MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
-        MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
-        MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
-        for (let h = 1; h <= 512 && f0 * h < 20000; h++) harm.push([f0 * h, W.fr[0][h] ** 2 + W.fr[1][h] ** 2]);
-      } else harm.push([f0, 1]);
-      const lv = val(oi(s, 'olevel')) ** 2, byp = val(oi(s, 'byp')), flt = val(oi(s, 'flt'));
-      const fc = F.map(q => Math.min(21600, Math.max(20, q.cut * Math.pow(2, q.env * 5 * fLv + q.kt * (note - 60) / 12))));
-      for (const [f, pw] of harm) {
-        const g = (1 - byp) * (1 - flt) * Math.sqrt(filterMag2(f, fc[0], F[0].reso, F[0].mode)) + (1 - byp) * flt * Math.sqrt(filterMag2(f, fc[1], F[1].reso, F[1].mode)) + byp;
-        dry += pw * lv; wet += pw * lv * g * g;
-      }
+    for (const sl of slots) {
+      const fc = Math.min(21600, Math.max(20, cut * Math.pow(2, env * 5 * fLv + kt * (sl.note - 60) / 12)));
+      for (const [f, pw] of sl.harm) { const g = (1 - sl.byp) * Math.sqrt(filterMag2(f, fc, reso, mode)) + sl.byp; dry += pw * sl.lv; wet += pw * sl.lv * g * g; }
     }
     best = Math.max(best, wet);
   }
@@ -2436,12 +2574,11 @@ function passedDb(side) {
 }
 function loudnessGuard(side) {
   const other = side === 'A' ? 'B' : 'A';
-  const free = DEFS.map((d, i) => i).filter(i => /^Filter [12]$/.test(DEFS[i].group) && !isLocked(DEFS[i]) && !state.links[DEFS[i].id]);
+  const free = ['cutoff', 'reso', 'mode', 'envamt', 'keytrack'].map(k => IX[k]).filter(i => !isLocked(DEFS[i]) && !state.links[DEFS[i].id]);
   for (let k = 0; k < 10 && passedDb(side) < -20; k++) free.forEach(i => { state[side][i] = rvApart(DEFS[i], side, state[other][i]); });
   if (passedDb(side) < -20) {
-    const mi = fi(0, 'mode'), ci = fi(0, 'cutoff');
-    if (free.includes(mi)) state[side][mi] = 0;
-    if (free.includes(ci)) state[side][ci] = Math.max(state[side][ci], 0.75);
+    if (free.includes(IX.mode)) state[side][IX.mode] = 0;
+    if (free.includes(IX.cutoff)) state[side][IX.cutoff] = Math.max(state[side][IX.cutoff], 0.75);
   }
 }
 // raw = section dice: anywhere in each knob's full range, none of the shaping rules (locks still apply)
@@ -2456,7 +2593,7 @@ function randomizeSide(side, g, raw) {
     if (state.links[d.id]) return;   // shared values only change with Randomize all or Randomize linked
     state[side][i] = raw ? rvRaw(d) : rvApart(d, side, state[other][i]);
   });
-  if (!raw) { mixOttGains(side, g); effectMixRules(side, g); }
+  if (!raw) { mixOttGains(side, g); effectMixRules(side, g); fmCarrierRule(side, g); }
   for (let s = 0; s < 4; s++) {   // each Wavetable slot's table for this side, unless its section is locked
     const grp = `Osc ${s + 1}`;
     if (state.oscType[s] === 'wt' && (!g || g === grp) && !state.secLocks[grp]) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }
@@ -2469,19 +2606,20 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
   DEFS.forEach((d, i) => { if (inGroup(d, g) && state.links[d.id] && !d.single && !isLocked(d)) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, 'A'); });
 }
 /* Slot types are shared by both sides, so only Randomize all (and launch) picks them; a locked section keeps its type.
-   Slot 1 stays Wavetable; slot 2 is Sub 40%, Wavetable 20%, Off 40%; slots 3 and 4 are Wavetable 20%, otherwise Off.
-   FX slots 1-3 get three different effects, kept in chain order; FX 4 stays OTT. */
-const OSC_ODDS = [[['wt', 1]], [['sub', 0.4], ['wt', 0.2], ['off', 0.4]], [['wt', 0.2], ['off', 0.8]], [['wt', 0.2], ['off', 0.8]]];
-const FX_POOL = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi'];
+   Slot 1 is never Off (Wavetable 45%, FM 40%, Sub 15%); slot 2 is Sub 30%, Wavetable 15%, FM 15%, Off 40%;
+   slots 3 and 4 are Wavetable 15%, FM 10%, otherwise Off. The FX slots get four different effects from all seven,
+   kept in chain order (so OTT, when it comes up, is last). */
+const OSC_ODDS = [[['wt', 0.45], ['fm', 0.4], ['sub', 0.15]], [['sub', 0.3], ['wt', 0.15], ['fm', 0.15], ['off', 0.4]],
+  [['wt', 0.15], ['fm', 0.1], ['off', 0.75]], [['wt', 0.15], ['fm', 0.1], ['off', 0.75]]];
+const FX_POOL = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'];
 function randomizeTypes() {
   const pick = odds => { let r = rnd(); for (const [t, w] of odds) { if (r < w) return t; r -= w; } return odds[odds.length - 1][0]; };
   for (let s = 0; s < 4; s++) if (!state.secLocks[`Osc ${s + 1}`]) state.oscType[s] = pick(OSC_ODDS[s]);
-  const locked = s => !!state.secLocks[`FX ${s + 1}`], free = [0, 1, 2].filter(s => !locked(s));
+  const locked = s => !!state.secLocks[`FX ${s + 1}`], free = [0, 1, 2, 3].filter(s => !locked(s));
   const taken = [0, 1, 2, 3].filter(locked).map(s => state.fxType[s]);
   const chosen = FX_POOL.filter(t => !taken.includes(t)).map(t => [rnd(), t]).sort((a, b) => a[0] - b[0]).slice(0, free.length).map(x => x[1])
     .sort((a, b) => FX_POOL.indexOf(a) - FX_POOL.indexOf(b));
   free.forEach((s, k) => { state.fxType[s] = chosen[k]; });
-  if (!locked(3)) state.fxType[3] = 'ott';
 }
 function randomizeAll(g, raw) {
   if (!g) randomizeTypes();
@@ -2567,7 +2705,7 @@ function openEditor(slot, side) {
 function closeEditor() { ed.classList.remove('open'); const b = $('wt' + edSide + edSlot); if (b && b.offsetParent) b.focus({ preventScroll:true }); }
 const tab = () => tables[edSlot][edSide];
 const edTitle = () => `Osc ${edSlot + 1} wavetable ${edSide}: ${tab().name}`;
-document.addEventListener('click', e => { const b = e.target.closest('[data-wt]'); if (b) openEditor(+b.dataset.wt, b.dataset.side); });
+document.addEventListener('click', e => { const b = e.target.closest('[data-wt]'); if (b && state.oscType[+b.dataset.wt] === 'wt') openEditor(+b.dataset.wt, b.dataset.side); });
 $('edDone').addEventListener('click', closeEditor);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ed.classList.contains('open')) closeEditor(); });
 
@@ -2771,12 +2909,16 @@ updateDlUI();
    Engine and effect pickers, folding sections, and showing only the
    current type's controls. Types are shared by both sides.
    ===================================================================== */
+// which type containers a slot of type t shows: its own, plus '*' (Level, Pan, Bypass) on any oscillator that isn't Off
+const engShown = (eng, t) => eng === t || (eng === '*' && t !== 'off');
 function updateSlotsUI() {
   for (let s = 0; s < 4; s++) {
     const t = state.oscType[s], sec = sections[`Osc ${s + 1}`];
     sec.querySelector('.typesel').value = t;
+    sec.dataset.type = t;
     sec.classList.toggle('slotoff', t === 'off');
-    sec.querySelectorAll('.eng').forEach(e => { e.hidden = e.dataset.eng === '*' ? t === 'off' : e.dataset.eng !== t; });
+    sec.querySelectorAll('.eng').forEach(e => { e.hidden = !engShown(e.dataset.eng, t); });
+    sec.querySelectorAll('.wtcard[data-wt]').forEach(b => { b.disabled = t !== 'wt'; });
     const f = state.fxType[s], fsec = sections[`FX ${s + 1}`];
     fsec.querySelector('.typesel').value = f;
     fsec.querySelectorAll('.eng').forEach(e => { e.hidden = e.dataset.eng !== f; });
@@ -2787,6 +2929,28 @@ function updateSlotsUI() {
     sec.querySelector('.fold').setAttribute('aria-expanded', !f);
   }
 }
+/* Slots sit in fixed positions: each slot's body is as tall as the largest type it can hold, measured on the
+   page (so it follows the screen width), and switching type never moves anything below it. */
+function fixSlotHeights() {
+  DEFS.forEach((d, i) => { if (d.kind) updateKnob(i); });   // hidden types' knobs need their text to measure true
+  for (const sec of Object.values(sections)) {
+    const kind = sec.dataset.kind; if (kind !== 'osc' && kind !== 'fx') continue;
+    const body = sec.querySelector('.gbody'), engs = [...body.querySelectorAll('.eng')], was = engs.map(e => e.hidden);
+    const folded = sec.classList.contains('folded');
+    sec.classList.remove('folded'); body.style.minHeight = '';
+    let max = 0;
+    for (const [t] of kind === 'osc' ? OSC_TYPES : FX_TYPES) {
+      engs.forEach(e => { e.hidden = kind === 'osc' ? !engShown(e.dataset.eng, t) : e.dataset.eng !== t; });
+      max = Math.max(max, body.offsetHeight);
+    }
+    engs.forEach((e, k) => { e.hidden = was[k]; });
+    body.style.minHeight = max + 'px';
+    if (folded) sec.classList.add('folded');
+  }
+}
+let fixTimer = null;
+window.addEventListener('resize', () => { clearTimeout(fixTimer); fixTimer = setTimeout(fixSlotHeights, 150); });
+if (document.fonts) document.fonts.ready.then(fixSlotHeights);
 // Knobs of a type that has just been shown were not kept up to date while hidden
 const refreshSlot = (kind, slot) => DEFS.forEach((d, i) => { if (d.kind === kind && d.slot === slot && isActive(d)) updateKnob(i); });
 
@@ -3321,7 +3485,21 @@ $('rzNotes').addEventListener('click', () => editSeq(randNotes));
 // main-page sequence dice and launch: new rate, new generator settings (Arp or Riff), rhythm, velocity,
 // and a density that leans high (never below 30%)
 const highDensity = () => 1 - 0.7 * Math.random() ** 2;
-function fullSeqRandom(q) { fixSeq(q); randRate(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); q.density = highDensity(); }
+/* Random patterns always hold at least 5 notes, and nine times in ten keep a note on the downbeat.
+   A slow rate that can't fit 5 notes into one bar gets two bars. */
+const MIN_NOTES = 5;
+function roomForNotes(s) { if (s.steps.length < MIN_NOTES && s.n16 < MAXSTEPS) { s.n16 = MAXSTEPS; fitSlots(s, true); } }
+function shapeRandom(s) {
+  const kept = () => keptSteps(s).filter(Boolean).length, want0 = Math.random() < 0.9;
+  if (want0) s.steps[0].on = true;
+  for (let k = 0; k < 60 && kept() < Math.min(MIN_NOTES, s.steps.length); k++) {
+    if (s.density < 1) s.density = Math.min(1, s.density + 0.1);   // thin less first, then switch rests back on
+    else { const off = s.steps.filter(st => !st.on); if (!off.length) break; off[Math.floor(Math.random() * off.length)].on = true; }
+  }
+  // which notes density keeps depends on dseed (not how many), so pick one that keeps the downbeat
+  if (want0) for (let k = 0; k < 40 && !keptSteps(s)[0]; k++) s.dseed = Math.random();
+}
+function fullSeqRandom(q) { fixSeq(q); randRate(q); roomForNotes(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); q.density = highDensity(); shapeRandom(q); }
 function randSeqSide(k) { fullSeqRandom(state.seq[k]); }
 $('rsA').addEventListener('click', () => bulk(() => randSeqSide('A')));
 $('rsB').addEventListener('click', () => bulk(() => randSeqSide('B')));
@@ -3330,7 +3508,7 @@ $('rzVel').addEventListener('click', () => editSeq(randVel));
 function randRate(s) { s.rate = Math.floor(Math.random() * RATES.length); fitSlots(s, true); }
 $('rzRate').addEventListener('click', () => editSeq(randRate));
 $('rzArp').addEventListener('click', () => editSeq(s => { randArpSettings(); genFromControls(s); }));
-function randAllSide(s) { randRate(s); randArpSettings(); genFromControls(s); randRhythm(s); randVel(s); s.density = 0.3 + 0.7 * Math.random(); }
+function randAllSide(s) { randRate(s); roomForNotes(s); randArpSettings(); genFromControls(s); randRhythm(s); randVel(s); s.density = 0.3 + 0.7 * Math.random(); shapeRandom(s); }
 $('rzAll').addEventListener('click', () => editSeq(randAllSide));
 $('sqOther').addEventListener('click', () => { pushUndo(); state.seq[sqSide === 'A' ? 'B' : 'A'] = cloneSeq(cur()); seqChanged(); });
 
@@ -3433,6 +3611,7 @@ setPanel('seq', true);   // the sequencer is the starting view
 labelOct();
 updateIcons();
 updateSlotsUI();
+fixSlotHeights();
 refreshAll();
 updateBlendUI();
 // Every launch starts from a fresh random patch and fresh 16-step sequences. Undo brings back the last session.

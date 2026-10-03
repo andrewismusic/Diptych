@@ -58,9 +58,9 @@ function plotSet(c, fn, n) {
   c.g.globalAlpha = 1;
 }
 function label(c, text, x, y, align) { c.g.fillStyle = css('--muted'); c.g.font = '11px "Barlow Semi Condensed", sans-serif'; c.g.textAlign = align; c.g.fillText(text, x, y); }
-function drawFilterViz(k) {
-  const c = prep($('vzF' + (k + 1))); if (!c) return;
-  const f = `f${k + 1}.`, cut = trio(f + 'cutoff'), res = trio(f + 'reso'), md = trio(f + 'mode');
+function drawFilterViz() {
+  const c = prep($('vzF')); if (!c) return;
+  const cut = trio('cutoff'), res = trio('reso'), md = trio('mode');
   const top = 24, bot = -36, yOf = db => 6 + (top - Math.max(bot, Math.min(top, db))) / (top - bot) * (c.h - 12);
   c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
   c.g.beginPath(); c.g.moveTo(0, yOf(0)); c.g.lineTo(c.w, yOf(0)); c.g.stroke();
@@ -119,6 +119,20 @@ function drawOttViz(slot) {
 }
 const drawOttAll = () => { for (let s = 0; s < 4; s++) drawOttViz(s); };
 function onOtt(d) { ottLive[d.slot] = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttAll(); }); } }
+// one cycle of a slot's sound for side 'A', 'B' or 'now' (what you hear), for the wave cards
+const slotVal = (s, key, which) => { const i = oi(s, key); return MorphEngine.denorm(DEFS[i], which === 'now' ? resolveNorm(i) : state[which][i]); };
+const CYC = new Float32Array(256);
+function slotCycle(s, which) {
+  const t = state.oscType[s];
+  if (t === 'sub') {
+    const shape = slotVal(s, 'sshape', which), g = 1 + 7 * slotVal(s, 'sdrive', which), tg = Math.tanh(g);
+    for (let n = 0; n < 256; n++) CYC[n] = OscSub.sample(n / 256, 1 / 256, shape, g, tg);
+  } else if (t === 'fm') {
+    OscFM.cycle({ algo: slotVal(s, 'fmalgo', which), fb: slotVal(s, 'fmfb', which), r: [1, 2, 3, 4].map(k => OscFM.RATIOS[slotVal(s, 'fmr' + k, which)]),
+      l: [1, 2, 3, 4].map(k => slotVal(s, 'fml' + k, which)) }, 256, CYC);
+  } else CYC.fill(0);
+  return CYC;
+}
 let wavesQueued = false;
 function drawWaves() {
   if (wavesQueued) return; wavesQueued = true;
@@ -126,16 +140,25 @@ function drawWaves() {
     wavesQueued = false;
     const sp = state.spectral;
     for (let s = 0; s < 4; s++) {
-      if (state.oscType[s] !== 'wt' || state.folded[`Osc ${s + 1}`]) continue;
-      MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
-      drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
-      MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], sp, W.fb[0], W.fb[1]);
-      drawWave($('cvB' + s), synthDisplay(W.fb[0], W.fb[1]), css('--b'), { fit:true });
-      MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(oi(s, 'wave')), sp, W.fr[0], W.fr[1]);
-      drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
-      $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
+      const t = state.oscType[s];
+      if (state.folded[`Osc ${s + 1}`]) continue;
+      if (t === 'wt') {
+        MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
+        drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
+        MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], sp, W.fb[0], W.fb[1]);
+        drawWave($('cvB' + s), synthDisplay(W.fb[0], W.fb[1]), css('--b'), { fit:true });
+        MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(oi(s, 'wave')), sp, W.fr[0], W.fr[1]);
+        drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
+        $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
+      } else {
+        drawWave($('cvA' + s), slotCycle(s, 'A'), css('--a'), { fit:true });
+        drawWave($('cvB' + s), slotCycle(s, 'B'), css('--b'), { fit:true });
+        drawWave($('cvH' + s), slotCycle(s, 'now'), mixColor(state.morph), { fit:true, lw:2.4 });
+        const name = which => t === 'fm' ? FMT.fmalgo(slotVal(s, 'fmalgo', which)) : t === 'sub' ? FMT.sshape(slotVal(s, 'sshape', which)) : 'Off';
+        $('nmA' + s).textContent = name('A'); $('nmB' + s).textContent = name('B');
+      }
     }
-    drawFilterViz(0); drawFilterViz(1); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttAll(); drawLanes();
+    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttAll(); drawLanes();
   });
 }
 function updateBlendUI() {}

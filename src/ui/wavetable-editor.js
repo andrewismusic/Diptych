@@ -26,7 +26,7 @@ function openEditor(slot, side) {
 function closeEditor() { ed.classList.remove('open'); const b = $('wt' + edSide + edSlot); if (b && b.offsetParent) b.focus({ preventScroll:true }); }
 const tab = () => tables[edSlot][edSide];
 const edTitle = () => `Osc ${edSlot + 1} wavetable ${edSide}: ${tab().name}`;
-document.addEventListener('click', e => { const b = e.target.closest('[data-wt]'); if (b) openEditor(+b.dataset.wt, b.dataset.side); });
+document.addEventListener('click', e => { const b = e.target.closest('[data-wt]'); if (b && state.oscType[+b.dataset.wt] === 'wt') openEditor(+b.dataset.wt, b.dataset.side); });
 $('edDone').addEventListener('click', closeEditor);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ed.classList.contains('open')) closeEditor(); });
 

@@ -62,3 +62,17 @@ test('the engine plays B note for note at 100%, one note at a time (20 random pa
   expect(res.mismatches).toEqual([]);
   expect(res.overlaps).toBe(0);
 });
+
+test('random patterns hold at least 5 notes and usually start on the downbeat', async ({ page }) => {
+  await openSynth(page, { seed: 24 });
+  const r = await page.evaluate(() => {
+    const counts = [], downbeat = [];
+    for (let k = 0; k < 200; k++) {
+      randSeqs();
+      for (const q of [state.seq.A, state.seq.B]) { const kept = keptSteps(q); counts.push(kept.filter(Boolean).length); downbeat.push(kept[0]); }
+    }
+    return { min: Math.min(...counts), downbeat: downbeat.filter(Boolean).length / downbeat.length };
+  });
+  expect(r.min).toBeGreaterThanOrEqual(5);
+  expect(r.downbeat).toBeGreaterThan(0.85);
+});

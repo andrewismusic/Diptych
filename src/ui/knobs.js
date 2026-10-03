@@ -1,7 +1,7 @@
 /* =====================================================================
    KNOBS
    ===================================================================== */
-const VIZ = { 'Filter 1':'vzF1', 'Filter 2':'vzF2', 'Filter envelope':'vzFE', 'Amp envelope':'vzAE' };
+const VIZ = { 'Filter': [['vzF', 'Filter response'], ['vzFE', 'Filter envelope']], 'Amp envelope': [['vzAE', 'Amp envelope']] };
 const lockIcon = on => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="${on ? 'M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7' : 'M5.2 7V5.2a2.8 2.8 0 0 1 5.5-.8'}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const iconBtn = (id, label, single) => `<span class="icons"><button type="button" class="lock" data-plock="${id}" aria-pressed="false" aria-label="Lock ${label}"></button>${single ? '' : `<button type="button" class="lock" data-plink="${id}" aria-pressed="false" aria-label="Link ${label}"></button>`}</span>`;
 const linkIcon = on => `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${on
@@ -36,7 +36,8 @@ const knobHTML = (d, i) => `<div class="kn">
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
   </div>`;
-const wtCards = s => `<div class="wt">
+// A, what you hear, and B for every oscillator slot; on a Wavetable slot the A and B cards open the editor
+const waveCards = s => `<div class="wt">
     <button class="wtcard a" id="wtA${s}" data-wt="${s}" data-side="A" type="button" aria-label="Edit wavetable A of Osc ${s + 1}">
       <canvas id="cvA${s}"></canvas><span class="wtlabel"><span class="nm" id="nmA${s}"></span><span class="ac">Edit A</span></span></button>
     <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm">What you hear</span></span></div>
@@ -54,11 +55,12 @@ function makeSection(d) {
   if (d.kind === 'fx') head += `<select class="typesel" data-fxsel="${d.slot}" aria-label="${d.group} effect">${options(FX_TYPES)}</select>`;
   head += '</h2>';
   let body;
-  if (d.kind === 'osc') body = Object.keys(OSC_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'wt' ? wtCards(d.slot) : ''}<div class="knobs"></div></div>`).join('')
+  if (d.kind === 'osc') body = waveCards(d.slot) + Object.keys(OSC_ENG).map(e => `<div class="eng" data-eng="${e}"><div class="knobs"></div></div>`).join('')
     + '<div class="eng" data-eng="*"><div class="knobs"></div></div>';
   else if (d.kind === 'fx') body = Object.keys(FX_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'ott'
     ? `<canvas class="viz" id="vzOT${d.slot}" aria-label="OTT bands: split points, gain settings and live levels"></canvas>` : ''}<div class="knobs"></div></div>`).join('');
-  else { const viz = VIZ[d.group]; body = `${viz ? `<canvas class="viz" id="${viz}" aria-label="${d.group}: A, B and current shape"></canvas>` : ''}<div class="knobs"></div>`; }
+  else body = (VIZ[d.group] || []).map(([id, name]) => `<canvas class="viz" id="${id}" aria-label="${name}: A, B and current shape"></canvas>`).join('') + '<div class="knobs"></div>';
+  if (d.kind) g.dataset.kind = d.kind;
   g.innerHTML = head + `<div class="gbody">${body}</div>`;
   groupsEl.appendChild(g);
   return g;

@@ -47,3 +47,10 @@
 .black{position:absolute;top:0;height:62%;width:7.5%;background:var(--keyb);border-radius:0 0 4px 4px;z-index:2}
 .white.on{background:color-mix(in srgb,var(--ink) 20%,var(--key))}
 .black.on{background:var(--muted)}
+.rbar{display:flex;align-items:center;gap:6px;padding:8px 0 2px;flex-wrap:nowrap}
+.rgrp{display:inline-flex;align-items:center;gap:3px}
+.rgrp + .rgrp{margin-left:4px}
+.ricon{display:inline-flex;color:var(--muted);margin-right:1px}
+.rbar button{min-height:32px;padding:2px 8px;font-size:.88rem}
+.rbar .ra{color:var(--a)} .rbar .rb{color:var(--b)}
+.rbar .undo{margin-left:auto;padding:2px 8px;display:inline-flex;align-items:center}

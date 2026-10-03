@@ -61,7 +61,7 @@ test('patch buttons: Copy, Swap, Reset, Undo and the dice work without errors', 
   await page.click('#copyAB');
   expect(await page.evaluate(() => tables.every(t => t.A.name === t.B.name))).toBe(true);
   await page.click('#swap'); await page.click('#rndAll'); await page.click('#rndA'); await page.click('#rndLinked');
-  for (const g of ['Osc 1', 'Filter 2', 'FX 4']) await page.click(`[data-dice="${g}"]:not([data-side])`);
+  for (const g of ['Osc 1', 'Filter', 'FX 4']) await page.click(`[data-dice="${g}"]:not([data-side])`);
   const before = await snap();
   await page.click('#resetAll');
   expect(await page.evaluate(() => ({ osc: state.oscType, fx: state.fxType }))).toEqual({ osc: ['wt', 'off', 'off', 'off'], fx: ['drive', 'delay', 'reverb', 'ott'] });
@@ -112,6 +112,7 @@ test.describe('phone', () => {
 
   test('editors open full screen without sideways scroll and close again', async ({ page }) => {
     await openSynth(page);
+    await page.locator('section[data-group="Osc 1"] .typesel').selectOption('wt');   // only Wavetable slots open the editor
     for (const [open, panel, done] of [['#wtA0', '#ed', '#edDone'], ['#seqEdit', '#sq', '#sqDone']]) {
       await page.locator(open).tap();
       await expect(page.locator(panel)).toHaveClass(/open/);
@@ -140,5 +141,35 @@ test.describe('phone', () => {
     await expect(fx1.locator('.gbody')).toBeVisible();
     // headings with a picker, dice, padlock and On/Off still fit at phone width
     expect(await page.evaluate(() => [...document.querySelectorAll('.group h2')].every(h => h.scrollWidth <= h.clientWidth + 1 && h.getBoundingClientRect().right <= innerWidth))).toBe(true);
+  });
+
+  test('slots keep a fixed height whatever type they hold', async ({ page }) => {
+    await openSynth(page);
+    const heights = await page.evaluate(async () => {
+      const h = g => sections[g].getBoundingClientRect().height, out = {};
+      for (const [g, list, pick] of [['Osc 2', OSC_TYPES, 'osc'], ['FX 3', FX_TYPES, 'fx']]) {
+        out[g] = [];
+        for (const [t] of list) {
+          const sel = sections[g].querySelector('.typesel'); sel.value = t; sel.dispatchEvent(new Event('change', { bubbles: true }));
+          out[g].push(Math.round(h(g)));
+        }
+      }
+      return out;
+    });
+    for (const g of Object.keys(heights)) expect(new Set(heights[g]).size, `${g}: ${heights[g]}`).toBe(1);
+  });
+
+  test('the randomize buttons sit in the bottom panel and fit', async ({ page }) => {
+    await openSynth(page);
+    const m = await page.evaluate(() => {
+      const bar = document.querySelector('#kb .rbar'), r = bar.getBoundingClientRect();
+      return { inPanel: !!bar, right: Math.max(...[...bar.querySelectorAll('button')].map(b => b.getBoundingClientRect().right)), vw: innerWidth, bottom: r.bottom, vh: innerHeight };
+    });
+    expect(m.inPanel).toBe(true);
+    expect(m.right).toBeLessThanOrEqual(m.vw);
+    expect(m.bottom).toBeLessThanOrEqual(m.vh);
+    await page.locator('#rndAll').tap();
+    await page.locator('#rsBoth').tap();
+    await expect(page.locator('#undo')).toBeEnabled();
   });
 });

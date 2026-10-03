@@ -12,7 +12,7 @@ analyzeAll();
 
 /* ---------- audio startup ---------- */
 // Everything the audio thread runs: the engine plus its oscillator and effect classes (stringified into the worklet).
-const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
+const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, OscFM, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
 let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
 const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
 const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });

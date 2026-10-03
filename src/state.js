@@ -1,7 +1,7 @@
 /* ---------- state + persistence ----------
    The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v4', STORE_VER = 1;
+const STORE = 'diptych-v4', STORE_VER = 2;
 const DEFAULT_LOCKS = () => {
   const l = { level: true, pan: true, pattern: true };
   for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
@@ -9,7 +9,7 @@ const DEFAULT_LOCKS = () => {
 };
 const DEFAULT_LINKS = () => {
   const l = {};
-  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.pitch`] = true; l[`o${s}.fine`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine', 'fmpitch', 'fmfine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
   return l;
 };
 const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
@@ -55,6 +55,10 @@ const pickList = (saved, list, n, fallback) => (Array.isArray(saved) && saved.le
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
   if (saved && Array.isArray(saved.ids) && Array.isArray(saved.A) && saved.ids.length === saved.A.length && saved.B.length === saved.A.length) {
+    // ver 2: back to one filter. Filter 1's ids ('f1.cutoff') become plain ('cutoff'); Filter 2 and the slots' filter blend are dropped.
+    const v1id = id => (!(saved.ver >= 2) && id.startsWith('f1.') ? id.slice(3) : id);
+    if (!(saved.ver >= 2)) for (const k of ['locks', 'links', 'linkMem']) if (saved[k]) saved[k] = Object.fromEntries(Object.entries(saved[k]).map(([id, v]) => [v1id(id), v]));
+    saved.ids = saved.ids.map(v1id);
     saved.ids.forEach((id, k) => {
       const i = IX[id]; if (i === undefined) return;
       state.A[i] = clamp(+saved.A[k]); state.B[i] = clamp(+saved.B[k]);
@@ -62,6 +66,7 @@ try {
     });
     state.morph = clamp(+saved.morph || 0);
     for (const k of ['locks', 'links', 'secLocks', 'linkMem', 'folded']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
+    if (!(saved.ver >= 2)) for (let s = 1; s <= 4; s++) { state.links[`o${s}.fmpitch`] = true; state.links[`o${s}.fmfine`] = true; }   // FM arrived in ver 2
     state.mono = !!saved.mono;
     state.oscType = pickList(saved.oscType, OSC_TYPES, 4, state.oscType);
     state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType);

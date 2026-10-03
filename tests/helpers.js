@@ -46,7 +46,7 @@ function installHarness() {
   const defs = () => DEFS.map(({ id, key, min, max, curve, snap, kind, slot, eng }) => ({ id, key, min, max, curve, snap: !!snap, kind, slot, eng }));
   const specOf = t => { const re = [], im = []; t.frames.forEach(f => { const a = MorphEngine.analyze(f); re.push(a.re); im.push(a.im); }); return { re, im }; };
   window.T = {
-    // Normalized A/B arrays at every parameter's default, with overrides by id in real units: { 'f1.cutoff': 2000 } or { level: [0.2, 1] }
+    // Normalized A/B arrays at every parameter's default, with overrides by id in real units: { 'cutoff': 2000 } or { level: [0.2, 1] }
     patch(over = {}) {
       const A = DEFS.map((_, i) => defaultNorm('A', i)), B = DEFS.map((_, i) => defaultNorm('B', i)), C = DEFS.map(() => 0);
       for (const [id, v] of Object.entries(over)) {

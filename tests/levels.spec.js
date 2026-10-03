@@ -43,7 +43,7 @@ for (const signal of ['dark', 'bright']) {
         if (KNOWN[name]) test.fail(true, KNOWN[name]);
         await openSynth(page);
         const rows = await page.evaluate(({ type, settings, bright }) => {
-          const base = bright ? { 'f1.cutoff': 18000, 'f1.reso': 0, 'f1.envamt': 0 } : {};
+          const base = bright ? { cutoff: 18000, reso: 0, envamt: 0 } : {};
           const notes = [[48, 0, 9999], [55, 0, 9999], [63, 0, 9999]];
           const slot1 = o => Object.fromEntries(Object.entries(o).map(([k, v]) => ['x1.' + k, v]));
           const lvl = (over, on) => T.db(T.stereoRms(T.render({ patch: T.flat({ ...base, ...slot1(over) }), notes, blocks: 940,

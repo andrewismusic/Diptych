@@ -12,7 +12,7 @@ const waitForSave = page => page.waitForTimeout(700);   // saves are debounced b
 
 test('Undo after a relaunch restores the previous session exactly, slot types included', async ({ page }) => {
   await openSynth(page, { seed: 31, storage: {} });
-  await page.evaluate(() => { state.links['f1.reso'] = true; state.locks.fatk = true; state.fxOn[2] = false; state.dlSpill[1] = true; save(); });
+  await page.evaluate(() => { state.links.reso = true; state.locks.fatk = true; state.fxOn[2] = false; state.dlSpill[1] = true; save(); });
   await waitForSave(page);
   const before = await snapshot(page), framesBefore = await frames(page);
   await page.reload();
@@ -42,16 +42,16 @@ test('parameters are matched by id: unknown ids are ignored, missing ones get de
   await openSynth(page, { seed: 33, storage: {} });
   await waitForSave(page);
   const saved = JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY));
-  const i = saved.ids.indexOf('f1.reso');
+  const i = saved.ids.indexOf('reso');
   saved.A[i] = 0.9; saved.B[i] = 0.9;
-  const ci = saved.ids.indexOf('f1.cutoff');
+  const ci = saved.ids.indexOf('cutoff');
   for (const k of ['A', 'B', 'C']) saved[k].splice(ci, 1);
   saved.ids.splice(ci, 1);
   saved.ids.push('bogus'); saved.A.push(0.5); saved.B.push(0.5); saved.C.push(0);
   await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(saved)]);
   await page.reload();
   await page.click('#undo');   // back to exactly what was loaded, before the launch randomize
-  const got = await page.evaluate(() => { const c = IX['f1.cutoff']; return { reso: state.A[IX['f1.reso']], cutoffA: state.A[c], cutoffB: state.B[c], defA: defaultNorm('A', c), defB: defaultNorm('B', c), n: state.A.length, nDefs: DEFS.length }; });
+  const got = await page.evaluate(() => { const c = IX.cutoff; return { reso: state.A[IX.reso], cutoffA: state.A[c], cutoffB: state.B[c], defA: defaultNorm('A', c), defB: defaultNorm('B', c), n: state.A.length, nDefs: DEFS.length }; });
   expect(got.reso).toBeCloseTo(0.9, 9);
   expect(got.cutoffA).toBeCloseTo(got.defA, 9);
   expect(got.cutoffB).toBeCloseTo(got.defB, 9);
@@ -62,7 +62,7 @@ test('patches from the fixed-chain version (diptych-v3) are ignored', async ({ p
   const old = JSON.stringify({ ver: 9, ids: ['cutoff'], A: [0.1], B: [0.1], C: [0], bpm: 77, oscType: ['sub', 'sub', 'sub', 'sub'] });
   await openSynth(page, { seed: 34, storage: { 'diptych-v3': old } });
   await page.click('#undo');
-  expect(await page.evaluate(() => ({ osc: state.oscType, cutoff: state.A[IX['f1.cutoff']] === defaultNorm('A', IX['f1.cutoff']) })))
+  expect(await page.evaluate(() => ({ osc: state.oscType, cutoff: state.A[IX.cutoff] === defaultNorm('A', IX.cutoff) })))
     .toEqual({ osc: ['wt', 'off', 'off', 'off'], cutoff: true });
 });
 
@@ -72,4 +72,23 @@ test('a corrupt saved patch falls back to defaults instead of breaking the page'
   await openSynth(page, { seed: 35, storage: { [KEY]: '{not json' } });
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => state.A.length === DEFS.length)).toBe(true);
+});
+
+test('ver 1 patches (two filters) migrate: Filter 1 becomes the filter, Filter 2 and the slot blend are dropped', async ({ page }) => {
+  await openSynth(page, { seed: 36, storage: {} });
+  await waitForSave(page);
+  const saved = JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY));
+  const ren = id => ['cutoff', 'reso', 'mode', 'envamt', 'keytrack'].includes(id) ? 'f1.' + id : id;
+  saved.ver = 1; saved.ids = saved.ids.map(ren);
+  const ci = saved.ids.indexOf('f1.cutoff'); saved.A[ci] = 0.42; saved.B[ci] = 0.43;
+  saved.ids.push('f2.cutoff', 'o1.flt'); saved.A.push(0.9, 1); saved.B.push(0.9, 1); saved.C.push(0, 0);
+  saved.locks = { ...saved.locks, 'f1.reso': true };
+  await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(saved)]);
+  await page.reload();
+  await page.click('#undo');
+  const got = await page.evaluate(() => ({ a: state.A[IX.cutoff], b: state.B[IX.cutoff], resoLocked: !!state.locks.reso, fmLinked: !!state.links['o2.fmpitch'] }));
+  expect(got.a).toBeCloseTo(0.42, 6); expect(got.b).toBeCloseTo(0.43, 6);
+  expect(got.resoLocked).toBe(true); expect(got.fmLinked).toBe(true);
+  await waitForSave(page);
+  expect(JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY)).ver).toBe(2);
 });

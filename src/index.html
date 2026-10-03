@@ -36,20 +36,6 @@
 </header>
 
 <main id="groups">
-  <div class="patchbar">
-    <div class="rrow"><span class="rlbl">Randomize sound</span>
-      <button type="button" id="rndA" class="ra">A</button>
-      <button type="button" id="rndLinked">Linked</button>
-      <button type="button" id="rndAll">All</button>
-      <button type="button" id="rndB" class="rb">B</button>
-    </div>
-    <div class="rrow"><span class="rlbl">Randomize sequence</span>
-      <button type="button" id="rsA" class="ra">A</button>
-      <button type="button" id="rsBoth">Both</button>
-      <button type="button" id="rsB" class="rb">B</button>
-      <button type="button" id="undo" disabled>Undo</button>
-    </div>
-  </div>
 </main>
 
 <div class="foot">
@@ -151,6 +137,13 @@
 
 <div class="kb" id="kb">
   <div class="wrap">
+    <div class="rbar" role="group" aria-label="Randomize">
+      <span class="rgrp" role="group" aria-label="Randomize sound"><span class="ricon" title="Randomize sound"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5.3" cy="5.3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="10.7" cy="10.7" r="1.2" fill="currentColor"/></svg></span>
+        <button type="button" id="rndA" class="ra" aria-label="Randomize sound, side A">A</button><button type="button" id="rndLinked" aria-label="Randomize linked knobs">Link</button><button type="button" id="rndAll" aria-label="Randomize all of the sound">All</button><button type="button" id="rndB" class="rb" aria-label="Randomize sound, side B">B</button></span>
+      <span class="rgrp" role="group" aria-label="Randomize sequence"><span class="ricon" title="Randomize sequence"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M6 12.2V3.4l7-1.6v8.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><ellipse cx="4.3" cy="12.3" rx="2" ry="1.6" fill="currentColor"/><ellipse cx="11.3" cy="10.5" rx="2" ry="1.6" fill="currentColor"/></svg></span>
+        <button type="button" id="rsA" class="ra" aria-label="Randomize sequence A">A</button><button type="button" id="rsBoth" aria-label="Randomize both sequences">Both</button><button type="button" id="rsB" class="rb" aria-label="Randomize sequence B">B</button></span>
+      <button type="button" id="undo" class="undo" aria-label="Undo" disabled><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 4.5H10a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.8 2.2L5.3 4.6l2.5 2.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
     <div class="morph">
       <span class="letter a" aria-hidden="true">A</span>
       <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">

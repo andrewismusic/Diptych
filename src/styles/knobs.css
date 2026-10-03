@@ -1,9 +1,4 @@
 /* ---------- groups + knobs ---------- */
-.patchbar{flex:1 1 100%;display:flex;flex-direction:column;gap:6px;padding:12px 0 0}
-.rrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.rlbl{color:var(--muted);font-size:.92rem;min-width:10.4em}
-.rrow #undo{margin-left:auto}
-.patchbar .ra{color:var(--a)} .patchbar .rb{color:var(--b)}
 main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
 .group{flex:1 1 100%;padding:12px 0 6px}
 .group h2{margin:0 0 6px;font-size:.95rem;font-weight:600;color:var(--muted)}
@@ -56,3 +51,7 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .eng[hidden]{display:none}
 .eng + .eng{margin-top:6px}
 .slotoff .tools{opacity:.35}
+.wtcard:disabled{opacity:1;cursor:default}
+.group[data-kind="osc"]:not([data-type="wt"]) .wtcard .ac{visibility:hidden}
+.group[data-kind="osc"] .wt{margin-bottom:6px}
+.group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* slot knobs keep the same height whatever their values say */

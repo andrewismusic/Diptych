@@ -5,9 +5,9 @@
    lerp(A, B, bend(morph, curve)); only the parameters of each slot's
    current type are resolved.
 
-   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sub) ->
-   each slot splits between filter 1, filter 2 and around the filters ->
-   amp envelope -> master Level and Pan. Then the 4 FX slots in order,
+   Signal flow per voice: 4 oscillator slots (Off / Wavetable / FM / Sub)
+   -> each slot splits between the filter and around it (Bypass) -> amp
+   envelope -> master Level and Pan. Then the 4 FX slots in order,
    and a final tanh soft clip.
 
    MorphEngine and the classes in the other engine files are stringified
@@ -23,25 +23,28 @@ class MorphEngine {
     this.act = new Uint8Array(n); this.fresh = new Uint8Array(n);
     this.morph = 0; this.first = true; this.clock = 0; this.lastPitch = -1;
     this.I = {}; defs.forEach((d, i) => { this.I[d.id] = i; });
-    // per-slot key -> index maps: oscillator slots, FX slots and the two filters
+    // per-slot key -> index maps: oscillator slots and FX slots
     const keyMap = (kind, slot) => { const m = {}; defs.forEach((d, i) => { if (d.kind === kind && d.slot === slot) m[d.key] = i; }); return m; };
     this.oP = [0, 1, 2, 3].map(s => keyMap('osc', s));
     this.xP = [0, 1, 2, 3].map(s => keyMap('fx', s));
-    this.fP = [0, 1].map(s => keyMap('flt', s));
     // oscillator slots: type, pending type, and a fade used to switch types without clicks
     this.oscType = ['off', 'off', 'off', 'off']; this.oscNext = [null, null, null, null];
     this.oFade = new Float64Array(4);
-    this.cPrev = new Float64Array(24); this.cNext = new Float64Array(24); this.cD = new Float64Array(24);   // per slot: to F1 L/R, F2 L/R, around L/R
+    this.cPrev = new Float64Array(16); this.cNext = new Float64Array(16); this.cD = new Float64Array(16);   // per slot: into the filter L/R, around it L/R
     this.banks = [0, 1, 2, 3].map(() => new WtBank());
     this.uL = new Float32Array(28); this.uR = new Float32Array(28); this.uOff = new Float32Array(28);
     this.uDt = new Float32Array(28); this.uLev = new Int32Array(28); this.uJ = new Int32Array(28); this.uN = new Int32Array(4);
     this.tune = new Float64Array(4); this.sdt = new Float64Array(4);
     this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
+    // FM per slot: routing (6), output weights (4), output gain, and per operator ratio, level, index, decay, curvature
+    this.fmM = new Float64Array(24); this.fmO = new Float64Array(16); this.fmG = new Float64Array(4); this.fmFb = new Float64Array(4);
+    this.fmR = new Float64Array(16); this.fmL = new Float64Array(16); this.fmI = new Float64Array(16); this.fmD = new Float64Array(16); this.fmC = new Float64Array(16);
+    this.fmE0 = new Float64Array(16); this.fmE1 = new Float64Array(16); this.fmSc = new Float64Array(4); this.fmTmpM = new Float64Array(6); this.fmTmpO = new Float64Array(4);
     this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
-      ph:new Float64Array(28), sph:new Float64Array(4), f1:new Float64Array(4), f2:new Float64Array(4), vAge:0, vPh:0 });
+      ph:new Float64Array(28), sph:new Float64Array(4), fph:new Float64Array(16), ffb:new Float64Array(8), flt:new Float64Array(4), vAge:0, vPh:0 });
     // FX slots: instance, type, pending type, On/Off and the crossfade to dry used for On/Off and type switches
     this.fxInst = [null, null, null, null]; this.fxType = [null, null, null, null]; this.fxNext = [null, null, null, null];
     this.fxOn = [true, true, true, true]; this.fxBy = new Float64Array(4); this.dlSpill = [false, false, false, false];
@@ -140,7 +143,7 @@ class MorphEngine {
   }
   swapOsc(s, t) {
     this.oscType[s] = t; this.oscNext[s] = null;
-    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; }
+    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; for (let k = 0; k < 4; k++) v.fph[s * 4 + k] = 0; v.ffb[s * 2] = v.ffb[s * 2 + 1] = 0; }
     this.computeActive();
   }
   makeFx(type, s) { return new (MorphEngine.FX_CLASSES[type])(this.sr, this, s); }
@@ -189,7 +192,7 @@ class MorphEngine {
     }
   }
   startVoice(v, note) {
-    v.aLv = 0; v.fLv = 0; v.f1.fill(0); v.f2.fill(0);
+    v.aLv = 0; v.fLv = 0; v.flt.fill(0); v.fph.fill(0); v.ffb.fill(0);
     for (let j = 0; j < 28; j++) v.ph[j] = Math.random();
     v.sph.fill(0);
     v.pitch = this.val[this.I.glide] > 0.0005 && this.lastPitch >= 0 ? this.lastPitch : note;
@@ -301,7 +304,7 @@ class MorphEngine {
       for (let s = 0; s < 4; s++) {
         if (this.oscNext[s] !== null) {
           let silent = this.oFade[s] <= 0;
-          for (let j = 0; j < 6 && silent; j++) if (this.cPrev[s * 6 + j] !== 0) silent = false;
+          for (let j = 0; j < 4 && silent; j++) if (this.cPrev[s * 4 + j] !== 0) silent = false;
           if (silent) this.swapOsc(s, this.oscNext[s]);
           else this.oFade[s] = Math.max(0, this.oFade[s] - fStep);
         } else if (this.oscType[s] !== 'off') this.oFade[s] = Math.min(1, this.oFade[s] + fStep);
@@ -315,25 +318,23 @@ class MorphEngine {
     for (let i = 0; i < n; i++) { L[i] = Math.tanh(L[i]); R[i] = Math.tanh(R[i]); }
   }
   renderVoices(L, R, p, len) {
-    const sr = this.sr, v = this.val, I = this.I;
+    const sr = this.sr, v = this.val, I = this.I, TAU = 2 * Math.PI;
     // --- slots: mix coefficients (ramped per sample from the last sub-block) and per-engine setup ---
     const C0 = this.cPrev, CN = this.cNext, CD = this.cD, list = this.slList, kind = this.slKind;
-    const P0 = this.oP[0], tune1 = this.oscType[0] === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : 0;   // the Sub follows slot 1
-    let nSl = 0, use1 = false, use2 = false;
+    const P0 = this.oP[0], t0 = this.oscType[0];   // the Sub follows slot 1's pitch
+    const tune1 = t0 === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : t0 === 'fm' ? v[P0.fmpitch] + v[P0.fmfine] / 100 : 0;
+    let nSl = 0;
     for (let s = 0; s < 4; s++) {
-      const t = this.oscType[s], P = this.oP[s], o = s * 6;
+      const t = this.oscType[s], P = this.oP[s], o = s * 4;
       const live = t !== 'off' && !(t === 'wt' && !this.banks[s].ready);
       if (live) {
         const lv = v[P.olevel] / 0.8 * this.oFade[s], pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
-        const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv;
-        const byp = v[P.byp], flt = v[P.flt], r1 = (1 - byp) * (1 - flt), r2 = (1 - byp) * flt;
-        CN[o] = pl * r1; CN[o + 1] = pr * r1; CN[o + 2] = pl * r2; CN[o + 3] = pr * r2; CN[o + 4] = pl * byp; CN[o + 5] = pr * byp;
-      } else for (let j = 0; j < 6; j++) CN[o + j] = 0;
+        const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv, byp = v[P.byp];
+        CN[o] = pl * (1 - byp); CN[o + 1] = pr * (1 - byp); CN[o + 2] = pl * byp; CN[o + 3] = pr * byp;
+      } else for (let j = 0; j < 4; j++) CN[o + j] = 0;
       let any = false;
-      for (let j = 0; j < 6; j++) { CD[o + j] = (CN[o + j] - C0[o + j]) / len; if (C0[o + j] !== 0 || CN[o + j] !== 0) any = true; }
+      for (let j = 0; j < 4; j++) { CD[o + j] = (CN[o + j] - C0[o + j]) / len; if (C0[o + j] !== 0 || CN[o + j] !== 0) any = true; }
       if (!any || !live) continue;
-      if (C0[o] || C0[o + 1] || CN[o] || CN[o + 1]) use1 = true;
-      if (C0[o + 2] || C0[o + 3] || CN[o + 2] || CN[o + 3]) use2 = true;
       list[nSl] = s;
       if (t === 'wt') {
         kind[nSl] = 1;
@@ -354,6 +355,19 @@ class MorphEngine {
         const ug = 1 / Math.sqrt(pw);
         for (let j = 0; j < uni; j++) { this.uL[b + j] *= ug; this.uR[b + j] *= ug; }
         this.uN[s] = uni;
+      } else if (t === 'fm') {
+        kind[nSl] = 3;
+        this.tune[s] = v[P.fmpitch] + v[P.fmfine] / 100;
+        const m = this.fmTmpM, oo = this.fmTmpO;
+        this.fmG[s] = OscFM.algo(v[P.fmalgo], m, oo);
+        for (let k = 0; k < 6; k++) this.fmM[s * 6 + k] = m[k];
+        for (let k = 0; k < 4; k++) {
+          const q = s * 4 + k, D = v[P['fmd' + (k + 1)]];
+          this.fmO[q] = oo[k]; this.fmR[q] = OscFM.RATIOS[Math.round(v[P['fmr' + (k + 1)]])];
+          this.fmL[q] = v[P['fml' + (k + 1)]]; this.fmI[q] = OscFM.index(this.fmL[q]);
+          this.fmD[q] = D; this.fmC[q] = OscFM.curve(D);
+        }
+        this.fmFb[s] = v[P.fmfb] * 3;
       } else {
         kind[nSl] = 2;
         this.tune[s] = tune1 + v[P.soct] * 12;
@@ -373,14 +387,11 @@ class MorphEngine {
       const glide = v[I.glide], gK = glide > 0.0005 ? 1 - Math.exp(-len / (glide * sr / 4)) : 1;
       const aInc = 1 / (v[I.aatk] * sr), aD = Math.exp(-5 / (v[I.adec] * sr)), aS = v[I.asus], aR = Math.exp(-6.9 / (v[I.arel] * sr));
       const fInc = 1 / (v[I.fatk] * sr), fD = Math.exp(-5 / (v[I.fdec] * sr)), fS = v[I.fsus], fR = Math.exp(-6.9 / (v[I.frel] * sr));
-      const flt = this.fP.map(F => {
-        const k = 2 - 1.96 * v[F.reso], md = v[F.mode];
-        let wl, wb, wh;
-        if (md < 0.5) { const t = md * 2; wl = 1 - t; wb = t; wh = 0; } else { const t = (md - 0.5) * 2; wl = 0; wb = 1 - t; wh = t; }
-        return { cutoff: v[F.cutoff], k, bpG: Math.sqrt(k * 2), env: v[F.envamt], kt: v[F.keytrack], wl, wb, wh };
-      });
-      const F1 = flt[0], F2 = flt[1];
+      const cutoff = v[I.cutoff], fk = 2 - 1.96 * v[I.reso], bpG = Math.sqrt(fk * 2), envAmt = v[I.envamt], kt = v[I.keytrack], md = v[I.mode];
+      let wl, wb, wh;
+      if (md < 0.5) { const t = md * 2; wl = 1 - t; wb = t; wh = 0; } else { const t = (md - 0.5) * 2; wl = 0; wb = 1 - t; wh = t; }
       const banks = this.banks, uL = this.uL, uR = this.uR, uDt = this.uDt, uLev = this.uLev, uJ = this.uJ, uN = this.uN;
+      const fmM = this.fmM, fmO = this.fmO, fmR = this.fmR, fmL = this.fmL, fmI = this.fmI, E0 = this.fmE0, E1 = this.fmE1;
 
       for (const vc of this.voices) {
         if (!vc.active) continue;
@@ -390,7 +401,7 @@ class MorphEngine {
         const vRate = Math.max(0.1, v[I.vrate] + v[I.vrfade] * (1 - rEnv));   // Rate fade is in Hz: the rate starts that far off and settles
         const vib = v[I.vdepth] * vEnv * Math.sin(2 * Math.PI * vc.vPh);
         vc.vPh += vRate * len / sr; if (vc.vPh >= 1) vc.vPh -= 1; vc.vAge += len;
-        const base = vc.pitch + vib;
+        const base = vc.pitch + vib, tA = vT, tB = vc.vAge / sr;   // FM envelopes run from the note's start
         for (let a = 0; a < nSl; a++) {
           const s = list[a];
           if (kind[a] === 1) {
@@ -400,23 +411,28 @@ class MorphEngine {
               const lev = Math.ceil(Math.log2(512 * dt / 0.45));
               uLev[b + j] = lev < 0 ? 0 : lev > 9 ? 9 : lev;
             }
-          } else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
+          } else {
+            const f0 = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12);
+            this.sdt[s] = f0 / sr;
+            if (kind[a] === 3) {
+              this.fmSc[s] = Math.min(1, Math.pow(600 / f0, 0.7));   // less modulation on high notes, where wide sidebands would alias
+              for (let k = 0, q = s * 4; k < 4; k++) {   // operator envelopes at this block's ends, interpolated per sample
+                E0[q + k] = OscFM.env(tA, this.fmD[q + k], this.fmC[q + k]); E1[q + k] = OscFM.env(tB, this.fmD[q + k], this.fmC[q + k]);
+              }
+            }
+          }
         }
-        const fc1 = Math.min(sr * 0.45, Math.max(20, F1.cutoff * Math.pow(2, F1.env * 5 * vc.fLv + F1.kt * (vc.pitch - 60) / 12)));
-        const fc2 = Math.min(sr * 0.45, Math.max(20, F2.cutoff * Math.pow(2, F2.env * 5 * vc.fLv + F2.kt * (vc.pitch - 60) / 12)));
-        const g1 = Math.tan(Math.PI * fc1 / sr), p1a = 1 / (1 + g1 * (g1 + F1.k)), p1b = g1 * p1a, p1c = g1 * p1b;
-        const g2 = Math.tan(Math.PI * fc2 / sr), p2a = 1 / (1 + g2 * (g2 + F2.k)), p2b = g2 * p2a, p2c = g2 * p2b;
-        const s1 = vc.f1, s2 = vc.f2;
-        const do1 = use1 || Math.abs(s1[0]) + Math.abs(s1[1]) + Math.abs(s1[2]) + Math.abs(s1[3]) > 1e-9;
-        const do2 = use2 || Math.abs(s2[0]) + Math.abs(s2[1]) + Math.abs(s2[2]) + Math.abs(s2[3]) > 1e-9;
-        let l1 = s1[0], l2 = s1[1], r1 = s1[2], r2 = s1[3], m1 = s2[0], m2 = s2[1], n1 = s2[2], n2 = s2[3];
+        const fc = Math.min(sr * 0.45, Math.max(20, cutoff * Math.pow(2, envAmt * 5 * vc.fLv + kt * (vc.pitch - 60) / 12)));
+        const g = Math.tan(Math.PI * fc / sr), fa1 = 1 / (1 + g * (g + fk)), fa2 = g * fa1, fa3 = g * fa2;
+        const st = vc.flt;
+        let l1 = st[0], l2 = st[1], r1 = st[2], r2 = st[3];
         let aSt = vc.aSt, aLv = vc.aLv, fSt = vc.fSt, fLv = vc.fLv;
-        const ph = vc.ph, sph = vc.sph, vel = vc.vel;
+        const ph = vc.ph, sph = vc.sph, fph = vc.fph, ffb = vc.ffb, vel = vc.vel;
         for (let s = 0; s < len; s++) {
           const t = s + 1;
-          let f1L = 0, f1R = 0, f2L = 0, f2R = 0, dL = 0, dR = 0;
+          let iL = 0, iR = 0, dL = 0, dR = 0;
           for (let a = 0; a < nSl; a++) {
-            const sl = list[a], o = sl * 6;
+            const sl = list[a], o = sl * 4;
             let xl, xr;
             if (kind[a] === 1) {
               const bk = banks[sl], xf = Math.min(1, bk.xf + bk.xfInc * s), b = sl * 7;
@@ -430,40 +446,42 @@ class MorphEngine {
                 xl += x * uL[b + j]; xr += x * uR[b + j];
                 q += uDt[b + j]; if (q >= 1) q -= 1; ph[pj] = q;
               }
+            } else if (kind[a] === 3) {
+              const q = sl * 4, mq = sl * 6, dt = this.sdt[sl], sc = this.fmSc[sl], w = s / len;
+              const e1 = E0[q] + (E1[q] - E0[q]) * w, e2 = E0[q + 1] + (E1[q + 1] - E0[q + 1]) * w, e3 = E0[q + 2] + (E1[q + 2] - E0[q + 2]) * w, e4 = E0[q + 3] + (E1[q + 3] - E0[q + 3]) * w;
+              let p1 = fph[q] + dt * fmR[q], p2 = fph[q + 1] + dt * fmR[q + 1], p3 = fph[q + 2] + dt * fmR[q + 2], p4 = fph[q + 3] + dt * fmR[q + 3];
+              p1 -= Math.floor(p1); p2 -= Math.floor(p2); p3 -= Math.floor(p3); p4 -= Math.floor(p4);
+              fph[q] = p1; fph[q + 1] = p2; fph[q + 2] = p3; fph[q + 3] = p4;
+              const fb = ffb[sl * 2], fb2 = ffb[sl * 2 + 1];
+              const o4 = Math.sin(TAU * p4 + this.fmFb[sl] * (fb + fb2) * 0.5) * e4;
+              ffb[sl * 2 + 1] = fb; ffb[sl * 2] = o4;
+              const i4 = fmI[q + 3] * sc * o4;
+              const o3 = Math.sin(TAU * p3 + fmM[mq] * i4) * e3, i3 = fmI[q + 2] * sc * o3;
+              const o2 = Math.sin(TAU * p2 + fmM[mq + 1] * i4 + fmM[mq + 3] * i3) * e2, i2 = fmI[q + 1] * sc * o2;
+              const o1 = Math.sin(TAU * p1 + fmM[mq + 2] * i4 + fmM[mq + 4] * i3 + fmM[mq + 5] * i2) * e1;
+              xl = xr = (fmO[q] * fmL[q] * o1 + fmO[q + 1] * fmL[q + 1] * o2 + fmO[q + 2] * fmL[q + 2] * o3 + fmO[q + 3] * fmL[q + 3] * o4) * this.fmG[sl];
             } else {
               const dt = this.sdt[sl];
               let q = sph[sl];
               xl = xr = OscSub.sample(q, dt, this.sShape[sl], this.sG[sl], this.sTg[sl]);
               q += dt; if (q >= 1) q -= 1; sph[sl] = q;
             }
-            f1L += xl * (C0[o] + CD[o] * t); f1R += xr * (C0[o + 1] + CD[o + 1] * t);
-            f2L += xl * (C0[o + 2] + CD[o + 2] * t); f2R += xr * (C0[o + 3] + CD[o + 3] * t);
-            dL += xl * (C0[o + 4] + CD[o + 4] * t); dR += xr * (C0[o + 5] + CD[o + 5] * t);
+            iL += xl * (C0[o] + CD[o] * t); iR += xr * (C0[o + 1] + CD[o + 1] * t);
+            dL += xl * (C0[o + 2] + CD[o + 2] * t); dR += xr * (C0[o + 3] + CD[o + 3] * t);
           }
           if (aSt === 1) { aLv += aInc; if (aLv >= 1) { aLv = 1; aSt = 2; } } else if (aSt === 2) aLv = aS + (aLv - aS) * aD; else aLv *= aR;
           if (fSt === 1) { fLv += fInc; if (fLv >= 1) { fLv = 1; fSt = 2; } } else if (fSt === 2) fLv = fS + (fLv - fS) * fD; else fLv *= fR;
-          let oL = dL, oR = dR;
-          if (do1) {
-            let v3 = f1L - l2, v1 = p1a * l1 + p1b * v3, v2 = l2 + p1b * l1 + p1c * v3;
-            l1 = 2 * v1 - l1; l2 = 2 * v2 - l2;
-            oL += F1.wl * v2 + F1.wb * v1 * F1.bpG + F1.wh * (f1L - F1.k * v1 - v2);
-            v3 = f1R - r2; v1 = p1a * r1 + p1b * v3; v2 = r2 + p1b * r1 + p1c * v3;
-            r1 = 2 * v1 - r1; r2 = 2 * v2 - r2;
-            oR += F1.wl * v2 + F1.wb * v1 * F1.bpG + F1.wh * (f1R - F1.k * v1 - v2);
-          }
-          if (do2) {
-            let v3 = f2L - m2, v1 = p2a * m1 + p2b * v3, v2 = m2 + p2b * m1 + p2c * v3;
-            m1 = 2 * v1 - m1; m2 = 2 * v2 - m2;
-            oL += F2.wl * v2 + F2.wb * v1 * F2.bpG + F2.wh * (f2L - F2.k * v1 - v2);
-            v3 = f2R - n2; v1 = p2a * n1 + p2b * v3; v2 = n2 + p2b * n1 + p2c * v3;
-            n1 = 2 * v1 - n1; n2 = 2 * v2 - n2;
-            oR += F2.wl * v2 + F2.wb * v1 * F2.bpG + F2.wh * (f2R - F2.k * v1 - v2);
-          }
+          let v3 = iL - l2, v1 = fa1 * l1 + fa2 * v3, v2 = l2 + fa2 * l1 + fa3 * v3;
+          l1 = 2 * v1 - l1; l2 = 2 * v2 - l2;
+          const oL = dL + wl * v2 + wb * v1 * bpG + wh * (iL - fk * v1 - v2);
+          v3 = iR - r2; v1 = fa1 * r1 + fa2 * v3; v2 = r2 + fa2 * r1 + fa3 * v3;
+          r1 = 2 * v1 - r1; r2 = 2 * v2 - r2;
+          const oR = dR + wl * v2 + wb * v1 * bpG + wh * (iR - fk * v1 - v2);
           const amp = aLv * vel;
           L[p + s] += oL * amp * (gl0 + glI * t); R[p + s] += oR * amp * (gr0 + grI * t);
         }
         vc.aSt = aSt; vc.aLv = aLv; vc.fSt = fSt; vc.fLv = fLv;
-        s1[0] = l1; s1[1] = l2; s1[2] = r1; s1[3] = r2; s2[0] = m1; s2[1] = m2; s2[2] = n1; s2[3] = n2;
+        st[0] = l1; st[1] = l2; st[2] = r1; st[3] = r2;
         if (aSt === 3 && aLv < 3e-4) vc.active = false;
       }
     }

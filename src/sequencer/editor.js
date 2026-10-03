@@ -144,7 +144,21 @@ $('rzNotes').addEventListener('click', () => editSeq(randNotes));
 // main-page sequence dice and launch: new rate, new generator settings (Arp or Riff), rhythm, velocity,
 // and a density that leans high (never below 30%)
 const highDensity = () => 1 - 0.7 * Math.random() ** 2;
-function fullSeqRandom(q) { fixSeq(q); randRate(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); q.density = highDensity(); }
+/* Random patterns always hold at least 5 notes, and nine times in ten keep a note on the downbeat.
+   A slow rate that can't fit 5 notes into one bar gets two bars. */
+const MIN_NOTES = 5;
+function roomForNotes(s) { if (s.steps.length < MIN_NOTES && s.n16 < MAXSTEPS) { s.n16 = MAXSTEPS; fitSlots(s, true); } }
+function shapeRandom(s) {
+  const kept = () => keptSteps(s).filter(Boolean).length, want0 = Math.random() < 0.9;
+  if (want0) s.steps[0].on = true;
+  for (let k = 0; k < 60 && kept() < Math.min(MIN_NOTES, s.steps.length); k++) {
+    if (s.density < 1) s.density = Math.min(1, s.density + 0.1);   // thin less first, then switch rests back on
+    else { const off = s.steps.filter(st => !st.on); if (!off.length) break; off[Math.floor(Math.random() * off.length)].on = true; }
+  }
+  // which notes density keeps depends on dseed (not how many), so pick one that keeps the downbeat
+  if (want0) for (let k = 0; k < 40 && !keptSteps(s)[0]; k++) s.dseed = Math.random();
+}
+function fullSeqRandom(q) { fixSeq(q); randRate(q); roomForNotes(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); q.density = highDensity(); shapeRandom(q); }
 function randSeqSide(k) { fullSeqRandom(state.seq[k]); }
 $('rsA').addEventListener('click', () => bulk(() => randSeqSide('A')));
 $('rsB').addEventListener('click', () => bulk(() => randSeqSide('B')));
@@ -153,7 +167,7 @@ $('rzVel').addEventListener('click', () => editSeq(randVel));
 function randRate(s) { s.rate = Math.floor(Math.random() * RATES.length); fitSlots(s, true); }
 $('rzRate').addEventListener('click', () => editSeq(randRate));
 $('rzArp').addEventListener('click', () => editSeq(s => { randArpSettings(); genFromControls(s); }));
-function randAllSide(s) { randRate(s); randArpSettings(); genFromControls(s); randRhythm(s); randVel(s); s.density = 0.3 + 0.7 * Math.random(); }
+function randAllSide(s) { randRate(s); roomForNotes(s); randArpSettings(); genFromControls(s); randRhythm(s); randVel(s); s.density = 0.3 + 0.7 * Math.random(); shapeRandom(s); }
 $('rzAll').addEventListener('click', () => editSeq(randAllSide));
 $('sqOther').addEventListener('click', () => { pushUndo(); state.seq[sqSide === 'A' ? 'B' : 'A'] = cloneSeq(cur()); seqChanged(); });
 
