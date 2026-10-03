@@ -37,13 +37,18 @@ const knobHTML = (d, i) => `<div class="kn">
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
   </div>`;
-// A, what you hear, and B for every oscillator slot; on a Wavetable slot the A and B cards open the editor
+/* A, what you hear, and B for every oscillator slot. On a Wavetable slot the A and B cards open the editor
+   (tap the wave or Edit); on a Sampler slot their labels are the sample menus and the middle card holds One-shot / Loop. */
+const sideCard = (s, k) => `<div class="wtcard ${k.toLowerCase()}" data-wt="${s}" data-side="${k}">
+      <canvas id="cv${k}${s}"></canvas><span class="wtlabel"><span class="nm" id="nm${k}${s}"></span>
+      <select class="smpsel" data-smpsel="${s}" data-side="${k}" aria-label="Osc ${s + 1} sample ${k}"></select>
+      <button type="button" class="ac" id="wt${k}${s}" data-wt="${s}" data-side="${k}" aria-label="Edit wavetable ${k} of Osc ${s + 1}">Edit ${k}</button></span></div>`;
 const waveCards = s => `<div class="wt">
-    <button class="wtcard a" id="wtA${s}" data-wt="${s}" data-side="A" type="button" aria-label="Edit wavetable A of Osc ${s + 1}">
-      <canvas id="cvA${s}"></canvas><span class="wtlabel"><span class="nm" id="nmA${s}"></span><span class="ac">Edit A</span></span></button>
-    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm">What you hear</span></span></div>
-    <button class="wtcard b" id="wtB${s}" data-wt="${s}" data-side="B" type="button" aria-label="Edit wavetable B of Osc ${s + 1}">
-      <canvas id="cvB${s}"></canvas><span class="wtlabel"><span class="nm" id="nmB${s}"></span><span class="ac">Edit B</span></span></button>
+    ${sideCard(s, 'A')}
+    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm hear">What you hear</span>
+      <span class="seg smploop" role="group" aria-label="Osc ${s + 1} playback"><button type="button" data-smploop="${s}" data-v="0">One-shot</button><button type="button" data-smploop="${s}" data-v="1">Loop</button></span>
+      <span class="smpnote" id="smpNote${s}" role="status"></span></span></div>
+    ${sideCard(s, 'B')}
   </div>`;
 const options = list => list.map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
 /* One section per group. Oscillator and FX slot sections hold a container per type (data-eng),

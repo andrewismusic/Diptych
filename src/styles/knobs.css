@@ -47,16 +47,18 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .eng[hidden]{display:none}
 .eng + .eng{margin-top:6px}
 .slotoff .tools{opacity:.35}
-.wtcard:disabled{opacity:1;cursor:default}
-.group[data-kind="osc"]:not([data-type="wt"]) .wtcard .ac{visibility:hidden}
+.group[data-kind="osc"][data-type="wt"] .wtcard[data-wt]{cursor:pointer}
+.wtlabel .ac{border:0;background:none;padding:0;min-height:0;font:inherit;font-weight:600}
+.group[data-kind="osc"]:not([data-type="wt"]) .wtcard .ac{display:none}
+.group[data-kind="osc"]:not([data-type="smp"]) :is(.smpsel,.smploop,.smpnote){display:none}
+.group[data-kind="osc"][data-type="smp"] .wtcard .nm{display:none}
+.wtlabel{align-items:center;min-height:24px}   /* room for a sample menu, so a slot is the same height whatever it holds */
+.smpsel{min-height:24px;padding:0 2px;font-size:.78rem;min-width:0;flex:1 1 auto;max-width:100%}
+.smploop button{min-height:24px;padding:0 6px;font-size:.76rem}
+.smpnote{color:var(--muted);font-size:.74rem}
+.smpnote:empty{display:none}
 .group[data-kind="osc"] .wt{margin-bottom:6px}
 .group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* slot knobs keep the same height whatever their values say */
-.smprow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 6px;font-size:.88rem}
-.smpsel{display:inline-flex;align-items:center;gap:4px} .smpsel span{font-weight:600}
-.smpsel.a span{color:var(--a)} .smpsel.b span{color:var(--b)}
-.smpsel select{min-height:30px;padding:2px 4px;max-width:9.5em;font-size:.85rem}
-.smprow .seg button{min-height:30px;padding:2px 8px;font-size:.85rem}
-.smpnote{color:var(--muted);font-size:.8rem}
 .gname{font-weight:600;white-space:nowrap;margin-right:4px}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}

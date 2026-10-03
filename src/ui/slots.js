@@ -13,7 +13,6 @@ function updateSlotsUI() {
     sec.dataset.type = t;
     sec.classList.toggle('slotoff', t === 'off');
     sec.querySelectorAll('.eng').forEach(e => { e.hidden = !engShown(e.dataset.eng, t); });
-    sec.querySelectorAll('.wtcard[data-wt]').forEach(b => { b.disabled = t !== 'wt'; });
     const f = state.fxType[s], fsec = sections[`FX ${s + 1}`];
     fsec.querySelector('.typesel').value = f;
     fsec.querySelectorAll('.eng').forEach(e => { e.hidden = e.dataset.eng !== f; });
@@ -36,8 +35,6 @@ function fixSlotHeights() {
     body.style.minHeight = max + 'px';
   }
 }
-let fixTimer = null;
-window.addEventListener('resize', () => { clearTimeout(fixTimer); fixTimer = setTimeout(fixSlotHeights, 150); });
 if (document.fonts) document.fonts.ready.then(fixSlotHeights);
 // Knobs of a type that has just been shown were not kept up to date while hidden
 const refreshSlot = (kind, slot) => DEFS.forEach((d, i) => { if (d.kind === kind && d.slot === slot && isActive(d)) updateKnob(i); });

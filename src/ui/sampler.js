@@ -1,19 +1,13 @@
 /* =====================================================================
    SAMPLER CONTROLS
-   In each slot's Sampler panel: a sample menu per side (built-in samples,
+   On a Sampler slot's wave cards: a sample menu per side (built-in samples,
    the loaded file if any, and "Load file…") and One-shot / Loop.
    ===================================================================== */
 const smpFile = document.createElement('input');
 smpFile.type = 'file'; smpFile.accept = 'audio/*'; smpFile.hidden = true;
 document.body.appendChild(smpFile);
 let smpPending = null;   // { s, k } waiting for a file
-for (let s = 0; s < 4; s++) {
-  sections[`Osc ${s + 1}`].querySelector('.eng[data-eng="smp"]').insertAdjacentHTML('afterbegin', `<div class="smprow">
-    <label class="smpsel a"><span>A</span><select data-smpsel="${s}" data-side="A" aria-label="Osc ${s + 1} sample A"></select></label>
-    <label class="smpsel b"><span>B</span><select data-smpsel="${s}" data-side="B" aria-label="Osc ${s + 1} sample B"></select></label>
-    <span class="seg" role="group" aria-label="Osc ${s + 1} playback"><button type="button" data-smploop="${s}" data-v="0">One-shot</button><button type="button" data-smploop="${s}" data-v="1">Loop</button></span>
-    <span class="smpnote" id="smpNote${s}" role="status"></span></div>`);
-}
+// the menus and One-shot / Loop live in each slot's wave cards (see waveCards in knobs.js)
 function updateSamplerUI() {
   document.querySelectorAll('[data-smpsel]').forEach(sel => {
     const ref = state.smp[+sel.dataset.smpsel][sel.dataset.side];

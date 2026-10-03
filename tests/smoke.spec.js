@@ -177,7 +177,7 @@ test.describe('phone', () => {
     await openSynth(page, { storage: {} });
     const osc2 = page.locator('section[data-group="Osc 2"]');
     await osc2.locator('.typesel').selectOption('smp');
-    await expect(osc2.locator('.smprow')).toBeVisible();
+    await expect(osc2.locator('select[data-side="A"]')).toBeVisible();   // the sample menus sit in the wave cards
     await osc2.locator('select[data-side="A"]').selectOption('f:Bell');
     expect(await page.evaluate(() => state.smp[1].A)).toEqual({ name: 'Bell' });
     // a one-second 16-bit WAV of a 440 Hz sine

@@ -1,0 +1,66 @@
+/* ---------- desktop / plugin layout (body.desk, see ui/layout.js) ----------
+   A fixed 1440 x 900 design scaled to the window: oscillators across the top; Voice, Filter, Amp envelope and
+   Output in the middle; the effects below; the bottom panel last. Knobs are compact and A/B values sit on one line. */
+body.desk{overflow:hidden;height:100vh}
+.desk #app{width:1440px;height:900px;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+.desk .top .wrap,.desk .kb .wrap{max-width:none;padding:0 12px}
+.desk .titlebar{padding:6px 0;justify-content:flex-start}
+.desk .top .wrap{display:flex;align-items:center;gap:16px}
+.desk .morphfoot{padding:0;margin-left:auto}
+.desk .titlebar #audioBtn{order:3}
+.desk .foot{display:none}
+.desk main{max-width:none;margin:0;padding:6px 12px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-content:start;overflow:hidden}
+.desk .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
+.desk .group[data-kind]{grid-column:span 3}
+.desk .group[data-group="Voice"]{grid-column:span 3}
+.desk .group[data-group="Filter"]{grid-column:span 5}
+.desk .group[data-group="Amp envelope"]{grid-column:span 3}
+.desk .group[data-group="Output"]{grid-column:span 1}
+.desk .group[data-group="Output"] .sectool.da,.desk .group[data-group="Output"] .sectool.db{display:none}
+.desk .group[data-group="Output"] .knobs{flex-wrap:nowrap;justify-content:center}
+.desk .group[data-group="Output"] .kn{width:46px} .desk .group[data-group="Output"] .knob{width:34px;height:34px}
+.desk .group h2{margin:0 0 3px;font-size:.85rem}
+.desk .group h2 .lock{width:20px;height:20px}
+.desk .typesel{min-height:24px;font-size:.78rem;padding:0 4px}
+.desk .fxsw{min-height:22px;padding:0 8px;font-size:.74rem}
+.desk .knobs{max-width:none;gap:2px 0}
+.desk .kn{width:54px}
+.desk .knob{width:40px;height:40px;margin:1px 0}
+.desk .kname{font-size:.7rem}
+.desk .kval{font-size:.7rem;min-height:1.2em}
+.desk .kab,.desk .group[data-kind] .kab{font-size:.6rem;min-height:1.25em;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;max-width:54px}
+.desk .kwrap .icons{bottom:-6px;transform:translateX(-50%) scale(.8)}
+.desk .viz{height:38px;max-width:none;margin:1px 0 4px}
+.desk .wt{gap:5px}
+.desk .wtcard{padding:3px 4px;gap:1px}
+.desk .wtcard canvas{height:26px}
+.desk .wtlabel{font-size:.68rem;min-height:20px}
+.desk .group[data-kind="osc"] .wt{margin-bottom:3px}
+.desk .eng + .eng{margin-top:2px}
+.desk .smpsel,.desk .smploop button{min-height:20px;font-size:.68rem}
+.desk .blendrow{margin-top:2px;font-size:.74rem}
+.desk .blendrow .seg button{min-height:22px;padding:0 8px;font-size:.74rem}
+.desk .group[data-group="Filter"] .gbody{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.desk .sub + .sub{margin-top:0}
+.desk .subh{display:none}
+.desk .group[data-group="Output"] .knobs{justify-content:center}
+/* bottom panel: randomize row and morph slider share a line */
+.desk .kb{position:static}
+.desk .kb .wrap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:16px;align-items:center}
+.desk .rbar{padding:4px 0}
+.desk .kb .morph{padding:0}
+.desk .panes{grid-column:1 / -1}
+.desk .kbbar{grid-row:1;grid-column:3}
+.desk .kbbar{padding:2px 0 4px}
+.desk .panes{margin-bottom:6px}
+.desk .keys,.desk .seqpane{height:100px}
+.desk .lanes{grid-template-rows:repeat(3,22px)} .desk .lanes canvas{height:22px}
+/* oscillator slots: one flow of knobs (engine knobs, then Level, Pan, Bypass), six to a row */
+.desk .group[data-kind="osc"] .gbody{display:flex;flex-wrap:wrap;align-content:flex-start}
+.desk .group[data-kind="osc"] .wt{flex:1 1 100%}
+.desk .group[data-kind="osc"] .eng:not([hidden]),.desk .group[data-kind="osc"] .eng:not([hidden]) > .knobs{display:contents}
+.desk .group[data-kind="osc"] .eng + .eng{margin:0}
+.desk .seqright{flex-direction:row;align-items:center}
+.desk .lanes{flex:1 1 auto;min-width:0}
+.desk .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
+.desk .seqctl button{min-height:26px;padding:1px 8px;font-size:.8rem}
