@@ -1,19 +1,20 @@
 /* ---------- state + persistence ----------
    The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v4', STORE_VER = 3;
+const STORE = 'diptych-v4', STORE_VER = 4;
 const DEFAULT_LOCKS = () => {
   const l = { level: true, pan: true, pattern: true };
-  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`o${s}.sample`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
   return l;
 };
 const DEFAULT_LINKS = () => {
   const l = {};
-  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine', 'spitch', 'sfine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
   return l;
 };
 const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
 const DEFAULT_FX = () => ['drive', 'delay', 'reverb', 'ott'];
+const DEFAULT_SMP = () => [0, 1, 2, 3].map(() => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } }));   // sample references per slot
 const DEFAULT_TABLES = () => [0, 1, 2, 3].map(() => ({ A: makeTable('Basic shapes'), B: makeTable('Vowel formants') }));
 const state = {
   A: DEFS.map((_, i) => defaultNorm('A', i)),
@@ -30,6 +31,8 @@ const state = {
   fxType: DEFAULT_FX(),
   fxOn: [true, true, true, true],
   dlSpill: [false, false, false, false],
+  smp: DEFAULT_SMP(),
+  smpLoop: [false, false, false, false],
   seq: null,
   bpm: 120,
   walk: true,
@@ -71,6 +74,10 @@ try {
     state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType, 'drive');
     if (Array.isArray(saved.fxOn) && saved.fxOn.length === 4) state.fxOn = saved.fxOn.map(Boolean);
     if (Array.isArray(saved.dlSpill) && saved.dlSpill.length === 4) state.dlSpill = saved.dlSpill.map(Boolean);
+    const okRef = r => r && typeof r.name === 'string' && (r.id ? typeof r.id === 'string' : !!FACTORY[r.name]);
+    if (Array.isArray(saved.smp) && saved.smp.length === 4) saved.smp.forEach((p, s) => ['A', 'B'].forEach(k => { if (p && okRef(p[k])) state.smp[s][k] = { name: p[k].name, ...(p[k].id ? { id: p[k].id } : {}) }; }));
+    if (Array.isArray(saved.smpLoop) && saved.smpLoop.length === 4) state.smpLoop = saved.smpLoop.map(Boolean);
+    if (!(saved.ver >= 4)) for (let s = 1; s <= 4; s++) { state.locks[`o${s}.sample`] = true; state.links[`o${s}.spitch`] = true; state.links[`o${s}.sfine`] = true; }   // the Sampler arrived in ver 4
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;

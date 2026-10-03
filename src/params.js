@@ -10,7 +10,7 @@
    kind: 'osc' | 'fx' with slot (0-based); eng: the type it belongs
    to (null = every type of that slot).
    ===================================================================== */
-const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['sub', 'Sub']];
+const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['smp', 'Sampler'], ['sub', 'Sub']];
 const FX_TYPES = [['drive', 'Drive'], ['formant', 'Formant filter'], ['mod', 'Modulation'], ['delay', 'Delay'], ['reverb', 'Reverb'], ['lofi', 'Lo-fi'], ['ott', 'OTT']];
 const typeName = (list, t) => (list.find(x => x[0] === t) || [t, t])[1];
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
@@ -22,6 +22,11 @@ const OSC_ENG = {
     P_('posA', 'Position A', 0, 1, 'lin', 0.667, 0.667, { single:'A' }), P_('wave', 'Wave', 0, 1, 'lin', 0, 1),
     P_('posB', 'Position B', 0, 1, 'lin', 0.3, 0.3, { single:'B' }),
     P_('pitch', 'Pitch', -24, 24, 'int', 0, 0), P_('fine', 'Fine', -100, 100, 'lin', 0, 0), P_('unison', 'Unison', 0, 1, 'lin', 0, 0.35),
+  ],
+  // Sampler: a sample per side; Sample crossfades them like Wave; Start is read when a note starts
+  smp: [
+    P_('sample', 'Sample', 0, 1, 'lin', 0, 1), P_('sstart', 'Start', 0, 1, 'lin', 0, 0),
+    P_('spitch', 'Pitch', -24, 24, 'int', 0, 0), P_('sfine', 'Fine', -100, 100, 'lin', 0, 0), P_('strack', 'Key track', 0, 1, 'lin', 1, 1),
   ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
 };
@@ -75,6 +80,8 @@ const FMT = {
   olevel: pct, opan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
   byp: v => (v < 0.005 ? 'Off' : pct(v)),
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
+  sample: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'), sstart: pct,
+  spitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', sfine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`, strack: pct,
   sshape: v => (v < 0.02 ? 'Sine' : Math.abs(v - 0.5) < 0.02 ? 'Triangle' : v > 0.98 ? 'Square' : pct(v)), sdrive: pct,
   posA: pct, posB: pct,
   drive: pct, dshape: pct, dmix: pct,

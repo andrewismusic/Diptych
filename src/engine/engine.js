@@ -5,7 +5,7 @@
    lerp(A, B, bend(morph, curve)); only the parameters of each slot's
    current type are resolved.
 
-   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sub)
+   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sampler / Sub)
    -> each slot splits between the filter and around it (Bypass) -> amp
    envelope -> master Level and Pan. Then the 4 FX slots in order,
    and a final tanh soft clip.
@@ -37,10 +37,14 @@ class MorphEngine {
     this.tune = new Float64Array(4); this.sdt = new Float64Array(4);
     this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
     this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
+    // Sampler per slot: a buffer per side ({ d, sr } or null), Loop, and per-block settings
+    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null })); this.smpLoop = [false, false, false, false];
+    this.smpMix = new Float64Array(4); this.smpTrk = new Float64Array(4); this.smpRA = new Float64Array(4); this.smpRB = new Float64Array(4);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
-      ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0 });
+      ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0,
+      sp:new Float64Array(8), op:new Float64Array(8), sxf:new Int32Array(4), sold:new Uint8Array(4) });   // sampler: positions, old positions and crossfade on restart
     // FX slots: instance, type, pending type, On/Off and the crossfade to dry used for On/Off and type switches
     this.fxInst = [null, null, null, null]; this.fxType = [null, null, null, null]; this.fxNext = [null, null, null, null];
     this.fxOn = [true, true, true, true]; this.fxBy = new Float64Array(4); this.dlSpill = [false, false, false, false];
@@ -139,8 +143,15 @@ class MorphEngine {
   }
   swapOsc(s, t) {
     this.oscType[s] = t; this.oscNext[s] = null;
-    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; }
+    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; this.smpStart(v, s, false); }
     this.computeActive();
+  }
+  /* (Re)start a voice's sample playback in slot s at the Start point. When a sounding note restarts, the old
+     playback crossfades out over 5 ms (and a fresh one fades in), so restarts don't click. */
+  smpStart(v, s, keepOld) {
+    const st = this.val[this.oP[s].sstart] || 0, XN = Math.round(0.005 * this.sr);
+    for (const k of [0, 1]) { const b = this.smp[s][k ? 'B' : 'A'], q = s * 2 + k; v.op[q] = v.sp[q]; v.sp[q] = b ? st * (b.d.length - 1) : 0; }
+    v.sold[s] = keepOld ? 1 : 0; v.sxf[s] = XN;
   }
   makeFx(type, s) { return new (MorphEngine.FX_CLASSES[type])(this.sr, this, s); }
 
@@ -164,6 +175,8 @@ class MorphEngine {
         this.computeActive();
         break;
       case 'table': this.banks[m.slot].setTable(m.side, m.re, m.im); break;
+      case 'sample': this.smp[m.slot][m.side] = m.d ? { d: m.d, sr: m.sr } : null; break;
+      case 'smpLoop': this.smpLoop[m.i] = !!m.v; break;
       case 'blend': this.banks.forEach(b => { b.spectral = !!m.v; b.ver++; }); break;
       case 'seq':
         this.seq = m.seq;
@@ -198,14 +211,18 @@ class MorphEngine {
       this.stack = this.stack.filter(n => n !== note); this.stack.push(note);
       for (let k = 1; k < 8; k++) if (this.voices[k].active) { this.voices[k].aSt = 3; this.voices[k].fSt = 3; }
       const v = this.voices[0];
+      const was = v.active;
       if (!v.active) this.startVoice(v, note);
+      for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
       v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.vAge = 0; v.vPh = 0; this.lastPitch = note;
       return;
     }
     let v = this.voices.find(x => x.active && x.note === note);
     if (!v) v = this.voices.find(x => !x.active);
     if (!v) v = this.voices.reduce((a, b) => (a.age < b.age ? a : b));
+    const was = v.active;
     if (!v.active) this.startVoice(v, note);
+    for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
     v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.age = this.clock++;
     v.vAge = 0; v.vPh = 0;   // vibrato fades in again from each new note
     this.lastPitch = note;
@@ -351,6 +368,10 @@ class MorphEngine {
         const ug = 1 / Math.sqrt(pw);
         for (let j = 0; j < uni; j++) { this.uL[b + j] *= ug; this.uR[b + j] *= ug; }
         this.uN[s] = uni;
+      } else if (t === 'smp') {
+        kind[nSl] = 4;
+        this.tune[s] = v[P.spitch] + v[P.sfine] / 100;
+        this.smpMix[s] = v[P.sample]; this.smpTrk[s] = v[P.strack];
       } else {
         kind[nSl] = 2;
         this.tune[s] = tune1 + v[P.soct] * 12;
@@ -393,6 +414,9 @@ class MorphEngine {
               const lev = Math.ceil(Math.log2(512 * dt / 0.45));
               uLev[b + j] = lev < 0 ? 0 : lev > 9 ? 9 : lev;
             }
+          } else if (kind[a] === 4) {   // sampler: samples are at middle C; Key track scales how far notes move them
+            const semi = (base - 60) * this.smpTrk[s] + this.tune[s], A = this.smp[s].A, B = this.smp[s].B;
+            this.smpRA[s] = A ? Math.pow(2, semi / 12) * A.sr / sr : 0; this.smpRB[s] = B ? Math.pow(2, semi / 12) * B.sr / sr : 0;
           } else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
         }
         const fc = Math.min(sr * 0.45, Math.max(20, cutoff * Math.pow(2, envAmt * 5 * vc.fLv + kt * (vc.pitch - 60) / 12)));
@@ -419,6 +443,19 @@ class MorphEngine {
                 xl += x * uL[b + j]; xr += x * uR[b + j];
                 q += uDt[b + j]; if (q >= 1) q -= 1; ph[pj] = q;
               }
+            } else if (kind[a] === 4) {
+              const S = this.smp[sl], q = sl * 2, loop = this.smpLoop[sl], sp = vc.sp, op = vc.op;
+              let ya = 0, yb = 0, oa = 0, ob = 0;
+              if (S.A) { const d = S.A.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
+                ya = OscSmp.read(d, sp[q], loop, ls); sp[q] = OscSmp.advance(sp[q], this.smpRA[sl], n, loop, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { oa = OscSmp.read(d, op[q], loop, ls); op[q] = OscSmp.advance(op[q], this.smpRA[sl], n, loop, ls); } }
+              if (S.B) { const d = S.B.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
+                yb = OscSmp.read(d, sp[q + 1], loop, ls); sp[q + 1] = OscSmp.advance(sp[q + 1], this.smpRB[sl], n, loop, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { ob = OscSmp.read(d, op[q + 1], loop, ls); op[q + 1] = OscSmp.advance(op[q + 1], this.smpRB[sl], n, loop, ls); } }
+              const mix = this.smpMix[sl];
+              let x = ya + (yb - ya) * mix;
+              if (vc.sxf[sl] > 0) { const g = vc.sxf[sl] / Math.round(0.005 * sr); x = x * (1 - g) + (oa + (ob - oa) * mix) * g; vc.sxf[sl]--; }
+              xl = xr = x;
             } else {
               const dt = this.sdt[sl];
               let q = sph[sl];

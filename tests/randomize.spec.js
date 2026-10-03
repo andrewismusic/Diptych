@@ -179,7 +179,7 @@ test('a slot\'s both-sides dice picks its engine (never Off, never a second Sub)
     state.secLocks['Osc 3'] = true; state.oscType[2] = 'off'; for (let k = 0; k < 20; k++) randomizeAll('Osc 3', true);
     return { seen: [...seen], fxDistinct: [...seenFx].every(t => !state.fxType.filter((x, i) => i !== 1).includes(t) || true), nFx: seenFx.size, sideKept, lockedKept: state.oscType[2] };
   });
-  expect(r.seen).toEqual(['wt']);   // slot 1 holds the Sub, so slot 2 can only be a Wavetable
+  expect(r.seen.sort()).toEqual(['smp', 'wt']);   // slot 1 holds the Sub, so slot 2 can be anything but Off or a second Sub
   expect(r.nFx).toBeGreaterThan(2);
   expect(r.sideKept).toBe(true);
   expect(r.lockedKept).toBe('off');

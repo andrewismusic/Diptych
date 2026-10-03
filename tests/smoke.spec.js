@@ -172,4 +172,28 @@ test.describe('phone', () => {
     await page.locator('#seqAB').tap();
     expect(await page.evaluate(() => JSON.stringify(state.seq.A) === JSON.stringify(state.seq.B))).toBe(true);
   });
+
+  test('Sampler: built-in sample menus, and a loaded file that survives a reload', async ({ page }) => {
+    await openSynth(page, { storage: {} });
+    const osc2 = page.locator('section[data-group="Osc 2"]');
+    await osc2.locator('.typesel').selectOption('smp');
+    await expect(osc2.locator('.smprow')).toBeVisible();
+    await osc2.locator('select[data-side="A"]').selectOption('f:Bell');
+    expect(await page.evaluate(() => state.smp[1].A)).toEqual({ name: 'Bell' });
+    // a one-second 16-bit WAV of a 440 Hz sine
+    const sr = 44100, n = sr, buf = Buffer.alloc(44 + n * 2);
+    buf.write('RIFF', 0); buf.writeUInt32LE(36 + n * 2, 4); buf.write('WAVEfmt ', 8); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20); buf.writeUInt16LE(1, 22);
+    buf.writeUInt32LE(sr, 24); buf.writeUInt32LE(sr * 2, 28); buf.writeUInt16LE(2, 32); buf.writeUInt16LE(16, 34); buf.write('data', 36); buf.writeUInt32LE(n * 2, 40);
+    for (let i = 0; i < n; i++) buf.writeInt16LE(Math.round(Math.sin(2 * Math.PI * 440 * i / sr) * 20000), 44 + i * 2);
+    const chooser = page.waitForEvent('filechooser');
+    await osc2.locator('select[data-side="B"]').selectOption('load');
+    await (await chooser).setFiles({ name: 'test-sine.wav', mimeType: 'audio/wav', buffer: buf });
+    await page.waitForFunction(() => state.smp[1].B && state.smp[1].B.id && smpData[1].B);
+    expect(await page.evaluate(() => ({ name: state.smp[1].B.name, len: smpData[1].B.d.length }))).toEqual({ name: 'test-sine', len: 44100 });
+    await page.waitForTimeout(700);   // saved
+    await page.reload();
+    await page.click('#undo');   // back to the saved session
+    await page.waitForFunction(() => smpData[1].B && smpData[1].B.d.length === 44100, null, { timeout: 5000 });
+    expect(await page.evaluate(() => state.smp[1].B.name)).toBe('test-sine');
+  });
 });

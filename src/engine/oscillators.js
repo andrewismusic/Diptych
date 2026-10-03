@@ -77,3 +77,26 @@ class OscSub {
   }
 }
 
+
+/* Sampler: reads a sample at a position (in source samples) with 4-point Hermite interpolation.
+   Looping runs from the Start point to the end, crossfading over the last XF samples into the ones just
+   before the loop start, so the wrap never clicks; a one-shot fades over its last 64 samples. */
+class OscSmp {
+  static get XF() { return 1024; }
+  static at(d, i) { return i < 0 || i >= d.length ? 0 : d[i]; }
+  static herm(d, pos) {
+    const i = Math.floor(pos), f = pos - i, a = OscSmp.at(d, i - 1), b = OscSmp.at(d, i), c = OscSmp.at(d, i + 1), e = OscSmp.at(d, i + 2);
+    return b + 0.5 * f * (c - a + f * (2 * a - 5 * b + 4 * c - e + f * (3 * (b - c) + e - a)));
+  }
+  /* Loop start for a buffer: the Start point, but at least XF in (the wrap crossfades into the XF samples just
+     before the loop start, so they have to exist) and far enough from the end for a usable loop. */
+  static loopStart(n, start) { return Math.max(Math.min(OscSmp.XF, n / 4), Math.min(start, n - 4 * OscSmp.XF)); }
+  static read(d, pos, loop, ls) {
+    const n = d.length;
+    if (!loop) return pos >= n ? 0 : OscSmp.herm(d, pos) * Math.min(1, (n - pos) / 64);
+    const L = n - ls, X = Math.min(OscSmp.XF, L * 0.5), w = pos - (n - X);
+    const y = OscSmp.herm(d, pos);
+    return w > 0 ? y + (OscSmp.herm(d, pos - L) - y) * (w / X) : y;
+  }
+  static advance(pos, r, n, loop, ls) { pos += r; if (loop && pos >= n) pos -= n - ls; return pos; }
+}

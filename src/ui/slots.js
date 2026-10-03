@@ -6,6 +6,7 @@
 // which type containers a slot of type t shows: its own, plus '*' (Level, Pan, Bypass) on any oscillator that isn't Off
 const engShown = (eng, t) => eng === t || (eng === '*' && t !== 'off');
 function updateSlotsUI() {
+  if (typeof updateSamplerUI === 'function') updateSamplerUI();
   for (let s = 0; s < 4; s++) {
     const t = state.oscType[s], sec = sections[`Osc ${s + 1}`];
     sec.querySelector('.typesel').value = t;

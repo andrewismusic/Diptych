@@ -130,6 +130,19 @@ function slotCycle(s, which) {
   } else CYC.fill(0);
   return CYC;
 }
+// a sample's outline (or the blend of two, at mix), with a line at the Start point
+function drawOverview(cv, oa, ob, mix, color, start) {
+  const c = prep(cv); if (!c) return;
+  const mid = c.h / 2, amp = c.h / 2 - 4, n = 128;
+  c.g.strokeStyle = css('--line'); c.g.lineWidth = 1; c.g.beginPath(); c.g.moveTo(0, mid); c.g.lineTo(c.w, mid); c.g.stroke();
+  const val = (o, i) => (o ? o[i] : null);
+  const at = (j, i) => { const a = val(oa, j), b = val(ob, j); return a && b ? a[i] + (b[i] - a[i]) * mix : a ? a[i] * (ob ? 1 - mix : 1) : b ? b[i] * mix : 0; };
+  c.g.fillStyle = color; c.g.beginPath();
+  for (let i = 0; i < n; i++) c.g.lineTo(i / (n - 1) * c.w, mid - at(1, i) * amp);
+  for (let i = n - 1; i >= 0; i--) c.g.lineTo(i / (n - 1) * c.w, mid - at(0, i) * amp);
+  c.g.fill();
+  c.g.strokeStyle = css('--ink'); c.g.lineWidth = 1.5; c.g.beginPath(); c.g.moveTo(start * c.w, 2); c.g.lineTo(start * c.w, c.h - 2); c.g.stroke();
+}
 let wavesQueued = false;
 function drawWaves() {
   if (wavesQueued) return; wavesQueued = true;
@@ -146,6 +159,12 @@ function drawWaves() {
         MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(oi(s, 'wave')), sp, W.fr[0], W.fr[1]);
         drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
         $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
+      } else if (t === 'smp') {
+        const oa = sampleOverview(smpData[s].A), ob = sampleOverview(smpData[s].B), mix = resolveNorm(oi(s, 'sample'));
+        drawOverview($('cvA' + s), oa, null, 0, css('--a'), slotVal(s, 'sstart', 'A'));
+        drawOverview($('cvB' + s), ob, null, 0, css('--b'), slotVal(s, 'sstart', 'B'));
+        drawOverview($('cvH' + s), oa, ob, mix, mixColor(state.morph), slotVal(s, 'sstart', 'now'));
+        $('nmA' + s).textContent = state.smp[s].A ? state.smp[s].A.name : ''; $('nmB' + s).textContent = state.smp[s].B ? state.smp[s].B.name : '';
       } else {
         drawWave($('cvA' + s), slotCycle(s, 'A'), css('--a'), { fit:true });
         drawWave($('cvB' + s), slotCycle(s, 'B'), css('--b'), { fit:true });

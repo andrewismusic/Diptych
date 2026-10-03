@@ -90,7 +90,7 @@ test('ver 1 patches (two filters) migrate: Filter 1 becomes the filter, Filter 2
   expect(got.a).toBeCloseTo(0.42, 6); expect(got.b).toBeCloseTo(0.43, 6);
   expect(got.resoLocked).toBe(true);
   await waitForSave(page);
-  expect(JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY)).ver).toBe(3);
+  expect(JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY)).ver).toBe(4);
 });
 
 test('ver 2 patches with FM slots load, with those slots Off', async ({ page }) => {

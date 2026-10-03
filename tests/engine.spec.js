@@ -99,3 +99,45 @@ test('a Sub follows slot 1 pitch, an octave or two below', async ({ page }) => {
   expect(f.sub2).toBeCloseTo(130.8, -1);   // slot 1 up an octave, Sub two octaves below that
 });
 
+
+// render one Sampler slot with a built-in sample on both sides
+const smpRender = (page, o) => page.evaluate(o => {
+  const d = factoryData(o.name);
+  const r = T.render({ osc: ['smp', 'off', 'off', 'off'], fx: ['drive', 'drive', 'drive', 'drive'], fxOn: [0, 0, 0, 0], blocks: o.blocks || 400, notes: o.notes,
+    patch: T.flat({ cutoff: 18000, envamt: 0, asus: 1, arel: 0.01, ...(o.over || {}) }), events: o.events,
+    setup: e => { e.handle({ type:'sample', slot:0, side:'A', d: d.d, sr: d.sr }); e.handle({ type:'sample', slot:0, side:'B', d: d.d, sr: d.sr }); if (o.loop) e.handle({ type:'smpLoop', i:0, v:true }); } });
+  const hz = (a, b) => {   // autocorrelation: the lag (40 to 600 samples) where the sound best matches itself
+    let best = 0, bl = 0;
+    for (let lag = 40; lag <= 600; lag++) { let c = 0, e = 0; for (let i = a; i < b; i++) { c += r.R[i] * r.R[i + lag]; e += r.R[i + lag] ** 2; } c /= Math.sqrt(e + 1e-12); if (c > best) { best = c; bl = lag; } }
+    return 48000 / bl;
+  };
+  const rms = (a, b) => T.rms(r.R, a, b);
+  return { hz1: hz(4800, 9600), rmsLate: rms(o.late || 0, (o.late || 0) + 4800), ratio: o.click ? T.maxStep(r.R, o.click[0], o.click[1]) / T.maxStep(r.R, o.click[2], o.click[3]) : 0 };
+}, o);
+
+test('Sampler: built-in samples play at middle C, follow the key, and stay put at 0% Key track', async ({ page }) => {
+  await openSynth(page);
+  expect((await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999]] })).hz1).toBeCloseTo(261.6, -1);
+  expect((await smpRender(page, { name: 'Vocal ah', notes: [[72, 0, 9999]] })).hz1).toBeCloseTo(523.3, -1);
+  expect((await smpRender(page, { name: 'Vocal ah', notes: [[72, 0, 9999]], over: { 'o1.strack': 0 } })).hz1).toBeCloseTo(261.6, -1);
+});
+
+test('Sampler: Loop keeps sounding past the end, One-shot stops', async ({ page }) => {
+  await openSynth(page);
+  const late = Math.round(3.2 * 48000);   // Vocal ah is 2.4 s long
+  const one = await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999]], blocks: 1300, late });
+  const loop = await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999]], blocks: 1300, late, loop: true });
+  expect(one.rmsLate).toBeLessThan(1e-4);
+  expect(loop.rmsLate).toBeGreaterThan(0.01);
+});
+
+test('Sampler: restarting a sounding note and looping do not click', async ({ page }) => {
+  await openSynth(page);
+  // the same note again at block 300 restarts the sample (crossfaded); compare its steepest step with the steady sound
+  const r = await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999], [60, 300, 9999]], blocks: 600, click: [300 * 128, 300 * 128 + 600, 150 * 128, 290 * 128] });
+  expect(r.ratio, 'restart').toBeLessThan(1.3);
+  // the loop wrap: Vocal ah wraps at 2.4 s
+  const w = Math.round(2.4 * 48000);
+  const l = await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999]], blocks: 1000, loop: true, click: [w - 2000, w + 2000, w - 30000, w - 10000] });
+  expect(l.ratio, 'loop wrap').toBeLessThan(1.3);
+});

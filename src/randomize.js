@@ -13,6 +13,10 @@ const RND = {
   byp: () => (rnd() < 0.8 ? 0 : rnd() * 0.5),
   pitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; },
   fine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
+  // Sampler: Sample is locked at full range by default, like Wave; Start usually at the top; Key track usually full
+  sample: side => (side === 'A' ? 0 : 1), sstart: () => (rnd() < 0.6 ? 0 : rnd() * 0.4),
+  spitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; }, sfine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
+  strack: () => (rnd() < 0.85 ? 1 : rnd() < 0.5 ? 0 : rnd()),
   soct: () => (rnd() < 0.6 ? -1 : -2), sshape: () => rnd(), sdrive: () => rnd() ** 2 * 0.8,
   unison: () => (rnd() < 0.4 ? 0 : rnd()),
   glide: () => (rnd() < 0.5 ? 0 : rnd() < 0.9 ? rnd() * 0.1 : 0.1 + rnd() ** 2 * 0.5),   // half off; 95% under 100 ms
@@ -57,7 +61,7 @@ const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side))));
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -133,6 +137,14 @@ function slotHarmonics(s, side, f0) {
     MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
     re = W.fr[0]; im = W.fr[1];
+  } else if (t === 'smp') {   // the spectrum of the sample this side mostly plays, from its Start point, at this note's speed
+    const ref = state.smp[s][val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? (smpData[s].A && smpData[s].A.id === ref.id ? smpData[s].A : smpData[s].B && smpData[s].B.id === ref.id ? smpData[s].B : null) : smpFor(ref);
+    if (!data) return [[f0, 1]];
+    const N = 2048, st = Math.floor(val('sstart') * Math.max(0, data.d.length - N)), fr = new Float64Array(N), fi = new Float64Array(N);
+    for (let i = 0; i < N; i++) fr[i] = (data.d[st + i] || 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
+    MorphEngine.fft(fr, fi, false);
+    for (let k = 1; k < N / 2; k++) { const f = k * data.sr / N * f0 / C4; if (f < 20000) harm.push([f, fr[k] ** 2 + fi[k] ** 2]); }
+    return harm.length ? harm : [[f0, 1]];
   } else return [[f0, 1]];
   for (let h = 1; h <= 512 && f0 * h < 20000; h++) harm.push([f0 * h, re[h] ** 2 + im[h] ** 2]);
   return harm;
@@ -142,7 +154,7 @@ function passedDb(side) {
   const cut = val(IX.cutoff), reso = val(IX.reso), mode = val(IX.mode), env = val(IX.envamt), kt = val(IX.keytrack), fsus = val(IX.fsus);
   const p1 = state.oscType[0] === 'wt' ? val(oi(0, 'pitch')) : 0;
   const slots = [0, 1, 2, 3].filter(s => state.oscType[s] !== 'off').map(s => {
-    const t = state.oscType[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : p1 + 12 * val(oi(s, 'soct')));
+    const t = state.oscType[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : p1 + 12 * val(oi(s, 'soct')));
     return { note, harm: slotHarmonics(s, side, 440 * Math.pow(2, (note - 69) / 12)), lv: val(oi(s, 'olevel')) ** 2, byp: val(oi(s, 'byp')) };
   });
   let dry = 0, best = 0;
@@ -181,6 +193,7 @@ function randomizeSide(side, g, raw) {
   for (let s = 0; s < 4; s++) {   // each Wavetable slot's table for this side, unless its section is locked
     const grp = `Osc ${s + 1}`;
     if (state.oscType[s] === 'wt' && (!g || g === grp) && !state.secLocks[grp]) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }
+    if (state.oscType[s] === 'smp' && (!g || g === grp) && !state.secLocks[grp]) state.smp[s][side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
   }
   if (!raw) { sineGuard(side); loudnessGuard(side); }
 }
@@ -195,7 +208,8 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
    Randomize all: slot 1 is never Off; slots 2-4 are often Off. FX slots get four different effects from all
    seven, kept in chain order (so OTT, when it comes up, is last). A slot's dice pick any engine but Off
    (any effect not used in another slot) at even odds. */
-const OSC_ODDS = [[['wt', 0.85], ['sub', 0.15]], [['sub', 0.3], ['wt', 0.3], ['off', 0.4]], [['wt', 0.25], ['off', 0.75]], [['wt', 0.25], ['off', 0.75]]];
+const OSC_ODDS = [[['wt', 0.6], ['smp', 0.25], ['sub', 0.15]], [['sub', 0.3], ['wt', 0.2], ['smp', 0.1], ['off', 0.4]],
+  [['wt', 0.15], ['smp', 0.1], ['off', 0.75]], [['wt', 0.15], ['smp', 0.1], ['off', 0.75]]];
 const FX_POOL = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'];
 const pickOdds = odds => { const tot = odds.reduce((t, x) => t + x[1], 0); let r = rnd() * tot; for (const [t, w] of odds) { if (r < w) return t; r -= w; } return odds[odds.length - 1][0]; };
 // no second Sub: drop it from the odds when another slot already holds one
@@ -221,6 +235,11 @@ function randomizeAll(g, raw) {
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
   for (let s = 0; s < 4; s++) if (state.fxType[s] === 'delay' && (!g || g === `FX ${s + 1}`) && !state.secLocks[`FX ${s + 1}`]) state.dlSpill[s] = rnd() < 0.5;   // Cut or Spill
   updateDlUI();
+  // Loop: usually on when either side plays a sustained sample, usually off for plucks and hits
+  for (let s = 0; s < 4; s++) if (state.oscType[s] === 'smp' && (!g || g === `Osc ${s + 1}`) && !state.secLocks[`Osc ${s + 1}`]) {
+    const sus = ['A', 'B'].some(k => { const r = state.smp[s][k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
+    state.smpLoop[s] = rnd() < (sus ? 0.8 : 0.15);
+  }
   randomizeLinked(g, raw);
   state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too

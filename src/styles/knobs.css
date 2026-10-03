@@ -51,6 +51,12 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .group[data-kind="osc"]:not([data-type="wt"]) .wtcard .ac{visibility:hidden}
 .group[data-kind="osc"] .wt{margin-bottom:6px}
 .group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* slot knobs keep the same height whatever their values say */
+.smprow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 6px;font-size:.88rem}
+.smpsel{display:inline-flex;align-items:center;gap:4px} .smpsel span{font-weight:600}
+.smpsel.a span{color:var(--a)} .smpsel.b span{color:var(--b)}
+.smpsel select{min-height:30px;padding:2px 4px;max-width:9.5em;font-size:.85rem}
+.smprow .seg button{min-height:30px;padding:2px 8px;font-size:.85rem}
+.smpnote{color:var(--muted);font-size:.8rem}
 .gname{font-weight:600;white-space:nowrap;margin-right:4px}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}

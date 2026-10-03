@@ -131,6 +131,12 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .group[data-kind="osc"]:not([data-type="wt"]) .wtcard .ac{visibility:hidden}
 .group[data-kind="osc"] .wt{margin-bottom:6px}
 .group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* slot knobs keep the same height whatever their values say */
+.smprow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 6px;font-size:.88rem}
+.smpsel{display:inline-flex;align-items:center;gap:4px} .smpsel span{font-weight:600}
+.smpsel.a span{color:var(--a)} .smpsel.b span{color:var(--b)}
+.smpsel select{min-height:30px;padding:2px 4px;max-width:9.5em;font-size:.85rem}
+.smprow .seg button{min-height:30px;padding:2px 8px;font-size:.85rem}
+.smpnote{color:var(--muted);font-size:.8rem}
 .gname{font-weight:600;white-space:nowrap;margin-right:4px}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
@@ -426,7 +432,7 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
    lerp(A, B, bend(morph, curve)); only the parameters of each slot's
    current type are resolved.
 
-   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sub)
+   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sampler / Sub)
    -> each slot splits between the filter and around it (Bypass) -> amp
    envelope -> master Level and Pan. Then the 4 FX slots in order,
    and a final tanh soft clip.
@@ -458,10 +464,14 @@ class MorphEngine {
     this.tune = new Float64Array(4); this.sdt = new Float64Array(4);
     this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
     this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
+    // Sampler per slot: a buffer per side ({ d, sr } or null), Loop, and per-block settings
+    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null })); this.smpLoop = [false, false, false, false];
+    this.smpMix = new Float64Array(4); this.smpTrk = new Float64Array(4); this.smpRA = new Float64Array(4); this.smpRB = new Float64Array(4);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
-      ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0 });
+      ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0,
+      sp:new Float64Array(8), op:new Float64Array(8), sxf:new Int32Array(4), sold:new Uint8Array(4) });   // sampler: positions, old positions and crossfade on restart
     // FX slots: instance, type, pending type, On/Off and the crossfade to dry used for On/Off and type switches
     this.fxInst = [null, null, null, null]; this.fxType = [null, null, null, null]; this.fxNext = [null, null, null, null];
     this.fxOn = [true, true, true, true]; this.fxBy = new Float64Array(4); this.dlSpill = [false, false, false, false];
@@ -560,8 +570,15 @@ class MorphEngine {
   }
   swapOsc(s, t) {
     this.oscType[s] = t; this.oscNext[s] = null;
-    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; }
+    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; this.smpStart(v, s, false); }
     this.computeActive();
+  }
+  /* (Re)start a voice's sample playback in slot s at the Start point. When a sounding note restarts, the old
+     playback crossfades out over 5 ms (and a fresh one fades in), so restarts don't click. */
+  smpStart(v, s, keepOld) {
+    const st = this.val[this.oP[s].sstart] || 0, XN = Math.round(0.005 * this.sr);
+    for (const k of [0, 1]) { const b = this.smp[s][k ? 'B' : 'A'], q = s * 2 + k; v.op[q] = v.sp[q]; v.sp[q] = b ? st * (b.d.length - 1) : 0; }
+    v.sold[s] = keepOld ? 1 : 0; v.sxf[s] = XN;
   }
   makeFx(type, s) { return new (MorphEngine.FX_CLASSES[type])(this.sr, this, s); }
 
@@ -585,6 +602,8 @@ class MorphEngine {
         this.computeActive();
         break;
       case 'table': this.banks[m.slot].setTable(m.side, m.re, m.im); break;
+      case 'sample': this.smp[m.slot][m.side] = m.d ? { d: m.d, sr: m.sr } : null; break;
+      case 'smpLoop': this.smpLoop[m.i] = !!m.v; break;
       case 'blend': this.banks.forEach(b => { b.spectral = !!m.v; b.ver++; }); break;
       case 'seq':
         this.seq = m.seq;
@@ -619,14 +638,18 @@ class MorphEngine {
       this.stack = this.stack.filter(n => n !== note); this.stack.push(note);
       for (let k = 1; k < 8; k++) if (this.voices[k].active) { this.voices[k].aSt = 3; this.voices[k].fSt = 3; }
       const v = this.voices[0];
+      const was = v.active;
       if (!v.active) this.startVoice(v, note);
+      for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
       v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.vAge = 0; v.vPh = 0; this.lastPitch = note;
       return;
     }
     let v = this.voices.find(x => x.active && x.note === note);
     if (!v) v = this.voices.find(x => !x.active);
     if (!v) v = this.voices.reduce((a, b) => (a.age < b.age ? a : b));
+    const was = v.active;
     if (!v.active) this.startVoice(v, note);
+    for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
     v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.age = this.clock++;
     v.vAge = 0; v.vPh = 0;   // vibrato fades in again from each new note
     this.lastPitch = note;
@@ -772,6 +795,10 @@ class MorphEngine {
         const ug = 1 / Math.sqrt(pw);
         for (let j = 0; j < uni; j++) { this.uL[b + j] *= ug; this.uR[b + j] *= ug; }
         this.uN[s] = uni;
+      } else if (t === 'smp') {
+        kind[nSl] = 4;
+        this.tune[s] = v[P.spitch] + v[P.sfine] / 100;
+        this.smpMix[s] = v[P.sample]; this.smpTrk[s] = v[P.strack];
       } else {
         kind[nSl] = 2;
         this.tune[s] = tune1 + v[P.soct] * 12;
@@ -814,6 +841,9 @@ class MorphEngine {
               const lev = Math.ceil(Math.log2(512 * dt / 0.45));
               uLev[b + j] = lev < 0 ? 0 : lev > 9 ? 9 : lev;
             }
+          } else if (kind[a] === 4) {   // sampler: samples are at middle C; Key track scales how far notes move them
+            const semi = (base - 60) * this.smpTrk[s] + this.tune[s], A = this.smp[s].A, B = this.smp[s].B;
+            this.smpRA[s] = A ? Math.pow(2, semi / 12) * A.sr / sr : 0; this.smpRB[s] = B ? Math.pow(2, semi / 12) * B.sr / sr : 0;
           } else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
         }
         const fc = Math.min(sr * 0.45, Math.max(20, cutoff * Math.pow(2, envAmt * 5 * vc.fLv + kt * (vc.pitch - 60) / 12)));
@@ -840,6 +870,19 @@ class MorphEngine {
                 xl += x * uL[b + j]; xr += x * uR[b + j];
                 q += uDt[b + j]; if (q >= 1) q -= 1; ph[pj] = q;
               }
+            } else if (kind[a] === 4) {
+              const S = this.smp[sl], q = sl * 2, loop = this.smpLoop[sl], sp = vc.sp, op = vc.op;
+              let ya = 0, yb = 0, oa = 0, ob = 0;
+              if (S.A) { const d = S.A.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
+                ya = OscSmp.read(d, sp[q], loop, ls); sp[q] = OscSmp.advance(sp[q], this.smpRA[sl], n, loop, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { oa = OscSmp.read(d, op[q], loop, ls); op[q] = OscSmp.advance(op[q], this.smpRA[sl], n, loop, ls); } }
+              if (S.B) { const d = S.B.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
+                yb = OscSmp.read(d, sp[q + 1], loop, ls); sp[q + 1] = OscSmp.advance(sp[q + 1], this.smpRB[sl], n, loop, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { ob = OscSmp.read(d, op[q + 1], loop, ls); op[q + 1] = OscSmp.advance(op[q + 1], this.smpRB[sl], n, loop, ls); } }
+              const mix = this.smpMix[sl];
+              let x = ya + (yb - ya) * mix;
+              if (vc.sxf[sl] > 0) { const g = vc.sxf[sl] / Math.round(0.005 * sr); x = x * (1 - g) + (oa + (ob - oa) * mix) * g; vc.sxf[sl]--; }
+              xl = xr = x;
             } else {
               const dt = this.sdt[sl];
               let q = sph[sl];
@@ -972,6 +1015,29 @@ class OscSub {
   }
 }
 
+
+/* Sampler: reads a sample at a position (in source samples) with 4-point Hermite interpolation.
+   Looping runs from the Start point to the end, crossfading over the last XF samples into the ones just
+   before the loop start, so the wrap never clicks; a one-shot fades over its last 64 samples. */
+class OscSmp {
+  static get XF() { return 1024; }
+  static at(d, i) { return i < 0 || i >= d.length ? 0 : d[i]; }
+  static herm(d, pos) {
+    const i = Math.floor(pos), f = pos - i, a = OscSmp.at(d, i - 1), b = OscSmp.at(d, i), c = OscSmp.at(d, i + 1), e = OscSmp.at(d, i + 2);
+    return b + 0.5 * f * (c - a + f * (2 * a - 5 * b + 4 * c - e + f * (3 * (b - c) + e - a)));
+  }
+  /* Loop start for a buffer: the Start point, but at least XF in (the wrap crossfades into the XF samples just
+     before the loop start, so they have to exist) and far enough from the end for a usable loop. */
+  static loopStart(n, start) { return Math.max(Math.min(OscSmp.XF, n / 4), Math.min(start, n - 4 * OscSmp.XF)); }
+  static read(d, pos, loop, ls) {
+    const n = d.length;
+    if (!loop) return pos >= n ? 0 : OscSmp.herm(d, pos) * Math.min(1, (n - pos) / 64);
+    const L = n - ls, X = Math.min(OscSmp.XF, L * 0.5), w = pos - (n - X);
+    const y = OscSmp.herm(d, pos);
+    return w > 0 ? y + (OscSmp.herm(d, pos - L) - y) * (w / X) : y;
+  }
+  static advance(pos, r, n, loop, ls) { pos += r; if (loop && pos >= n) pos -= n - ls; return pos; }
+}
 /* =====================================================================
    EFFECT CLASSES
    Each effect is one class with process(L, R, p, len, v, P): it works in
@@ -1436,7 +1502,7 @@ class FxOtt {
    kind: 'osc' | 'fx' with slot (0-based); eng: the type it belongs
    to (null = every type of that slot).
    ===================================================================== */
-const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['sub', 'Sub']];
+const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['smp', 'Sampler'], ['sub', 'Sub']];
 const FX_TYPES = [['drive', 'Drive'], ['formant', 'Formant filter'], ['mod', 'Modulation'], ['delay', 'Delay'], ['reverb', 'Reverb'], ['lofi', 'Lo-fi'], ['ott', 'OTT']];
 const typeName = (list, t) => (list.find(x => x[0] === t) || [t, t])[1];
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
@@ -1448,6 +1514,11 @@ const OSC_ENG = {
     P_('posA', 'Position A', 0, 1, 'lin', 0.667, 0.667, { single:'A' }), P_('wave', 'Wave', 0, 1, 'lin', 0, 1),
     P_('posB', 'Position B', 0, 1, 'lin', 0.3, 0.3, { single:'B' }),
     P_('pitch', 'Pitch', -24, 24, 'int', 0, 0), P_('fine', 'Fine', -100, 100, 'lin', 0, 0), P_('unison', 'Unison', 0, 1, 'lin', 0, 0.35),
+  ],
+  // Sampler: a sample per side; Sample crossfades them like Wave; Start is read when a note starts
+  smp: [
+    P_('sample', 'Sample', 0, 1, 'lin', 0, 1), P_('sstart', 'Start', 0, 1, 'lin', 0, 0),
+    P_('spitch', 'Pitch', -24, 24, 'int', 0, 0), P_('sfine', 'Fine', -100, 100, 'lin', 0, 0), P_('strack', 'Key track', 0, 1, 'lin', 1, 1),
   ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
 };
@@ -1501,6 +1572,8 @@ const FMT = {
   olevel: pct, opan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
   byp: v => (v < 0.005 ? 'Off' : pct(v)),
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
+  sample: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'), sstart: pct,
+  spitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', sfine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`, strack: pct,
   sshape: v => (v < 0.02 ? 'Sine' : Math.abs(v - 0.5) < 0.02 ? 'Triangle' : v > 0.98 ? 'Square' : pct(v)), sdrive: pct,
   posA: pct, posB: pct,
   drive: pct, dshape: pct, dmix: pct,
@@ -1583,22 +1656,108 @@ const PRESETS = {
 const makeTable = name => ({ name, frames: PRESETS[name]().map(normalizeFrame) });
 const cloneTable = t => ({ name: t.name, frames: t.frames.map(f => f.slice()) });
 
+/* =====================================================================
+   SAMPLES (UI side)
+   Built-in samples are generated in code at middle C (so nothing has to be
+   downloaded); loaded files are stored in IndexedDB, which can hold them
+   (localStorage can't). A slot's choice per side is a small reference saved
+   with the patch: { name } for a built-in sample, { name, id } for a file.
+   ===================================================================== */
+const SMP_SR = 44100, SMP_MAX_SEC = 20, C4 = 261.6256;
+/* Level-match samples to the Wavetable: the loudest 50 ms is brought to the RMS of a full-level sawtooth
+   (about 0.58), with peaks kept under 3 so very spiky sounds don't get out of hand. */
+function smpNorm(d) {
+  const W = Math.round(0.05 * SMP_SR); let best = 1e-9, acc = 0, pk = 1e-9;
+  for (let i = 0; i < d.length; i++) { acc += d[i] * d[i]; if (i >= W) acc -= d[i - W] * d[i - W]; best = Math.max(best, acc / Math.min(i + 1, W)); pk = Math.max(pk, Math.abs(d[i])); }
+  const g = Math.min(0.58 / Math.sqrt(best), 3 / pk);
+  for (let i = 0; i < d.length; i++) d[i] *= g;
+  return d;
+}
+const smpRand = (() => { let a = 12345; return () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296 * 2 - 1; }; })();   // fixed noise, so built-ins are the same every time
+const partials = (sec, list) => {   // [ratio, amplitude, decay seconds] at middle C
+  const n = Math.round(sec * SMP_SR), d = new Float32Array(n);
+  for (const [r, a, dec] of list) { const w = 2 * Math.PI * C4 * r / SMP_SR, k = Math.exp(-1 / (dec * SMP_SR)); let g = a; for (let i = 0; i < n; i++) { d[i] += g * Math.sin(w * i); g *= k; } }
+  return d;
+};
+// sustained: loops well (Randomize usually turns Loop on for these)
+const FACTORY = {
+  'Plucked string': { sustained: false, make: () => {   // Karplus-Strong with a light loss filter, so it rings rather than going dull at once
+    const n = Math.round(2 * SMP_SR), P = SMP_SR / C4 - 0.4, N = Math.floor(P), fr = P - N, d = new Float32Array(n);   // the loss filter adds 0.4 samples of delay
+    const r = i => (i - N - 1 < 0 ? 0 : (1 - fr) * d[i - N] + fr * d[i - N - 1]);
+    let lp = 0;   // a softened noise burst, so the string's energy goes into its tone rather than the attack
+    for (let i = 0; i < n; i++) d[i] = i < N + 1 ? (lp += (smpRand() - lp) * 0.5) : 0.9985 * (0.6 * r(i) + 0.4 * r(i - 1));
+    return d;
+  } },
+  'Bell': { sustained: false, make: () => partials(3.5, [[0.56, 1, 2.2], [0.92, 0.67, 2], [1.19, 1, 1.4], [1.71, 1.8, 1.2], [2, 2.67, 0.7], [2.74, 1.67, 0.8], [3, 1.46, 0.55], [3.76, 1.33, 0.45], [4.07, 1.33, 0.33]]) },
+  'Mallet': { sustained: false, make: () => { const d = partials(1.6, [[1, 1, 0.6], [3.93, 0.5, 0.18], [9.2, 0.25, 0.05]]); for (let i = 0; i < 80; i++) d[i] += smpRand() * 0.3 * (1 - i / 80); return d; } },
+  'Vocal ah': { sustained: true, make: () => {   // a pulse train through the formants of "ah"
+    const n = Math.round(2.4 * SMP_SR), d = new Float32Array(n), F = [[730, 90, 1], [1090, 110, 0.5], [2440, 160, 0.3]];
+    for (let h = 1; C4 * h < 8000; h++) {
+      const f = C4 * h, g = F.reduce((t, [c, bw, a]) => t + a / (1 + ((f - c) / bw) ** 2), 0) / Math.sqrt(h), w = 2 * Math.PI * f / SMP_SR, ph = smpRand() * Math.PI;
+      for (let i = 0; i < n; i++) d[i] += g * Math.sin(w * i * (1 + 0.004 * Math.sin(2 * Math.PI * 5 * i / SMP_SR)) + ph);
+    }
+    return d;
+  } },
+  'Breath pad': { sustained: true, make: () => {   // shaped noise over soft harmonics, swelling in
+    const n = Math.round(3 * SMP_SR), d = partials(3, [[1, 0.5, 30], [2, 0.25, 30], [3, 0.12, 30], [1.5, 0.2, 30]]);
+    let lp = 0, bp = 0;
+    for (let i = 0; i < n; i++) { lp += (smpRand() - lp) * 0.08; bp += (lp - bp) * 0.02; d[i] = (d[i] + (lp - bp) * 2.5) * Math.min(1, i / (0.4 * SMP_SR)); }
+    return d;
+  } },
+  'Drum': { sustained: false, make: () => {   // a tuned drum: falling sine with a click
+    const n = Math.round(0.8 * SMP_SR), d = new Float32Array(n); let ph = 0;
+    for (let i = 0; i < n; i++) { const t = i / SMP_SR, f = C4 * (0.5 + 1.5 * Math.exp(-t * 30)); ph += 2 * Math.PI * f / SMP_SR; d[i] = Math.sin(ph) * Math.exp(-t * 6) + (i < 120 ? smpRand() * 0.5 * (1 - i / 120) : 0); }
+    return d;
+  } },
+};
+const FACTORY_NAMES = Object.keys(FACTORY);
+const factoryCache = {};
+const factoryData = name => factoryCache[name] || (factoryCache[name] = { d: smpNorm(FACTORY[name].make()), sr: SMP_SR, name });
+
+/* IndexedDB: loaded files, keyed by an id saved in the patch */
+const idb = (() => {
+  let db = null;
+  const open = () => db || (db = new Promise((res, rej) => {
+    const r = indexedDB.open('diptych', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('samples');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+  const tx = (mode, fn) => open().then(d => new Promise((res, rej) => { const t = d.transaction('samples', mode), q = fn(t.objectStore('samples')); t.oncomplete = () => res(q.result); t.onerror = () => rej(t.error); }));
+  return { put: (k, v) => tx('readwrite', s => s.put(v, k)), get: k => tx('readonly', s => s.get(k)) };
+})();
+// decode an audio file to mono at SMP_SR, at most 20 seconds, peak-normalized
+async function decodeSampleFile(file) {
+  const buf = await new OfflineAudioContext(1, 1, SMP_SR).decodeAudioData(await file.arrayBuffer());
+  const n = Math.min(buf.length, SMP_MAX_SEC * SMP_SR), d = new Float32Array(n);
+  for (let c = 0; c < buf.numberOfChannels; c++) { const ch = buf.getChannelData(c); for (let i = 0; i < n; i++) d[i] += ch[i] / buf.numberOfChannels; }
+  return smpNorm(d);
+}
+// one column per pixel group: [mins, maxs], for the sample cards
+const overviewCache = new WeakMap();
+function sampleOverview(data, cols = 128) {
+  if (!data) return null;
+  let o = overviewCache.get(data.d); if (o) return o;
+  const mn = new Float32Array(cols), mx = new Float32Array(cols), n = data.d.length;
+  for (let c = 0; c < cols; c++) { let a = 0, b = 0; for (let i = Math.floor(c * n / cols); i < Math.floor((c + 1) * n / cols); i++) { a = Math.min(a, data.d[i]); b = Math.max(b, data.d[i]); } mn[c] = a; mx[c] = b; }
+  o = [mn, mx]; overviewCache.set(data.d, o); return o;
+}
 /* ---------- state + persistence ----------
    The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v4', STORE_VER = 3;
+const STORE = 'diptych-v4', STORE_VER = 4;
 const DEFAULT_LOCKS = () => {
   const l = { level: true, pan: true, pattern: true };
-  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`o${s}.sample`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
   return l;
 };
 const DEFAULT_LINKS = () => {
   const l = {};
-  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
+  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine', 'spitch', 'sfine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
   return l;
 };
 const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
 const DEFAULT_FX = () => ['drive', 'delay', 'reverb', 'ott'];
+const DEFAULT_SMP = () => [0, 1, 2, 3].map(() => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } }));   // sample references per slot
 const DEFAULT_TABLES = () => [0, 1, 2, 3].map(() => ({ A: makeTable('Basic shapes'), B: makeTable('Vowel formants') }));
 const state = {
   A: DEFS.map((_, i) => defaultNorm('A', i)),
@@ -1615,6 +1774,8 @@ const state = {
   fxType: DEFAULT_FX(),
   fxOn: [true, true, true, true],
   dlSpill: [false, false, false, false],
+  smp: DEFAULT_SMP(),
+  smpLoop: [false, false, false, false],
   seq: null,
   bpm: 120,
   walk: true,
@@ -1656,6 +1817,10 @@ try {
     state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType, 'drive');
     if (Array.isArray(saved.fxOn) && saved.fxOn.length === 4) state.fxOn = saved.fxOn.map(Boolean);
     if (Array.isArray(saved.dlSpill) && saved.dlSpill.length === 4) state.dlSpill = saved.dlSpill.map(Boolean);
+    const okRef = r => r && typeof r.name === 'string' && (r.id ? typeof r.id === 'string' : !!FACTORY[r.name]);
+    if (Array.isArray(saved.smp) && saved.smp.length === 4) saved.smp.forEach((p, s) => ['A', 'B'].forEach(k => { if (p && okRef(p[k])) state.smp[s][k] = { name: p[k].name, ...(p[k].id ? { id: p[k].id } : {}) }; }));
+    if (Array.isArray(saved.smpLoop) && saved.smpLoop.length === 4) state.smpLoop = saved.smpLoop.map(Boolean);
+    if (!(saved.ver >= 4)) for (let s = 1; s <= 4; s++) { state.locks[`o${s}.sample`] = true; state.links[`o${s}.spitch`] = true; state.links[`o${s}.sfine`] = true; }   // the Sampler arrived in ver 4
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;
@@ -1685,15 +1850,34 @@ function analyzeFrame(slot, side, j) {
 }
 const analyzeAll = () => { for (let s = 0; s < 4; s++) { analyzeTable(s, 'A'); analyzeTable(s, 'B'); } };
 analyzeAll();
+/* sample data per slot and side, resolved from the patch's references: built-ins at once, files from IndexedDB
+   (they arrive a moment later, and are sent to the engine when they do) */
+const smpData = [0, 1, 2, 3].map(() => ({ A: null, B: null })), smpSent = [0, 1, 2, 3].map(() => ({ A: undefined, B: undefined }));
+const smpFor = ref => (!ref ? null : !ref.id ? (FACTORY[ref.name] ? factoryData(ref.name) : null) : null);
+function resolveSamples() {
+  for (let s = 0; s < 4; s++) for (const k of ['A', 'B']) {
+    const ref = state.smp[s][k], cur = smpData[s][k];
+    if (!ref || !ref.id) { smpData[s][k] = smpFor(ref); continue; }
+    if (cur && cur.id === ref.id) continue;
+    smpData[s][k] = null;
+    idb.get(ref.id).then(v => {
+      const now = state.smp[s][k];
+      if (v && now && now.id === ref.id) { smpData[s][k] = { d: v.d, sr: v.sr, name: v.name, id: ref.id }; if (ready) postSample(s, k); drawWaves(); }
+    }).catch(() => {});
+  }
+}
+resolveSamples();
 
 /* ---------- audio startup ---------- */
 // Everything the audio thread runs: the engine plus its oscillator and effect classes (stringified into the worklet).
-const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
+const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, OscSmp, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
 let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
 const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
 const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });
 const sendSlots = () => { if (ready) send({ type:'slots', osc: state.oscType, fx: state.fxType }); };
 const postTable = (slot, side) => send({ type:'table', slot, side, re: spec[slot][side].re.slice(), im: spec[slot][side].im.slice() });
+// a sample is only posted when it changed (they are large)
+function postSample(s, k) { const x = smpData[s][k]; if (smpSent[s][k] === x) return; smpSent[s][k] = x; send({ type:'sample', slot:s, side:k, d: x ? x.d : null, sr: x ? x.sr : SMP_SR }); }
 const tableTimers = {};
 function sendTable(slot, side) {
   const k = slot + side;
@@ -1706,6 +1890,8 @@ function sendAll() {   // runs during startup, before ready is set
   send({ type:'blend', v: state.spectral });
   state.fxOn.forEach((on, i) => send({ type:'bypass', i, on }));
   state.dlSpill.forEach((v, i) => send({ type:'dlmode', i, v }));
+  for (let s = 0; s < 4; s++) { postSample(s, 'A'); postSample(s, 'B'); }
+  state.smpLoop.forEach((v, i) => send({ type:'smpLoop', i, v }));
   send({ type:'slots', osc: state.oscType, fx: state.fxType });
   send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono });
   if (typeof buildSeq === 'function') { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); }
@@ -1767,6 +1953,7 @@ registerProcessor('morph-engine', MorphProcessor);`;
       send = m => eng.handle(m);
       kind = 'compatibility mode (main thread)';
     }
+    smpSent.forEach(p => { p.A = p.B = undefined; });   // a fresh engine has no samples yet
     sendAll();
     queue.forEach(m => send(m)); queue = [];
     ready = true;
@@ -2181,6 +2368,19 @@ function slotCycle(s, which) {
   } else CYC.fill(0);
   return CYC;
 }
+// a sample's outline (or the blend of two, at mix), with a line at the Start point
+function drawOverview(cv, oa, ob, mix, color, start) {
+  const c = prep(cv); if (!c) return;
+  const mid = c.h / 2, amp = c.h / 2 - 4, n = 128;
+  c.g.strokeStyle = css('--line'); c.g.lineWidth = 1; c.g.beginPath(); c.g.moveTo(0, mid); c.g.lineTo(c.w, mid); c.g.stroke();
+  const val = (o, i) => (o ? o[i] : null);
+  const at = (j, i) => { const a = val(oa, j), b = val(ob, j); return a && b ? a[i] + (b[i] - a[i]) * mix : a ? a[i] * (ob ? 1 - mix : 1) : b ? b[i] * mix : 0; };
+  c.g.fillStyle = color; c.g.beginPath();
+  for (let i = 0; i < n; i++) c.g.lineTo(i / (n - 1) * c.w, mid - at(1, i) * amp);
+  for (let i = n - 1; i >= 0; i--) c.g.lineTo(i / (n - 1) * c.w, mid - at(0, i) * amp);
+  c.g.fill();
+  c.g.strokeStyle = css('--ink'); c.g.lineWidth = 1.5; c.g.beginPath(); c.g.moveTo(start * c.w, 2); c.g.lineTo(start * c.w, c.h - 2); c.g.stroke();
+}
 let wavesQueued = false;
 function drawWaves() {
   if (wavesQueued) return; wavesQueued = true;
@@ -2197,6 +2397,12 @@ function drawWaves() {
         MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], resolveNorm(oi(s, 'wave')), sp, W.fr[0], W.fr[1]);
         drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
         $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
+      } else if (t === 'smp') {
+        const oa = sampleOverview(smpData[s].A), ob = sampleOverview(smpData[s].B), mix = resolveNorm(oi(s, 'sample'));
+        drawOverview($('cvA' + s), oa, null, 0, css('--a'), slotVal(s, 'sstart', 'A'));
+        drawOverview($('cvB' + s), ob, null, 0, css('--b'), slotVal(s, 'sstart', 'B'));
+        drawOverview($('cvH' + s), oa, ob, mix, mixColor(state.morph), slotVal(s, 'sstart', 'now'));
+        $('nmA' + s).textContent = state.smp[s].A ? state.smp[s].A.name : ''; $('nmB' + s).textContent = state.smp[s].B ? state.smp[s].B.name : '';
       } else {
         drawWave($('cvA' + s), slotCycle(s, 'A'), css('--a'), { fit:true });
         drawWave($('cvB' + s), slotCycle(s, 'B'), css('--b'), { fit:true });
@@ -2233,6 +2439,7 @@ const cloneTables = () => tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t
 function snapshot() {
   return { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: state.morph, spectral: state.spectral, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
            oscType: state.oscType.slice(), fxType: state.fxType.slice(), fxOn: state.fxOn.slice(), dlSpill: state.dlSpill.slice(),
+           smp: JSON.parse(JSON.stringify(state.smp)), smpLoop: state.smpLoop.slice(),
            tables: cloneTables(), seq: JSON.parse(JSON.stringify(state.seq)) };
 }
 function pushUndo() { undoStack.push(snapshot()); if (undoStack.length > 30) undoStack.shift(); $('undo').disabled = false; }
@@ -2240,14 +2447,14 @@ $('undo').addEventListener('click', () => {
   const s = undoStack.pop(); if (!s) return;
   applyBulk(() => {
     Object.assign(state, { A: s.A, B: s.B, C: s.C, morph: s.morph, spectral: s.spectral, links: s.links, linkMem: s.linkMem,
-      oscType: s.oscType, fxType: s.fxType, fxOn: s.fxOn, dlSpill: s.dlSpill, seq: s.seq });
+      oscType: s.oscType, fxType: s.fxType, fxOn: s.fxOn, dlSpill: s.dlSpill, smp: s.smp, smpLoop: s.smpLoop, seq: s.seq });
     s.tables.forEach((t, k) => { tables[k] = t; });
   });
   $('undo').disabled = !undoStack.length;
 });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
-  fn(); analyzeAll(); updateIcons(); updateSlotsUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
+  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSlotsUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
   if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
   if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
   if (ed.classList.contains('open')) {
@@ -2261,18 +2468,21 @@ const copySound = (from, to) => bulk(() => {
   const ip = IX.pattern, keep = state[to][ip];
   state[to] = state[from].slice(); state[to][ip] = keep;
   tables.forEach(t => { t[to] = cloneTable(t[from]); });
+  state.smp.forEach(p => { p[to] = { ...p[from] }; });
 });
 $('copyAB').addEventListener('click', () => copySound('A', 'B'));
 $('copyBA').addEventListener('click', () => copySound('B', 'A'));
 $('swap').addEventListener('click', () => bulk(() => {
   let t = state.A; state.A = state.B; state.B = t; state.C = state.C.map(c => -c);
   tables.forEach(p => { const x = p.A; p.A = p.B; p.B = x; });
+  state.smp.forEach(p => { const x = p.A; p.A = p.B; p.B = x; });
   t = state.seq.A; state.seq.A = state.seq.B; state.seq.B = t;
 }));
 $('resetAll').addEventListener('click', () => bulk(() => {
   state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
   state.spectral = true; state.links = DEFAULT_LINKS(); state.linkMem = {};
   state.oscType = DEFAULT_OSC(); state.fxType = DEFAULT_FX(); state.fxOn = [true, true, true, true]; state.dlSpill = [false, false, false, false];
+  state.smp = DEFAULT_SMP(); state.smpLoop = [false, false, false, false];
   DEFAULT_TABLES().forEach((t, k) => { tables[k] = t; });
   state.seq = defaultSeqs();
 }));
@@ -2291,6 +2501,10 @@ const RND = {
   byp: () => (rnd() < 0.8 ? 0 : rnd() * 0.5),
   pitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; },
   fine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
+  // Sampler: Sample is locked at full range by default, like Wave; Start usually at the top; Key track usually full
+  sample: side => (side === 'A' ? 0 : 1), sstart: () => (rnd() < 0.6 ? 0 : rnd() * 0.4),
+  spitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; }, sfine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
+  strack: () => (rnd() < 0.85 ? 1 : rnd() < 0.5 ? 0 : rnd()),
   soct: () => (rnd() < 0.6 ? -1 : -2), sshape: () => rnd(), sdrive: () => rnd() ** 2 * 0.8,
   unison: () => (rnd() < 0.4 ? 0 : rnd()),
   glide: () => (rnd() < 0.5 ? 0 : rnd() < 0.9 ? rnd() * 0.1 : 0.1 + rnd() ** 2 * 0.5),   // half off; 95% under 100 ms
@@ -2335,7 +2549,7 @@ const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side))));
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -2411,6 +2625,14 @@ function slotHarmonics(s, side, f0) {
     MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
     re = W.fr[0]; im = W.fr[1];
+  } else if (t === 'smp') {   // the spectrum of the sample this side mostly plays, from its Start point, at this note's speed
+    const ref = state.smp[s][val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? (smpData[s].A && smpData[s].A.id === ref.id ? smpData[s].A : smpData[s].B && smpData[s].B.id === ref.id ? smpData[s].B : null) : smpFor(ref);
+    if (!data) return [[f0, 1]];
+    const N = 2048, st = Math.floor(val('sstart') * Math.max(0, data.d.length - N)), fr = new Float64Array(N), fi = new Float64Array(N);
+    for (let i = 0; i < N; i++) fr[i] = (data.d[st + i] || 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
+    MorphEngine.fft(fr, fi, false);
+    for (let k = 1; k < N / 2; k++) { const f = k * data.sr / N * f0 / C4; if (f < 20000) harm.push([f, fr[k] ** 2 + fi[k] ** 2]); }
+    return harm.length ? harm : [[f0, 1]];
   } else return [[f0, 1]];
   for (let h = 1; h <= 512 && f0 * h < 20000; h++) harm.push([f0 * h, re[h] ** 2 + im[h] ** 2]);
   return harm;
@@ -2420,7 +2642,7 @@ function passedDb(side) {
   const cut = val(IX.cutoff), reso = val(IX.reso), mode = val(IX.mode), env = val(IX.envamt), kt = val(IX.keytrack), fsus = val(IX.fsus);
   const p1 = state.oscType[0] === 'wt' ? val(oi(0, 'pitch')) : 0;
   const slots = [0, 1, 2, 3].filter(s => state.oscType[s] !== 'off').map(s => {
-    const t = state.oscType[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : p1 + 12 * val(oi(s, 'soct')));
+    const t = state.oscType[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : p1 + 12 * val(oi(s, 'soct')));
     return { note, harm: slotHarmonics(s, side, 440 * Math.pow(2, (note - 69) / 12)), lv: val(oi(s, 'olevel')) ** 2, byp: val(oi(s, 'byp')) };
   });
   let dry = 0, best = 0;
@@ -2459,6 +2681,7 @@ function randomizeSide(side, g, raw) {
   for (let s = 0; s < 4; s++) {   // each Wavetable slot's table for this side, unless its section is locked
     const grp = `Osc ${s + 1}`;
     if (state.oscType[s] === 'wt' && (!g || g === grp) && !state.secLocks[grp]) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }
+    if (state.oscType[s] === 'smp' && (!g || g === grp) && !state.secLocks[grp]) state.smp[s][side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
   }
   if (!raw) { sineGuard(side); loudnessGuard(side); }
 }
@@ -2473,7 +2696,8 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
    Randomize all: slot 1 is never Off; slots 2-4 are often Off. FX slots get four different effects from all
    seven, kept in chain order (so OTT, when it comes up, is last). A slot's dice pick any engine but Off
    (any effect not used in another slot) at even odds. */
-const OSC_ODDS = [[['wt', 0.85], ['sub', 0.15]], [['sub', 0.3], ['wt', 0.3], ['off', 0.4]], [['wt', 0.25], ['off', 0.75]], [['wt', 0.25], ['off', 0.75]]];
+const OSC_ODDS = [[['wt', 0.6], ['smp', 0.25], ['sub', 0.15]], [['sub', 0.3], ['wt', 0.2], ['smp', 0.1], ['off', 0.4]],
+  [['wt', 0.15], ['smp', 0.1], ['off', 0.75]], [['wt', 0.15], ['smp', 0.1], ['off', 0.75]]];
 const FX_POOL = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'];
 const pickOdds = odds => { const tot = odds.reduce((t, x) => t + x[1], 0); let r = rnd() * tot; for (const [t, w] of odds) { if (r < w) return t; r -= w; } return odds[odds.length - 1][0]; };
 // no second Sub: drop it from the odds when another slot already holds one
@@ -2499,6 +2723,11 @@ function randomizeAll(g, raw) {
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
   for (let s = 0; s < 4; s++) if (state.fxType[s] === 'delay' && (!g || g === `FX ${s + 1}`) && !state.secLocks[`FX ${s + 1}`]) state.dlSpill[s] = rnd() < 0.5;   // Cut or Spill
   updateDlUI();
+  // Loop: usually on when either side plays a sustained sample, usually off for plucks and hits
+  for (let s = 0; s < 4; s++) if (state.oscType[s] === 'smp' && (!g || g === `Osc ${s + 1}`) && !state.secLocks[`Osc ${s + 1}`]) {
+    const sus = ['A', 'B'].some(k => { const r = state.smp[s][k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
+    state.smpLoop[s] = rnd() < (sus ? 0.8 : 0.15);
+  }
   randomizeLinked(g, raw);
   state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
@@ -2785,6 +3014,7 @@ updateDlUI();
 // which type containers a slot of type t shows: its own, plus '*' (Level, Pan, Bypass) on any oscillator that isn't Off
 const engShown = (eng, t) => eng === t || (eng === '*' && t !== 'off');
 function updateSlotsUI() {
+  if (typeof updateSamplerUI === 'function') updateSamplerUI();
   for (let s = 0; s < 4; s++) {
     const t = state.oscType[s], sec = sections[`Osc ${s + 1}`];
     sec.querySelector('.typesel').value = t;
@@ -2833,6 +3063,62 @@ document.addEventListener('change', e => {
   }
   sendSlots(); drawWaves(); save();
 });
+/* =====================================================================
+   SAMPLER CONTROLS
+   In each slot's Sampler panel: a sample menu per side (built-in samples,
+   the loaded file if any, and "Load file…") and One-shot / Loop.
+   ===================================================================== */
+const smpFile = document.createElement('input');
+smpFile.type = 'file'; smpFile.accept = 'audio/*'; smpFile.hidden = true;
+document.body.appendChild(smpFile);
+let smpPending = null;   // { s, k } waiting for a file
+for (let s = 0; s < 4; s++) {
+  sections[`Osc ${s + 1}`].querySelector('.eng[data-eng="smp"]').insertAdjacentHTML('afterbegin', `<div class="smprow">
+    <label class="smpsel a"><span>A</span><select data-smpsel="${s}" data-side="A" aria-label="Osc ${s + 1} sample A"></select></label>
+    <label class="smpsel b"><span>B</span><select data-smpsel="${s}" data-side="B" aria-label="Osc ${s + 1} sample B"></select></label>
+    <span class="seg" role="group" aria-label="Osc ${s + 1} playback"><button type="button" data-smploop="${s}" data-v="0">One-shot</button><button type="button" data-smploop="${s}" data-v="1">Loop</button></span>
+    <span class="smpnote" id="smpNote${s}" role="status"></span></div>`);
+}
+function updateSamplerUI() {
+  document.querySelectorAll('[data-smpsel]').forEach(sel => {
+    const ref = state.smp[+sel.dataset.smpsel][sel.dataset.side];
+    sel.innerHTML = FACTORY_NAMES.map(n => `<option value="f:${n}">${n}</option>`).join('')
+      + (ref && ref.id ? `<option value="u:${ref.id}">${ref.name.replace(/[<&]/g, '')}</option>` : '') + '<option value="load">Load file…</option>';
+    sel.value = ref ? (ref.id ? 'u:' + ref.id : 'f:' + ref.name) : 'load';
+  });
+  document.querySelectorAll('[data-smploop]').forEach(b => b.setAttribute('aria-pressed', state.smpLoop[+b.dataset.smploop] === (b.dataset.v === '1')));
+}
+function setSample(s, k, ref) {
+  pushUndo();
+  state.smp[s][k] = ref; resolveSamples();
+  if (ready) postSample(s, k);
+  updateSamplerUI(); drawWaves(); save();
+}
+document.addEventListener('change', e => {
+  const sel = e.target.closest('[data-smpsel]'); if (!sel) return;
+  const s = +sel.dataset.smpsel, k = sel.dataset.side;
+  if (sel.value === 'load') { smpPending = { s, k }; updateSamplerUI(); smpFile.click(); return; }
+  if (sel.value.startsWith('f:')) setSample(s, k, { name: sel.value.slice(2) });
+});
+smpFile.addEventListener('change', async () => {
+  const file = smpFile.files[0], p = smpPending; smpFile.value = ''; smpPending = null;
+  if (!file || !p) return;
+  const note = $('smpNote' + p.s);
+  try {
+    note.textContent = 'Loading…';
+    const d = await decodeSampleFile(file), id = 'u' + Date.now().toString(36), name = file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Sample';
+    await idb.put(id, { name, sr: SMP_SR, d }).catch(() => { note.textContent = 'Could not store the file; it will be gone after a reload.'; });
+    smpData[p.s][p.k] = { d, sr: SMP_SR, name, id };   // in hand already, no need to wait for IndexedDB
+    setSample(p.s, p.k, { name, id });
+    if (note.textContent === 'Loading…') note.textContent = '';
+  } catch (err) { note.textContent = 'That file could not be read as audio.'; }
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-smploop]'); if (!b) return;
+  const s = +b.dataset.smploop; state.smpLoop[s] = b.dataset.v === '1';
+  updateSamplerUI(); if (ready) send({ type:'smpLoop', i:s, v: state.smpLoop[s] }); save();
+});
+updateSamplerUI();
 /* =====================================================================
    KEYBOARD
    ===================================================================== */
