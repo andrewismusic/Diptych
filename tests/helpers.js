@@ -62,26 +62,29 @@ function installHarness() {
       DEFS.forEach((d, i) => { if (!(d.id in over)) p.B[i] = p.A[i]; });
       return p;
     },
-    /* opts: patch {A,B,C}, morph, osc (4 types), fx (4 types), fxOn (4), dlSpill (4),
-       tables: {A,B} for every slot or an array of {A,B} per slot (preset names or table objects),
+    /* opts: patch {A,B,C}, morph, fxOn (one per effect, default all on), dlSpill, smpLoop,
+       tables: {A,B} for both Wavetables or an array of {A,B} per Wavetable (preset names or table objects),
+       samples: {A,B} for the Sampler (built-in names or { d, sr }),
        notes [[midi, startBlock, endBlock]], blocks (128-sample blocks), sr, bpm, events: { [block]: message | message[] }, seed, setup(engine) */
     render(o = {}) {
       const real = Math.random; Math.random = seeded(o.seed || 7);
       try {
         const sr = o.sr || 48000, e = new MorphEngine(sr, defs());
-        if (o.setup) o.setup(e);   // e.g. spy on noteOn
         const p = o.patch || T.flat();
         e.handle({ type:'state', A: p.A, B: p.B, C: p.C, morph: o.morph || 0 });
         const tab = x => typeof x === 'string' ? makeTable(x) : x;
-        for (let s = 0; s < 4; s++) {
+        for (const s of WT_SLOTS) {
           const t = Array.isArray(o.tables) ? o.tables[s] || {} : o.tables || {};
           e.handle({ type:'table', slot:s, side:'A', ...specOf(tab(t.A || 'Basic shapes')) });
           e.handle({ type:'table', slot:s, side:'B', ...specOf(tab(t.B || 'Basic shapes')) });
         }
+        const smp = x => (typeof x === 'string' ? factoryData(x) : x);
+        for (const k of ['A', 'B']) { const d = o.samples && smp(o.samples[k]); if (d) e.handle({ type:'sample', slot: SMP_SLOT, side:k, d: d.d, sr: d.sr }); }
+        e.handle({ type:'smpLoop', i: SMP_SLOT, v: !!o.smpLoop });
         e.handle({ type:'blend', v:true }); e.handle({ type:'bpm', v: o.bpm || 120 });
-        (o.dlSpill || [0, 0, 0, 0]).forEach((v, i) => e.handle({ type:'dlmode', i, v: !!v }));
-        (o.fxOn || [1, 1, 1, 1]).forEach((on, i) => e.handle({ type:'bypass', i, on: !!on }));
-        e.handle({ type:'slots', osc: o.osc || ['wt', 'off', 'off', 'off'], fx: o.fx || ['drive', 'delay', 'reverb', 'ott'] });
+        e.handle({ type:'dlmode', v: !!o.dlSpill });
+        (o.fxOn || T.allFx).forEach((on, i) => e.handle({ type:'bypass', i, on: !!on }));
+        if (o.setup) o.setup(e);   // e.g. spy on noteOn
         const blocks = o.blocks || 750, N = 128, L = new Float32Array(blocks * N), R = new Float32Array(blocks * N);
         const bl = new Float32Array(N), br = new Float32Array(N), notes = o.notes || [[48, 0, blocks]];
         const t0 = performance.now();
@@ -95,9 +98,11 @@ function installHarness() {
     },
     // the page's current sound, as render() options
     current() {
-      return { patch: { A: state.A.slice(), B: state.B.slice(), C: state.C.slice() }, morph: state.morph, osc: state.oscType.slice(), fx: state.fxType.slice(),
-        fxOn: state.fxOn.map(x => +x), dlSpill: state.dlSpill.map(x => +x), tables: tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) })) };
+      return { patch: { A: state.A.slice(), B: state.B.slice(), C: state.C.slice() }, morph: state.morph, fxOn: state.fxOn.map(x => +x), dlSpill: state.dlSpill,
+        tables: tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) })), samples: { A: smpData.A, B: smpData.B }, smpLoop: state.smpLoop };
     },
+    allFx: FX_KIND.map(() => 1), noFx: FX_KIND.map(() => 0),   // every effect on / every effect bypassed
+    only: k => FX_KIND.map(t => +(t === k)),                   // just this effect on
     rms(x, from = 0, to = x.length) { let s = 0; for (let i = from; i < to; i++) s += x[i] * x[i]; return Math.sqrt(s / Math.max(1, to - from)); },
     peak(x, from = 0, to = x.length) { let p = 0; for (let i = from; i < to; i++) p = Math.max(p, Math.abs(x[i])); return p; },
     db: x => 20 * Math.log10(Math.max(x, 1e-12)),

@@ -4,6 +4,7 @@
    Going chorus -> flanger, the outer tap fades out first, then the middle one, like unison in reverse.
    Every internal setting is smoothed per sample (block-rate stepping caused zipper noise and phaser crackles). */
 class FxModulation {
+  static get REST() { return { mmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr;
@@ -70,6 +71,7 @@ class FxModulation {
    Tone: below 50% darkens (low-pass down to 400 Hz), above 50% thins (high-pass up to 2 kHz); it filters
    the echoes and every repeat, so its effect builds with feedback. */
 class FxDelay {
+  static get REST() { return { dlmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr, host) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr; this.host = host; this.spill = false; this.first = true; this.w = 0;
@@ -122,6 +124,7 @@ class FxDelay {
 /* Reverb: 4 all-pass diffusers into an 8-line feedback delay network (Householder mixing).
    Size glides the line lengths; Decay sets the feedback per line; Damping low-passes each line. */
 class FxReverb {
+  static get REST() { return { rvmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr;

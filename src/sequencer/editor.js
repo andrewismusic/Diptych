@@ -60,7 +60,7 @@ $('sqClear').addEventListener('click', () => editSeq(s => s.steps.forEach(st => 
 const pick = a => a[Math.floor(Math.random() * a.length)];
 // with the oscillator already shifted up an octave, keep generated patterns within two octaves
 // if any Wavetable slot is pitched up an octave or more on either side, generated patterns stay within 2 octaves
-const octCap = () => ([0, 1, 2, 3].some(s => state.oscType[s] === 'wt' && ['A', 'B'].some(k => MorphEngine.denorm(DEFS[oi(s, 'pitch')], state[k][oi(s, 'pitch')]) >= 12)) ? 2 : 3);
+const octCap = () => (WT_SLOTS.some(s => ['A', 'B'].some(k => MorphEngine.denorm(DEFS[oi(s, 'pitch')], state[k][oi(s, 'pitch')]) >= 12)) ? 2 : 3);
 function randArpSettings() {   // now: random generator settings, Arp or Riff
   setGen(Math.random() < 0.5 ? 'Arp' : 'Riff');
   $('sqChord').value = pick(Object.keys(CHORDS)); $('sqMode').value = pick(MODES);

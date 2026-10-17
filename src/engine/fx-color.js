@@ -2,6 +2,7 @@
 
 /* Lo-fi: wow and flutter, tape character, dropouts, codec damage and noise. */
 class FxLofi {
+  static get REST() { return { lwow: 0, lflut: 0, lchar: 0, lnmix: 0, ldrop: 0, lcodec: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr, host, slot) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr; this.rng = (0x9e3779b9 ^ (slot * 0x85ebca6b)) >>> 0 || 1;
@@ -131,6 +132,7 @@ class FxLofi {
    silence doesn't turn into hiss. Gain drops land at once and rises ease in, and the audio runs 1.5 ms
    behind the detector, so a note arriving after a quiet gap is caught before its first peak. */
 class FxOtt {
+  static get REST() { return { ottdepth: 0, ottgl: 0, ottgm: 0, ottgh: 0, ottout: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr, host, slot) {
     this.sr = sr; this.host = host; this.slot = slot;
     this.xo = new Float64Array(8);

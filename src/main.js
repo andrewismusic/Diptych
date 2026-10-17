@@ -1,7 +1,6 @@
 
 labelOct();
 updateIcons();
-updateSlotsUI();
 applyLayout();
 refreshAll();
 updateBlendUI();

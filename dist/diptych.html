@@ -123,22 +123,16 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .kab .a{color:var(--a)} .kab .b{color:var(--b)}
 
 .fxh .tools{display:inline-flex;align-items:center;gap:0}
-.typesel{min-height:30px;padding:2px 6px;font-size:.85rem;max-width:9.5em}
-.eng[hidden]{display:none}
-.eng + .eng{margin-top:6px}
-.slotoff .tools{opacity:.35}
 .group[data-kind="osc"][data-type="wt"] .wtcard[data-wt]{cursor:pointer}
 .wtlabel .ac{border:0;background:none;padding:0;min-height:0;font:inherit;font-weight:600}
-.group[data-kind="osc"]:not([data-type="wt"]) .wtcard .ac{display:none}
-.group[data-kind="osc"]:not([data-type="smp"]) :is(.smpsel,.smploop,.smpnote){display:none}
-.group[data-kind="osc"][data-type="smp"] .wtcard .nm{display:none}
-.wtlabel{align-items:center;min-height:24px}   /* room for a sample menu, so a slot is the same height whatever it holds */
+.wtcard.mute canvas{opacity:.3}   /* this side doesn't hear the oscillator (Level 0) */
+.wtlabel{align-items:center;min-height:24px}   /* room for the Sampler's menus, so every oscillator's cards line up */
 .smpsel{min-height:24px;padding:0 2px;font-size:.78rem;min-width:0;flex:1 1 auto;max-width:100%}
 .smploop button{min-height:24px;padding:0 6px;font-size:.76rem}
 .smpnote{color:var(--muted);font-size:.74rem}
 .smpnote:empty{display:none}
 .group[data-kind="osc"] .wt{margin-bottom:6px}
-.group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* slot knobs keep the same height whatever their values say */
+.group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* oscillator and effect knobs keep the same height whatever their values say */
 .gname{font-weight:600;white-space:nowrap;margin-right:4px}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
@@ -248,8 +242,9 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
   .wtcard canvas{height:72px} #edCanvas{height:260px}
 }
 /* ---------- desktop / plugin layout (body.desk, see ui/layout.js) ----------
-   A fixed 1440 x 900 design scaled to the window: oscillators across the top; Voice, Filter, Amp envelope and
-   Output in the middle; the effects below; the bottom panel last. Knobs are compact and A/B values sit on one line. */
+   A fixed 1440 x 900 design scaled to the window: the four oscillators across the top; Voice, Filter, Amp envelope
+   and Output in the middle; the seven effects in one row below, each as wide as two rows of its knobs need; the
+   bottom panel last. Knobs are compact and A/B values sit on one line. Rows are flex lines of fixed shares. */
 body.desk{overflow:hidden;height:100vh}
 .desk #app{width:1440px;height:900px;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
 .desk .top .wrap,.desk .kb .wrap{max-width:none;padding:0 12px}
@@ -258,20 +253,29 @@ body.desk{overflow:hidden;height:100vh}
 .desk .morphfoot{padding:0;margin-left:auto}
 .desk .titlebar #audioBtn{order:3}
 .desk .foot{display:none}
-.desk main{max-width:none;margin:0;padding:6px 12px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;align-content:start;overflow:hidden}
+.desk main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
 .desk .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
-.desk .group[data-kind]{grid-column:span 3}
-.desk .group[data-group="Voice"]{grid-column:span 3}
-.desk .group[data-group="Filter"]{grid-column:span 5}
-.desk .group[data-group="Amp envelope"]{grid-column:span 3}
-.desk .group[data-group="Output"]{grid-column:span 1}
+.desk .group{box-sizing:border-box}
+.desk .group[data-kind="osc"]{width:calc((100% - 3 * var(--g)) / 4)}
+.desk .group[data-group="Voice"],.desk .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
+.desk .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 5 / 12)}
+.desk .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) / 12)}
+/* effects: shares of 23, three knobs to a row (Lo-fi and OTT four) */
+.desk .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 23)}
+.desk .group[data-group="Lo-fi"],.desk .group[data-group="OTT"]{width:calc((100% - 6 * var(--g)) * 4 / 23)}
+.desk .group[data-group="Drive"]{width:calc((100% - 6 * var(--g)) * 2.7 / 23)}   /* a short name: room for Modulation's */
+.desk .group[data-group="Modulation"]{width:calc((100% - 6 * var(--g)) * 3.3 / 23)}
+.desk .group[data-kind="fx"] .knobs{justify-content:flex-start}
 .desk .group[data-group="Output"] .sectool.da,.desk .group[data-group="Output"] .sectool.db{display:none}
 .desk .group[data-group="Output"] .knobs{flex-wrap:nowrap;justify-content:center}
 .desk .group[data-group="Output"] .kn{width:46px} .desk .group[data-group="Output"] .knob{width:34px;height:34px}
 .desk .group h2{margin:0 0 3px;font-size:.85rem}
 .desk .group h2 .lock{width:20px;height:20px}
-.desk .typesel{min-height:24px;font-size:.78rem;padding:0 4px}
 .desk .fxsw{min-height:22px;padding:0 8px;font-size:.74rem}
+.desk .group[data-kind="fx"]{padding-left:6px;padding-right:6px}
+.desk .group[data-kind="fx"] h2{gap:2px}
+.desk .group[data-kind="fx"] h2 .lock{width:17px;margin-left:1px}
+.desk .group[data-kind="fx"] .fxsw{margin-left:auto;padding:0 6px}
 .desk .knobs{max-width:none;gap:2px 0}
 .desk .kn{width:54px}
 .desk .knob{width:40px;height:40px;margin:1px 0}
@@ -285,7 +289,6 @@ body.desk{overflow:hidden;height:100vh}
 .desk .wtcard canvas{height:26px}
 .desk .wtlabel{font-size:.68rem;min-height:20px}
 .desk .group[data-kind="osc"] .wt{margin-bottom:3px}
-.desk .eng + .eng{margin-top:2px}
 .desk .smpsel,.desk .smploop button{min-height:20px;font-size:.68rem}
 .desk .blendrow{margin-top:2px;font-size:.74rem}
 .desk .blendrow .seg button{min-height:22px;padding:0 8px;font-size:.74rem}
@@ -304,11 +307,8 @@ body.desk{overflow:hidden;height:100vh}
 .desk .panes{margin-bottom:6px}
 .desk .keys,.desk .seqpane{height:100px}
 .desk .lanes{grid-template-rows:repeat(3,22px)} .desk .lanes canvas{height:22px}
-/* oscillator slots: one flow of knobs (engine knobs, then Level, Pan, Bypass), six to a row */
-.desk .group[data-kind="osc"] .gbody{display:flex;flex-wrap:wrap;align-content:flex-start}
-.desk .group[data-kind="osc"] .wt{flex:1 1 100%}
-.desk .group[data-kind="osc"] .eng:not([hidden]),.desk .group[data-kind="osc"] .eng:not([hidden]) > .knobs{display:contents}
-.desk .group[data-kind="osc"] .eng + .eng{margin:0}
+/* oscillators: engine knobs, then Level, Pan, Bypass, six to a row */
+.desk .group[data-kind="osc"] .knobs{justify-content:flex-start}
 .desk .seqright{flex-direction:row;align-items:center}
 .desk .lanes{flex:1 1 auto;min-width:0}
 .desk .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
@@ -501,13 +501,14 @@ body.desk{overflow:hidden;height:100vh}
    DSP ENGINE
    Runs in an AudioWorklet when possible, otherwise on the main thread.
    Parameters arrive normalized and resolve every 16 samples as
-   lerp(A, B, bend(morph, curve)); only the parameters of each slot's
-   current type are resolved.
+   lerp(A, B, bend(morph, curve)).
 
-   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sampler / Sub)
-   -> each slot splits between the filter and around it (Bypass) -> amp
-   envelope -> master Level and Pan. Then the 4 FX slots in order,
-   and a final tanh soft clip.
+   The architecture is fixed: each slot's engine or effect comes from the
+   parameter list (its params' `eng`). Signal flow per voice: 4 oscillators
+   (Wavetable, Wavetable, Sub, Sampler) -> each splits between the filter and
+   around it (Bypass) -> amp envelope -> master Level and Pan. Then the 7
+   effects in order, and a final tanh soft clip. An oscillator at Level 0 is
+   skipped; an effect at rest (Mix 0) at the current morph goes idle (see renderFx).
 
    MorphEngine and the classes in the other engine files are stringified
    into the AudioWorklet (see audio.js), so they must stay self-contained:
@@ -519,16 +520,15 @@ class MorphEngine {
     const n = defs.length;
     this.A = new Float32Array(n); this.B = new Float32Array(n); this.C = new Float32Array(n);
     this.cur = new Float32Array(n); this.val = new Float32Array(n);
-    this.act = new Uint8Array(n); this.fresh = new Uint8Array(n);
     this.morph = 0; this.first = true; this.clock = 0; this.lastPitch = -1;
     this.I = {}; defs.forEach((d, i) => { this.I[d.id] = i; });
     // per-slot key -> index maps: oscillator slots and FX slots
     const keyMap = (kind, slot) => { const m = {}; defs.forEach((d, i) => { if (d.kind === kind && d.slot === slot) m[d.key] = i; }); return m; };
+    const engOf = (kind, slot) => (defs.find(d => d.kind === kind && d.slot === slot) || {}).eng;
+    this.nFx = 1 + Math.max(-1, ...defs.filter(d => d.kind === 'fx').map(d => d.slot));
     this.oP = [0, 1, 2, 3].map(s => keyMap('osc', s));
-    this.xP = [0, 1, 2, 3].map(s => keyMap('fx', s));
-    // oscillator slots: type, pending type, and a fade used to switch types without clicks
-    this.oscType = ['off', 'off', 'off', 'off']; this.oscNext = [null, null, null, null];
-    this.oFade = new Float64Array(4);
+    this.xP = Array.from({ length: this.nFx }, (_, s) => keyMap('fx', s));
+    this.oscType = [0, 1, 2, 3].map(s => engOf('osc', s) || 'off');
     this.cPrev = new Float64Array(16); this.cNext = new Float64Array(16); this.cD = new Float64Array(16);   // per slot: into the filter L/R, around it L/R
     this.banks = [0, 1, 2, 3].map(() => new WtBank());
     this.uL = new Float32Array(28); this.uR = new Float32Array(28); this.uOff = new Float32Array(28);
@@ -544,16 +544,20 @@ class MorphEngine {
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
       ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0,
       sp:new Float64Array(8), op:new Float64Array(8), sxf:new Int32Array(4), sold:new Uint8Array(4) });   // sampler: positions, old positions and crossfade on restart
-    // FX slots: instance, type, pending type, On/Off and the crossfade to dry used for On/Off and type switches
-    this.fxInst = [null, null, null, null]; this.fxType = [null, null, null, null]; this.fxNext = [null, null, null, null];
-    this.fxOn = [true, true, true, true]; this.fxBy = new Float64Array(4); this.dlSpill = [false, false, false, false];
-    this.byC = 1 - Math.exp(-1 / (0.015 * sr)); this.swStep = 1 / (0.015 * sr);   // On/Off: ~15 ms glide; type switch: 15 ms linear fade to dry
+    // Effects: instance, type, On/Off, idle, and the crossfade to dry used for On/Off and going idle
+    const nf = this.nFx;
+    this.fxType = Array.from({ length: nf }, (_, s) => engOf('fx', s));
+    this.fxInst = this.fxType.map((t, s) => this.makeFx(t, s));
+    this.fxOn = this.fxType.map(() => true); this.dlSpill = false; this.fxIdle = this.fxType.map(() => true); this.fxBy = new Float64Array(nf); this.fxFirst = true;
+    this.fxWarm = new Int32Array(nf); this.warmN = Math.round(0.025 * sr);   // a waking effect fills its buffers for 25 ms before fading in
+    // which parameters must sit at their neutral value (in real units) for an effect to be silent
+    this.fxRest = this.fxType.map((t, s) => Object.entries(MorphEngine.FX_CLASSES[t].REST).map(([k, v]) => [this.xP[s][k], v]));
+    this.byC = 1 - Math.exp(-1 / (0.015 * sr)); this.swStep = 1 / (0.015 * sr);   // On/Off: ~15 ms glide; going idle: 15 ms linear fade to dry
     this.dryL = new Float32Array(16); this.dryR = new Float32Array(16);
     // sequencer
     this.seq = null; this.playing = false; this.bpm = 120; this.walk = true;
     this.spos = 0; this.ei = 0; this.stick = 0; this.offs = []; this.reports = []; this.repCount = 0;
     this.mono = false; this.stack = [];
-    this.computeActive();
   }
 
   /* ---------- shared maths (also used by the UI) ---------- */
@@ -628,23 +632,6 @@ class MorphEngine {
   static get FX_CLASSES() { return { drive: FxDrive, formant: FxFormant, mod: FxModulation, delay: FxDelay, reverb: FxReverb, lofi: FxLofi, ott: FxOtt }; }
 
   /* ---------- slots ---------- */
-  // Only parameters of each slot's current (or incoming) type are resolved. A parameter that becomes
-  // active jumps straight to its value instead of gliding from a stale one.
-  computeActive() {
-    const ok = (d, t) => t !== null && t !== 'off' && (!d.eng || d.eng === t);
-    this.defs.forEach((d, i) => {
-      let a = 1;
-      if (d.kind === 'osc') a = ok(d, this.oscType[d.slot]) || ok(d, this.oscNext[d.slot]) ? 1 : 0;
-      else if (d.kind === 'fx') a = d.eng === this.fxType[d.slot] || d.eng === this.fxNext[d.slot] ? 1 : 0;
-      if (a && !this.act[i]) this.fresh[i] = 1;
-      this.act[i] = a;
-    });
-  }
-  swapOsc(s, t) {
-    this.oscType[s] = t; this.oscNext[s] = null;
-    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; this.smpStart(v, s, false); }
-    this.computeActive();
-  }
   /* (Re)start a voice's sample playback in slot s at the Start point. When a sounding note restarts, the old
      playback crossfades out over 5 ms (and a fresh one fades in), so restarts don't click. */
   smpStart(v, s, keepOld) {
@@ -661,18 +648,6 @@ class MorphEngine {
       case 'param': (m.side === 'A' ? this.A : this.B)[m.i] = m.v; break;
       case 'curve': this.C[m.i] = m.v; break;
       case 'morph': this.morph = m.v; break;
-      case 'slots':
-        for (let s = 0; s < 4; s++) {
-          const o = m.osc[s];
-          if (o === this.oscType[s]) this.oscNext[s] = null;
-          else if (this.oscType[s] === 'off' && this.oFade[s] <= 0) this.swapOsc(s, o);   // nothing sounding: switch at once
-          else this.oscNext[s] = o;
-          const f = m.fx[s];
-          if (!this.fxInst[s]) { this.fxInst[s] = this.makeFx(f, s); this.fxType[s] = f; this.fxBy[s] = this.fxOn[s] ? 1 : 0; }
-          else this.fxNext[s] = f === this.fxType[s] ? null : f;
-        }
-        this.computeActive();
-        break;
       case 'table': this.banks[m.slot].setTable(m.side, m.re, m.im); break;
       case 'sample': this.smp[m.slot][m.side] = m.d ? { d: m.d, sr: m.sr } : null; break;
       case 'smpLoop': this.smpLoop[m.i] = !!m.v; break;
@@ -691,7 +666,7 @@ class MorphEngine {
         break;
       case 'bpm': this.bpm = m.v; break;
       case 'walk': this.walk = !!m.v; break;
-      case 'dlmode': this.dlSpill[m.i] = !!m.v; break;
+      case 'dlmode': this.dlSpill = !!m.v; break;
       case 'bypass': this.fxOn[m.i] = !!m.on; break;
       case 'on': this.noteOn(m.note, m.vel); break;
       case 'off': this.noteOff(m.note); break;
@@ -792,13 +767,12 @@ class MorphEngine {
 
   /* ---------- per-block work ---------- */
   resolve() {
-    const m = this.morph, defs = this.defs, act = this.act, fresh = this.fresh;
+    const m = this.morph, defs = this.defs;
     for (let i = 0; i < defs.length; i++) {
-      if (!act[i]) continue;
       const d = defs[i];
       const mm = MorphEngine.bend(m, this.C[i]);
       const target = d.snap ? (mm < 0.5 ? this.A[i] : this.B[i]) : this.A[i] + (this.B[i] - this.A[i]) * mm;
-      if (this.first || fresh[i] || d.snap || d.curve === 'int') { this.cur[i] = target; fresh[i] = 0; }
+      if (this.first || d.snap || d.curve === 'int' || Math.abs(target - this.cur[i]) < 1e-5) this.cur[i] = target;   // lands exactly, so Level 0 and Mix 0 really reach 0
       else this.cur[i] += (target - this.cur[i]) * 0.08;   // de-zipper
       this.val[i] = MorphEngine.denorm(d, this.cur[i]);
     }
@@ -811,18 +785,12 @@ class MorphEngine {
       const len = Math.min(16, n - p);
       this.resolve();
       this.seqRun(len);
-      // oscillator type switches: fade the slot out (about 8 ms), switch once it is silent, fade back in
-      const fStep = len / (0.008 * sr);
-      for (let s = 0; s < 4; s++) {
-        if (this.oscNext[s] !== null) {
-          let silent = this.oFade[s] <= 0;
-          for (let j = 0; j < 4 && silent; j++) if (this.cPrev[s * 4 + j] !== 0) silent = false;
-          if (silent) this.swapOsc(s, this.oscNext[s]);
-          else this.oFade[s] = Math.max(0, this.oFade[s] - fStep);
-        } else if (this.oscType[s] !== 'off') this.oFade[s] = Math.min(1, this.oFade[s] + fStep);
-      }
       const v = this.val;
-      for (let s = 0; s < 4; s++) if (this.oscType[s] === 'wt') { const P = this.oP[s]; this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave]); }
+      for (let s = 0; s < 4; s++) if (this.oscType[s] === 'wt') {   // a silent Wavetable doesn't rebuild (it catches up, crossfading, when it is heard again)
+        const P = this.oP[s], o = s * 4;
+        if (v[P.olevel] === 0 && this.banks[s].ready && !this.cPrev[o] && !this.cPrev[o + 1] && !this.cPrev[o + 2] && !this.cPrev[o + 3]) continue;
+        this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave]);
+      }
       this.renderVoices(L, R, p, len);
       this.renderFx(L, R, p, len);
       p += len;
@@ -840,7 +808,7 @@ class MorphEngine {
       const t = this.oscType[s], P = this.oP[s], o = s * 4;
       const live = t !== 'off' && !(t === 'wt' && !this.banks[s].ready);
       if (live) {
-        const lv = v[P.olevel] / 0.8 * this.oFade[s], pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
+        const lv = v[P.olevel] / 0.8, pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
         const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv, byp = v[P.byp];
         CN[o] = pl * (1 - byp); CN[o + 1] = pr * (1 - byp); CN[o + 2] = pl * byp; CN[o + 3] = pr * byp;
       } else for (let j = 0; j < 4; j++) CN[o + j] = 0;
@@ -983,25 +951,33 @@ class MorphEngine {
     for (let s = 0; s < 4; s++) { const bk = this.banks[s]; if (bk.ready) bk.xf = Math.min(1, bk.xf + bk.xfInc * len); }
     C0.set(CN);
   }
-  // FX slots in order. Each runs even while switched off (so tails stay current) and is crossfaded
-  // with its dry input. A type switch fades linearly to dry over 15 ms, swaps at exactly dry, then fades back in.
+  // Is effect s silent right now? Its REST parameters sit at their neutral value at the current morph position.
+  fxAtRest(s) {
+    const D = this.defs;
+    for (const [i, v0] of this.fxRest[s]) if (MorphEngine.denorm(D[i], this.cur[i]) !== v0) return false;
+    return true;
+  }
+  /* Effects in order. Each runs even while switched off (so tails stay current) and is crossfaded with its dry input.
+     An effect at rest at the current morph position fades linearly to dry over 15 ms and goes idle: it costs nothing,
+     and it is replaced by a fresh instance, so when it is turned up again no stale echoes or reverb come back. On waking
+     it runs unheard for 25 ms (its delay lines start empty, and Lo-fi and Drive delay the sound slightly), then fades in.
+     Judging rest at the current position (not on both sides) keeps each end of the morph exactly as it is when the
+     other side changes: an effect at rest at full A is idle there, whatever B does. */
   renderFx(L, R, p, len) {
     const v = this.val, dryL = this.dryL, dryR = this.dryR;
-    for (let s = 0; s < 4; s++) {
-      const inst = this.fxInst[s]; if (!inst) continue;
-      const switching = this.fxNext[s] !== null;
-      if (switching && this.fxBy[s] <= 0) {
-        this.fxInst[s] = this.makeFx(this.fxNext[s], s); this.fxType[s] = this.fxNext[s]; this.fxNext[s] = null;
-        this.computeActive();   // its parameters resolve from the next sub-block; this one passes dry
-        continue;
-      }
-      const tgt = this.fxOn[s] ? 1 : 0, c = this.byC, sw = this.swStep;
-      if (inst instanceof FxDelay) inst.spill = this.dlSpill[s];
+    if (this.fxFirst) { this.fxFirst = false; for (let s = 0; s < this.nFx; s++) { const r = this.fxAtRest(s); this.fxIdle[s] = r; this.fxBy[s] = r || !this.fxOn[s] ? 0 : 1; } }
+    for (let s = 0; s < this.nFx; s++) {
+      const rest = this.fxAtRest(s);
+      if (this.fxIdle[s]) { if (rest) continue; this.fxIdle[s] = false; this.fxBy[s] = 0; this.fxWarm[s] = this.warmN; }
+      else if (rest && this.fxBy[s] <= 0) { this.fxIdle[s] = true; this.fxInst[s] = this.makeFx(this.fxType[s], s); continue; }
+      const warm = this.fxWarm[s] > 0; if (warm) this.fxWarm[s] -= len;
+      const inst = this.fxInst[s], tgt = this.fxOn[s] && !warm ? 1 : 0, c = this.byC, sw = this.swStep;
+      if (inst instanceof FxDelay) inst.spill = this.dlSpill;
       for (let i = 0; i < len; i++) { dryL[i] = L[p + i]; dryR[i] = R[p + i]; }
       inst.process(L, R, p, len, v, this.xP[s]);
       let by = this.fxBy[s];
       for (let i = 0; i < len; i++) {
-        by = switching ? (by > sw ? by - sw : 0) : by + (tgt - by) * c;
+        by = rest ? (by > sw ? by - sw : 0) : by + (tgt - by) * c;
         L[p + i] = dryL[i] + (L[p + i] - dryL[i]) * by; R[p + i] = dryR[i] + (R[p + i] - dryR[i]) * by;
       }
       this.fxBy[s] = by;
@@ -1126,6 +1102,7 @@ class OscSmp {
    changes tone, not volume. The curve runs from warm and asymmetric (even harmonics) through a firmer knee
    to a sine wavefolder. */
 class FxDrive {
+  static get REST() { return { dmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) {
     this.sr = sr; this.H = FxDrive.osFilter();
     this.XL = new Float64Array(9); this.XR = new Float64Array(9);
@@ -1183,6 +1160,7 @@ class FxDrive {
 
 /* Formant filter: three band-pass resonances per channel; Vowel sweeps A-E-I-O-U, Shift moves them. */
 class FxFormant {
+  static get REST() { return { fmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) { this.sr = sr; this.fs = new Float64Array(12); }
   static get VOWELS() { return [[650, 1080, 2650], [400, 1700, 2600], [290, 1870, 2800], [400, 800, 2600], [350, 600, 2700]]; }   // a e i o u
   process(L, R, p, len, v, P) {
@@ -1214,6 +1192,7 @@ class FxFormant {
    Going chorus -> flanger, the outer tap fades out first, then the middle one, like unison in reverse.
    Every internal setting is smoothed per sample (block-rate stepping caused zipper noise and phaser crackles). */
 class FxModulation {
+  static get REST() { return { mmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr;
@@ -1280,6 +1259,7 @@ class FxModulation {
    Tone: below 50% darkens (low-pass down to 400 Hz), above 50% thins (high-pass up to 2 kHz); it filters
    the echoes and every repeat, so its effect builds with feedback. */
 class FxDelay {
+  static get REST() { return { dlmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr, host) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr; this.host = host; this.spill = false; this.first = true; this.w = 0;
@@ -1332,6 +1312,7 @@ class FxDelay {
 /* Reverb: 4 all-pass diffusers into an 8-line feedback delay network (Householder mixing).
    Size glides the line lengths; Decay sets the feedback per line; Damping low-passes each line. */
 class FxReverb {
+  static get REST() { return { rvmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr;
@@ -1377,6 +1358,7 @@ class FxReverb {
 
 /* Lo-fi: wow and flutter, tape character, dropouts, codec damage and noise. */
 class FxLofi {
+  static get REST() { return { lwow: 0, lflut: 0, lchar: 0, lnmix: 0, ldrop: 0, lcodec: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr, host, slot) {
     const pow2 = n => { let k = 1; while (k < n) k <<= 1; return k; };
     this.sr = sr; this.rng = (0x9e3779b9 ^ (slot * 0x85ebca6b)) >>> 0 || 1;
@@ -1506,6 +1488,7 @@ class FxLofi {
    silence doesn't turn into hiss. Gain drops land at once and rises ease in, and the audio runs 1.5 ms
    behind the detector, so a note arriving after a quiet gap is caught before its first peak. */
 class FxOtt {
+  static get REST() { return { ottdepth: 0, ottgl: 0, ottgm: 0, ottgh: 0, ottout: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr, host, slot) {
     this.sr = sr; this.host = host; this.slot = slot;
     this.xo = new Float64Array(8);
@@ -1567,16 +1550,20 @@ class FxOtt {
    curve: 'lin' | 'log' | 'int' | 'pow2'   snap: switch instead of blending
    single: 'A' | 'B' belongs to one side only and never morphs
 
-   Oscillator and FX slots hold every parameter of every type, so each slot
-   remembers all its types' settings. Ids: global 'glide', 'cutoff',
-   slots 'o1.<key>' and 'x1.<key>'. `key` is the parameter's
+   The architecture is fixed (2026-10-17), so any two patches can morph into
+   each other: four oscillators (two Wavetables, a Sub, a Sampler) and all seven
+   effects in a fixed order. An oscillator at Level 0, or an effect at Mix 0,
+   is silent and costs no CPU.
+   Ids: global 'glide', 'cutoff'; oscillator parameters 'o1.<key>' (o1 and o2
+   are the Wavetables, o3 the Sub, o4 the Sampler); effect parameters use their
+   plain key ('dlmix'), since each effect appears once. `key` is the parameter's
    own name; formats (FMT) and randomize rules (RND) are looked up by key.
-   kind: 'osc' | 'fx' with slot (0-based); eng: the type it belongs
-   to (null = every type of that slot).
+   kind: 'osc' | 'fx' with slot (0-based); eng: the slot's engine or effect.
    ===================================================================== */
-const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['smp', 'Sampler'], ['sub', 'Sub']];
-const FX_TYPES = [['drive', 'Drive'], ['formant', 'Formant filter'], ['mod', 'Modulation'], ['delay', 'Delay'], ['reverb', 'Reverb'], ['lofi', 'Lo-fi'], ['ott', 'OTT']];
-const typeName = (list, t) => (list.find(x => x[0] === t) || [t, t])[1];
+const OSC_KIND = ['wt', 'wt', 'sub', 'smp'], OSC_NAMES = ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler'];
+const FX_KIND = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'], FX_NAMES = ['Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT'];
+const NOSC = OSC_KIND.length, NFX = FX_KIND.length;
+const WT_SLOTS = [0, 1], SUB_SLOT = 2, SMP_SLOT = 3, DELAY_SLOT = FX_KIND.indexOf('delay'), OTT_SLOT = FX_KIND.indexOf('ott');
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
 const OSC_COMMON = [
   P_('olevel', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('opan', 'Pan', -1, 1, 'lin', 0, 0), P_('byp', 'Bypass', 0, 1, 'lin', 0, 0),
@@ -1621,23 +1608,22 @@ const FX_ENG = {
     P_('otthi', 'High split', 600, 10000, 'log', 2500, 2500), P_('ottgl', 'Low gain', -12, 12, 'lin', 0, 0), P_('ottgm', 'Mid gain', -12, 12, 'lin', 0, 0),
     P_('ottgh', 'High gain', -12, 12, 'lin', 0, 0), P_('ottout', 'Output', -12, 12, 'lin', 0, 0)],
 };
+// The default patch is one Wavetable: the other oscillators start at Level 0
+const OSC_LEVEL = [0.8, 0, 0, 0];
 const DEFS = [];
-for (let s = 0; s < 4; s++) {
-  const group = `Osc ${s + 1}`, add = (p, eng) => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
-  OSC_COMMON.forEach(p => add(p, null));
-  Object.entries(OSC_ENG).forEach(([eng, ps]) => ps.forEach(p => add(p, eng)));
-}
+OSC_KIND.forEach((eng, s) => {
+  const group = OSC_NAMES[s], add = p => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
+  OSC_ENG[eng].forEach(add);
+  OSC_COMMON.forEach(p => add(p.key === 'olevel' ? { ...p, a: OSC_LEVEL[s], b: OSC_LEVEL[s] } : p));
+});
 VOICE.forEach(p => DEFS.push({ ...p, id: p.key, group:'Voice' }));
 FILTER.forEach(p => DEFS.push({ ...p, id: p.key, group:'Filter' }));
 ENVS.forEach(([group, ps]) => ps.forEach(p => DEFS.push({ ...p, id: p.key, group })));
-for (let s = 0; s < 4; s++) Object.entries(FX_ENG).forEach(([eng, ps]) => ps.forEach(p => DEFS.push({ ...p, id: `x${s + 1}.${p.key}`, group: `FX ${s + 1}`, kind:'fx', slot:s, eng })));
+FX_KIND.forEach((eng, s) => FX_ENG[eng].forEach(p => DEFS.push({ ...p, id: p.key, group: FX_NAMES[s], kind:'fx', slot:s, eng })));
 DEFS.push({ ...P_('pattern', 'Pattern', 0, 1, 'lin', 0, 1), id:'pattern', group:'Sequencer' });
 const IX = {}; DEFS.forEach((d, i) => { IX[d.id] = i; });
-// index of a slot parameter: oi(0, 'wave') -> IX['o1.wave'], xi(3, 'ottdepth') -> IX['x4.ottdepth']
-const oi = (s, key) => IX[`o${s + 1}.${key}`], xi = (s, key) => IX[`x${s + 1}.${key}`];
-// Is this parameter part of the sound right now? (its slot's current type, or a global)
-const isActive = d => d.kind === 'osc' ? state.oscType[d.slot] !== 'off' && (!d.eng || d.eng === state.oscType[d.slot])
-  : d.kind === 'fx' ? d.eng === state.fxType[d.slot] : true;
+// index of an oscillator parameter: oi(0, 'wave') -> IX['o1.wave']; effect parameters are IX.dlmix and so on
+const oi = (s, key) => IX[`o${s + 1}.${key}`];
 const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' s');
 const pct = v => Math.round(v * 100) + '%';
 const FMT = {
@@ -1814,23 +1800,14 @@ function sampleOverview(data, cols = 128) {
   o = [mn, mx]; overviewCache.set(data.d, o); return o;
 }
 /* ---------- state + persistence ----------
-   The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
+   The fixed architecture (2026-10-17) starts fresh: it saves under a new key and ignores earlier patches, by decision.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v4', STORE_VER = 4;
-const DEFAULT_LOCKS = () => {
-  const l = { level: true, pan: true, pattern: true };
-  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`o${s}.sample`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
-  return l;
-};
-const DEFAULT_LINKS = () => {
-  const l = {};
-  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine', 'spitch', 'sfine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
-  return l;
-};
-const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
-const DEFAULT_FX = () => ['drive', 'delay', 'reverb', 'ott'];
-const DEFAULT_SMP = () => [0, 1, 2, 3].map(() => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } }));   // sample references per slot
-const DEFAULT_TABLES = () => [0, 1, 2, 3].map(() => ({ A: makeTable('Basic shapes'), B: makeTable('Vowel formants') }));
+const STORE = 'diptych-v5', STORE_VER = 1;
+const DEFAULT_LOCKS = () => ({ level: true, pan: true, pattern: true, 'o1.wave': true, 'o2.wave': true, 'o4.sample': true, ottout: true });
+const DEFAULT_LINKS = () => ({ 'o1.pitch': true, 'o1.fine': true, 'o2.pitch': true, 'o2.fine': true, 'o4.spitch': true, 'o4.sfine': true, ottout: true });
+const DEFAULT_SMP = () => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } });   // the Sampler's sample references
+const DEFAULT_TABLES = () => WT_SLOTS.map(s => (s === 0 ? { A: makeTable('Basic shapes'), B: makeTable('Vowel formants') } : { A: makeTable('Harmonic stack'), B: makeTable('Pulse width') }));
+const DEFAULT_FXON = () => FX_KIND.map(() => true);
 const state = {
   A: DEFS.map((_, i) => defaultNorm('A', i)),
   B: DEFS.map((_, i) => defaultNorm('B', i)),
@@ -1842,17 +1819,15 @@ const state = {
   linkMem: {},
   mono: false,
   links: DEFAULT_LINKS(),
-  oscType: DEFAULT_OSC(),
-  fxType: DEFAULT_FX(),
-  fxOn: [true, true, true, true],
-  dlSpill: [false, false, false, false],
+  fxOn: DEFAULT_FXON(),   // bypass switches for auditioning: never morphed or randomized
+  dlSpill: false,
   smp: DEFAULT_SMP(),
-  smpLoop: [false, false, false, false],
+  smpLoop: false,
   seq: null,
   bpm: 120,
   walk: true,
 };
-const tables = DEFAULT_TABLES();   // tables[slot].A / .B, one pair per oscillator slot
+const tables = DEFAULT_TABLES();   // tables[slot].A / .B for each Wavetable slot (slots 0 and 1)
 
 function enc(f) {
   const i16 = new Int16Array(f.length);
@@ -1868,15 +1843,10 @@ function dec(b) {
   return Float32Array.from(i16, x => x / 32767);
 }
 const decTable = t => (t && Array.isArray(t.frames) && t.frames.length ? { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) } : null);
-// a saved type that no longer exists (FM, moved to its own page in ver 3) becomes the given stand-in
-const pickList = (saved, list, n, fallback, standIn) => (Array.isArray(saved) && saved.length === n ? saved.map(x => (list.some(t => t[0] === x) ? x : standIn)) : fallback);
+const okRef = r => r && typeof r.name === 'string' && (r.id ? typeof r.id === 'string' : !!FACTORY[r.name]);
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
   if (saved && Array.isArray(saved.ids) && Array.isArray(saved.A) && saved.ids.length === saved.A.length && saved.B.length === saved.A.length) {
-    // ver 2: back to one filter. Filter 1's ids ('f1.cutoff') become plain ('cutoff'); Filter 2 and the slots' filter blend are dropped.
-    const v1id = id => (!(saved.ver >= 2) && id.startsWith('f1.') ? id.slice(3) : id);
-    if (!(saved.ver >= 2)) for (const k of ['locks', 'links', 'linkMem']) if (saved[k]) saved[k] = Object.fromEntries(Object.entries(saved[k]).map(([id, v]) => [v1id(id), v]));
-    saved.ids = saved.ids.map(v1id);
     saved.ids.forEach((id, k) => {
       const i = IX[id]; if (i === undefined) return;
       state.A[i] = clamp(+saved.A[k]); state.B[i] = clamp(+saved.B[k]);
@@ -1885,18 +1855,13 @@ try {
     state.morph = clamp(+saved.morph || 0);
     for (const k of ['locks', 'links', 'secLocks', 'linkMem']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
     state.mono = !!saved.mono;
-    state.oscType = pickList(saved.oscType, OSC_TYPES, 4, state.oscType, 'off');
-    state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType, 'drive');
-    if (Array.isArray(saved.fxOn) && saved.fxOn.length === 4) state.fxOn = saved.fxOn.map(Boolean);
-    if (Array.isArray(saved.dlSpill) && saved.dlSpill.length === 4) state.dlSpill = saved.dlSpill.map(Boolean);
-    const okRef = r => r && typeof r.name === 'string' && (r.id ? typeof r.id === 'string' : !!FACTORY[r.name]);
-    if (Array.isArray(saved.smp) && saved.smp.length === 4) saved.smp.forEach((p, s) => ['A', 'B'].forEach(k => { if (p && okRef(p[k])) state.smp[s][k] = { name: p[k].name, ...(p[k].id ? { id: p[k].id } : {}) }; }));
-    if (Array.isArray(saved.smpLoop) && saved.smpLoop.length === 4) state.smpLoop = saved.smpLoop.map(Boolean);
-    if (!(saved.ver >= 4)) for (let s = 1; s <= 4; s++) { state.locks[`o${s}.sample`] = true; state.links[`o${s}.spitch`] = true; state.links[`o${s}.sfine`] = true; }   // the Sampler arrived in ver 4
+    if (Array.isArray(saved.fxOn) && saved.fxOn.length === NFX) state.fxOn = saved.fxOn.map(Boolean);
+    state.dlSpill = !!saved.dlSpill; state.smpLoop = !!saved.smpLoop;
+    if (saved.smp) ['A', 'B'].forEach(k => { const r = saved.smp[k]; if (okRef(r)) state.smp[k] = { name: r.name, ...(r.id ? { id: r.id } : {}) }; });
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;
-    if (Array.isArray(saved.tables)) saved.tables.slice(0, 4).forEach((t, s) => {
+    if (Array.isArray(saved.tables)) saved.tables.slice(0, WT_SLOTS.length).forEach((t, s) => {
       ['A', 'B'].forEach(side => { const d = t && decTable(t[side]); if (d) tables[s][side] = d; });
     });
   }
@@ -1911,7 +1876,7 @@ function save() {
     } catch (e) {}
   }, 400);
 }
-const spec = [0, 1, 2, 3].map(() => ({ A: null, B: null }));   // spectra per oscillator slot and side
+const spec = WT_SLOTS.map(() => ({ A: null, B: null }));   // spectra per Wavetable slot and side
 function analyzeTable(slot, side) {
   const t = tables[slot][side], sp = spec[slot][side] = { k: t.frames.length, re: [], im: [] };
   t.frames.forEach(f => { const a = MorphEngine.analyze(f); sp.re.push(a.re); sp.im.push(a.im); });
@@ -1920,21 +1885,21 @@ function analyzeFrame(slot, side, j) {
   const a = MorphEngine.analyze(tables[slot][side].frames[j]);
   spec[slot][side].re[j] = a.re; spec[slot][side].im[j] = a.im;
 }
-const analyzeAll = () => { for (let s = 0; s < 4; s++) { analyzeTable(s, 'A'); analyzeTable(s, 'B'); } };
+const analyzeAll = () => { for (const s of WT_SLOTS) { analyzeTable(s, 'A'); analyzeTable(s, 'B'); } };
 analyzeAll();
-/* sample data per slot and side, resolved from the patch's references: built-ins at once, files from IndexedDB
+/* the Sampler's data per side, resolved from the patch's references: built-ins at once, files from IndexedDB
    (they arrive a moment later, and are sent to the engine when they do) */
-const smpData = [0, 1, 2, 3].map(() => ({ A: null, B: null })), smpSent = [0, 1, 2, 3].map(() => ({ A: undefined, B: undefined }));
+const smpData = { A: null, B: null }, smpSent = { A: undefined, B: undefined };
 const smpFor = ref => (!ref ? null : !ref.id ? (FACTORY[ref.name] ? factoryData(ref.name) : null) : null);
 function resolveSamples() {
-  for (let s = 0; s < 4; s++) for (const k of ['A', 'B']) {
-    const ref = state.smp[s][k], cur = smpData[s][k];
-    if (!ref || !ref.id) { smpData[s][k] = smpFor(ref); continue; }
+  for (const k of ['A', 'B']) {
+    const ref = state.smp[k], cur = smpData[k];
+    if (!ref || !ref.id) { smpData[k] = smpFor(ref); continue; }
     if (cur && cur.id === ref.id) continue;
-    smpData[s][k] = null;
+    smpData[k] = null;
     idb.get(ref.id).then(v => {
-      const now = state.smp[s][k];
-      if (v && now && now.id === ref.id) { smpData[s][k] = { d: v.d, sr: v.sr, name: v.name, id: ref.id }; if (ready) postSample(s, k); drawWaves(); }
+      const now = state.smp[k];
+      if (v && now && now.id === ref.id) { smpData[k] = { d: v.d, sr: v.sr, name: v.name, id: ref.id }; if (ready) postSample(k); drawWaves(); }
     }).catch(() => {});
   }
 }
@@ -1946,10 +1911,9 @@ const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, OscSmp, FxDrive, FxFormant,
 let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
 const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
 const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });
-const sendSlots = () => { if (ready) send({ type:'slots', osc: state.oscType, fx: state.fxType }); };
 const postTable = (slot, side) => send({ type:'table', slot, side, re: spec[slot][side].re.slice(), im: spec[slot][side].im.slice() });
 // a sample is only posted when it changed (they are large)
-function postSample(s, k) { const x = smpData[s][k]; if (smpSent[s][k] === x) return; smpSent[s][k] = x; send({ type:'sample', slot:s, side:k, d: x ? x.d : null, sr: x ? x.sr : SMP_SR }); }
+function postSample(k) { const x = smpData[k]; if (smpSent[k] === x) return; smpSent[k] = x; send({ type:'sample', slot: SMP_SLOT, side:k, d: x ? x.d : null, sr: x ? x.sr : SMP_SR }); }
 const tableTimers = {};
 function sendTable(slot, side) {
   const k = slot + side;
@@ -1958,13 +1922,12 @@ function sendTable(slot, side) {
 }
 function sendAll() {   // runs during startup, before ready is set
   sendState();
-  for (let s = 0; s < 4; s++) { postTable(s, 'A'); postTable(s, 'B'); }
+  for (const s of WT_SLOTS) { postTable(s, 'A'); postTable(s, 'B'); }
   send({ type:'blend', v: state.spectral });
   state.fxOn.forEach((on, i) => send({ type:'bypass', i, on }));
-  state.dlSpill.forEach((v, i) => send({ type:'dlmode', i, v }));
-  for (let s = 0; s < 4; s++) { postSample(s, 'A'); postSample(s, 'B'); }
-  state.smpLoop.forEach((v, i) => send({ type:'smpLoop', i, v }));
-  send({ type:'slots', osc: state.oscType, fx: state.fxType });
+  send({ type:'dlmode', v: state.dlSpill });
+  postSample('A'); postSample('B');
+  send({ type:'smpLoop', i: SMP_SLOT, v: state.smpLoop });
   send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono });
   if (typeof buildSeq === 'function') { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); }
 }
@@ -2025,7 +1988,7 @@ registerProcessor('morph-engine', MorphProcessor);`;
       send = m => eng.handle(m);
       kind = 'compatibility mode (main thread)';
     }
-    smpSent.forEach(p => { p.A = p.B = undefined; });   // a fresh engine has no samples yet
+    smpSent.A = smpSent.B = undefined;   // a fresh engine has no samples yet
     sendAll();
     queue.forEach(m => send(m)); queue = [];
     ready = true;
@@ -2091,37 +2054,28 @@ const knobHTML = (d, i) => `<div class="kn">
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
   </div>`;
-/* A, what you hear, and B for every oscillator slot. On a Wavetable slot the A and B cards open the editor
-   (tap the wave or Edit); on a Sampler slot their labels are the sample menus and the middle card holds One-shot / Loop. */
-const sideCard = (s, k) => `<div class="wtcard ${k.toLowerCase()}" data-wt="${s}" data-side="${k}">
-      <canvas id="cv${k}${s}"></canvas><span class="wtlabel"><span class="nm" id="nm${k}${s}"></span>
-      <select class="smpsel" data-smpsel="${s}" data-side="${k}" aria-label="Osc ${s + 1} sample ${k}"></select>
-      <button type="button" class="ac" id="wt${k}${s}" data-wt="${s}" data-side="${k}" aria-label="Edit wavetable ${k} of Osc ${s + 1}">Edit ${k}</button></span></div>`;
-const waveCards = s => `<div class="wt">
-    ${sideCard(s, 'A')}
-    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm hear">What you hear</span>
-      <span class="seg smploop" role="group" aria-label="Osc ${s + 1} playback"><button type="button" data-smploop="${s}" data-v="0">One-shot</button><button type="button" data-smploop="${s}" data-v="1">Loop</button></span>
-      <span class="smpnote" id="smpNote${s}" role="status"></span></span></div>
-    ${sideCard(s, 'B')}
+/* A, what you hear, and B for every oscillator. On a Wavetable the A and B cards open the editor (tap the wave
+   or Edit); on the Sampler their labels are the sample menus and the middle card holds One-shot / Loop. */
+const sideCard = (s, k, t, name) => `<div class="wtcard ${k.toLowerCase()}" data-wt="${s}" data-side="${k}">
+      <canvas id="cv${k}${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<select class="smpsel" data-smpsel data-side="${k}" aria-label="Sample ${k}"></select>`
+        : `<span class="nm" id="nm${k}${s}"></span>`}${t === 'wt' ? `<button type="button" class="ac" id="wt${k}${s}" data-wt="${s}" data-side="${k}" aria-label="Edit wavetable ${k} of ${name}">Edit ${k}</button>` : ''}</span></div>`;
+const waveCards = (s, t, name) => `<div class="wt">
+    ${sideCard(s, 'A', t, name)}
+    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<span class="seg smploop" role="group" aria-label="Sampler playback"><button type="button" data-smploop data-v="0">One-shot</button><button type="button" data-smploop data-v="1">Loop</button></span>
+      <span class="smpnote" id="smpNote" role="status"></span>` : '<span class="nm hear">What you hear</span>'}</span></div>
+    ${sideCard(s, 'B', t, name)}
   </div>`;
-const options = list => list.map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
-/* One section per group. Oscillator and FX slot sections hold a container per type (data-eng),
-   and only the current type's is shown; '*' holds the knobs every oscillator type shares. */
+/* One section per group, in fixed positions. Oscillators show their wave cards above the knobs; OTT shows its bands. */
 const sections = {};
 function makeSection(d) {
   const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
-  let head = `<h2><span class="gname">${d.group}</span>`;
-  if (d.kind === 'osc') head += `<select class="typesel" data-osc="${d.slot}" aria-label="${d.group} engine">${options(OSC_TYPES)}</select>`;
-  if (d.kind === 'fx') head += `<select class="typesel" data-fxsel="${d.slot}" aria-label="${d.group} effect">${options(FX_TYPES)}</select>`;
-  head += '</h2>';
+  const head = `<h2><span class="gname">${d.group}</span></h2>`;
   let body;
-  if (d.kind === 'osc') body = waveCards(d.slot) + Object.keys(OSC_ENG).map(e => `<div class="eng" data-eng="${e}"><div class="knobs"></div></div>`).join('')
-    + '<div class="eng" data-eng="*"><div class="knobs"></div></div>';
-  else if (d.kind === 'fx') body = Object.keys(FX_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'ott'
-    ? `<canvas class="viz" id="vzOT${d.slot}" aria-label="OTT bands: split points, gain settings and live levels"></canvas>` : ''}<div class="knobs"></div></div>`).join('');
+  if (d.kind === 'osc') body = waveCards(d.slot, d.eng, d.group) + '<div class="knobs"></div>';
+  else if (d.kind === 'fx') body = (d.eng === 'ott' ? '<canvas class="viz" id="vzOT" aria-label="OTT bands: split points, gain settings and live levels"></canvas>' : '') + '<div class="knobs"></div>';
   else if (VIZ[d.group]) body = VIZ[d.group].map(b => `<div class="sub">${b.title ? `<div class="subh">${b.title}</div>` : ''}<canvas class="viz" id="${b.viz}" aria-label="${b.name}: A, B and current shape"></canvas><div class="knobs"${b.sub ? ` data-sub="${b.sub}"` : ''}></div></div>`).join('');
   else body = '<div class="knobs"></div>';
-  if (d.kind) g.dataset.kind = d.kind;
+  if (d.kind) { g.dataset.kind = d.kind; g.dataset.type = d.eng; g.dataset.slot = d.slot; }
   g.innerHTML = head + `<div class="gbody">${body}</div>`;
   groupsEl.appendChild(g);
   return g;
@@ -2131,7 +2085,7 @@ DEFS.forEach((d, i) => {
   if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
   else {
     const g = sections[d.group] || (sections[d.group] = makeSection(d));
-    box = d.kind === 'osc' || d.kind === 'fx' ? g.querySelector(`.eng[data-eng="${d.eng || '*'}"] .knobs`) : g.querySelector(d.sub ? `.knobs[data-sub="${d.sub}"]` : '.knobs:not([data-sub])');
+    box = g.querySelector(d.sub ? `.knobs[data-sub="${d.sub}"]` : '.knobs:not([data-sub])');
   }
   box.insertAdjacentHTML('beforeend', knobHTML(d, i));
 });
@@ -2209,7 +2163,7 @@ function updateKnob(i) {
   hB.setAttribute('aria-valuenow', Math.round(b * 100)); hB.setAttribute('aria-valuetext', valText(i, b));
   cc.setAttribute('aria-valuenow', Math.round(c * 100)); cc.setAttribute('aria-valuetext', fmtCurve(c));
 }
-function refreshAll() { DEFS.forEach((d, i) => { if (isActive(d)) updateKnob(i); }); updateMorphUI(); }   // hidden knobs update when their type is shown
+function refreshAll() { DEFS.forEach((d, i) => updateKnob(i)); updateMorphUI(); }
 function setParam(side, i, x) {
   x = clamp(x);
   if (isLinked(i)) {   // linked or single-side: both sides always hold the same value
@@ -2408,15 +2362,13 @@ function drawEnvViz(id, pre) {
   label(c, time(T), c.w - 5, 12, 'right');
 }
 /* OTT: where the bands split, and each band's level going in (outline) and coming out (filled) */
-const ottLive = [null, null, null, null];
-let ottQueued = false;
-function drawOttViz(slot) {
-  if (state.fxType[slot] !== 'ott') return;
-  const c = prep($('vzOT' + slot)); if (!c) return;
-  const val = key => MorphEngine.denorm(DEFS[xi(slot, key)], resolveNorm(xi(slot, key)));
+let ottLive = null, ottQueued = false;
+function drawOttViz() {
+  const c = prep($('vzOT')); if (!c) return;
+  const val = key => MorphEngine.denorm(DEFS[IX[key]], resolveNorm(IX[key]));
   const fx = f => Math.log(f / 20) / Math.log(1000) * c.w, yOf = db => c.h - 4 - (Math.max(-72, Math.min(0, db)) + 72) / 72 * (c.h - 34);
   const lo = val('ottlo'), hi = val('otthi'), gains = ['ottgl', 'ottgm', 'ottgh'].map(val);
-  const edges = [0, fx(lo), fx(hi), c.w], col = mixColor(state.morph), live = ottLive[slot];
+  const edges = [0, fx(lo), fx(hi), c.w], col = mixColor(state.morph), live = ottLive;
   c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
   [fx(lo), fx(hi)].forEach(x => { c.g.beginPath(); c.g.moveTo(x, 0); c.g.lineTo(x, c.h); c.g.stroke(); });
   for (let b = 0; b < 3; b++) {
@@ -2432,17 +2384,13 @@ function drawOttViz(slot) {
   label(c, Math.round(lo) + ' Hz', fx(lo) + 3, 25, 'left');
   label(c, (hi / 1000).toFixed(1) + ' kHz', fx(hi) + 3, 25, 'left');
 }
-const drawOttAll = () => { for (let s = 0; s < 4; s++) drawOttViz(s); };
-function onOtt(d) { ottLive[d.slot] = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttAll(); }); } }
+function onOtt(d) { ottLive = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttViz(); }); } }
 // one cycle of a slot's sound for side 'A', 'B' or 'now' (what you hear), for the wave cards
 const slotVal = (s, key, which) => { const i = oi(s, key); return MorphEngine.denorm(DEFS[i], which === 'now' ? resolveNorm(i) : state[which][i]); };
 const CYC = new Float32Array(256);
-function slotCycle(s, which) {
-  const t = state.oscType[s];
-  if (t === 'sub') {
-    const shape = slotVal(s, 'sshape', which), g = 1 + 7 * slotVal(s, 'sdrive', which), tg = Math.tanh(g);
-    for (let n = 0; n < 256; n++) CYC[n] = OscSub.sample(n / 256, 1 / 256, shape, g, tg);
-  } else CYC.fill(0);
+function subCycle(s, which) {
+  const shape = slotVal(s, 'sshape', which), g = 1 + 7 * slotVal(s, 'sdrive', which), tg = Math.tanh(g);
+  for (let n = 0; n < 256; n++) CYC[n] = OscSub.sample(n / 256, 1 / 256, shape, g, tg);
   return CYC;
 }
 // a sample's outline (or the blend of two, at mix), with a line at the Start point
@@ -2464,8 +2412,11 @@ function drawWaves() {
   requestAnimationFrame(() => {
     wavesQueued = false;
     const sp = state.spectral;
-    for (let s = 0; s < 4; s++) {
-      const t = state.oscType[s];
+    for (let s = 0; s < NOSC; s++) {
+      const t = OSC_KIND[s];
+      // a side where this oscillator is at Level 0 shows its card dimmed
+      ['A', 'B'].forEach(k => $('cv' + k + s).parentNode.classList.toggle('mute', state[k][oi(s, 'olevel')] === 0));
+      $('cvH' + s).parentNode.classList.toggle('mute', resolveNorm(oi(s, 'olevel')) === 0);
       if (t === 'wt') {
         MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
         drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
@@ -2475,20 +2426,18 @@ function drawWaves() {
         drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
         $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
       } else if (t === 'smp') {
-        const oa = sampleOverview(smpData[s].A), ob = sampleOverview(smpData[s].B), mix = resolveNorm(oi(s, 'sample'));
+        const oa = sampleOverview(smpData.A), ob = sampleOverview(smpData.B), mix = resolveNorm(oi(s, 'sample'));
         drawOverview($('cvA' + s), oa, null, 0, css('--a'), slotVal(s, 'sstart', 'A'));
         drawOverview($('cvB' + s), ob, null, 0, css('--b'), slotVal(s, 'sstart', 'B'));
         drawOverview($('cvH' + s), oa, ob, mix, mixColor(state.morph), slotVal(s, 'sstart', 'now'));
-        $('nmA' + s).textContent = state.smp[s].A ? state.smp[s].A.name : ''; $('nmB' + s).textContent = state.smp[s].B ? state.smp[s].B.name : '';
       } else {
-        drawWave($('cvA' + s), slotCycle(s, 'A'), css('--a'), { fit:true });
-        drawWave($('cvB' + s), slotCycle(s, 'B'), css('--b'), { fit:true });
-        drawWave($('cvH' + s), slotCycle(s, 'now'), mixColor(state.morph), { fit:true, lw:2.4 });
-        const name = which => t === 'sub' ? FMT.sshape(slotVal(s, 'sshape', which)) : 'Off';
-        $('nmA' + s).textContent = name('A'); $('nmB' + s).textContent = name('B');
+        drawWave($('cvA' + s), subCycle(s, 'A'), css('--a'), { fit:true });
+        drawWave($('cvB' + s), subCycle(s, 'B'), css('--b'), { fit:true });
+        drawWave($('cvH' + s), subCycle(s, 'now'), mixColor(state.morph), { fit:true, lw:2.4 });
+        $('nmA' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'A')); $('nmB' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'B'));
       }
     }
-    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttAll(); drawLanes();
+    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
   });
 }
 function updateBlendUI() {}
@@ -2506,7 +2455,7 @@ function updateMorphUI() {
 morphEl.addEventListener('input', () => {
   state.morph = morphEl.value / 1000;
   updateMorphUI();
-  DEFS.forEach((d, i) => { if (isActive(d)) updateKnob(i); });
+  DEFS.forEach((d, i) => updateKnob(i));
   if (ready) send({ type:'morph', v: state.morph });
   save();
 });
@@ -2515,8 +2464,7 @@ const undoStack = [];
 const cloneTables = () => tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) }));
 function snapshot() {
   return { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: state.morph, spectral: state.spectral, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
-           oscType: state.oscType.slice(), fxType: state.fxType.slice(), fxOn: state.fxOn.slice(), dlSpill: state.dlSpill.slice(),
-           smp: JSON.parse(JSON.stringify(state.smp)), smpLoop: state.smpLoop.slice(),
+           fxOn: state.fxOn.slice(), dlSpill: state.dlSpill, smp: JSON.parse(JSON.stringify(state.smp)), smpLoop: state.smpLoop,
            tables: cloneTables(), seq: JSON.parse(JSON.stringify(state.seq)) };
 }
 function pushUndo() { undoStack.push(snapshot()); if (undoStack.length > 30) undoStack.shift(); $('undo').disabled = false; }
@@ -2524,42 +2472,38 @@ $('undo').addEventListener('click', () => {
   const s = undoStack.pop(); if (!s) return;
   applyBulk(() => {
     Object.assign(state, { A: s.A, B: s.B, C: s.C, morph: s.morph, spectral: s.spectral, links: s.links, linkMem: s.linkMem,
-      oscType: s.oscType, fxType: s.fxType, fxOn: s.fxOn, dlSpill: s.dlSpill, smp: s.smp, smpLoop: s.smpLoop, seq: s.seq });
+      fxOn: s.fxOn, dlSpill: s.dlSpill, smp: s.smp, smpLoop: s.smpLoop, seq: s.seq });
     s.tables.forEach((t, k) => { tables[k] = t; });
   });
   $('undo').disabled = !undoStack.length;
 });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
-  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSlotsUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
+  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); updateDlUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
   if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
   if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
-  if (ed.classList.contains('open')) {
-    if (state.oscType[edSlot] !== 'wt') closeEditor();
-    else { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
-  }
+  if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
   save();
 }
-// Copy covers the sound only: sequences and the Pattern knob stay as they are (slot types are shared anyway)
+// Copy covers the sound only: sequences and the Pattern knob stay as they are
 const copySound = (from, to) => bulk(() => {
   const ip = IX.pattern, keep = state[to][ip];
   state[to] = state[from].slice(); state[to][ip] = keep;
   tables.forEach(t => { t[to] = cloneTable(t[from]); });
-  state.smp.forEach(p => { p[to] = { ...p[from] }; });
+  state.smp[to] = { ...state.smp[from] };
 });
 $('copyAB').addEventListener('click', () => copySound('A', 'B'));
 $('copyBA').addEventListener('click', () => copySound('B', 'A'));
 $('swap').addEventListener('click', () => bulk(() => {
   let t = state.A; state.A = state.B; state.B = t; state.C = state.C.map(c => -c);
   tables.forEach(p => { const x = p.A; p.A = p.B; p.B = x; });
-  state.smp.forEach(p => { const x = p.A; p.A = p.B; p.B = x; });
+  t = state.smp.A; state.smp.A = state.smp.B; state.smp.B = t;
   t = state.seq.A; state.seq.A = state.seq.B; state.seq.B = t;
 }));
 $('resetAll').addEventListener('click', () => bulk(() => {
   state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
   state.spectral = true; state.links = DEFAULT_LINKS(); state.linkMem = {};
-  state.oscType = DEFAULT_OSC(); state.fxType = DEFAULT_FX(); state.fxOn = [true, true, true, true]; state.dlSpill = [false, false, false, false];
-  state.smp = DEFAULT_SMP(); state.smpLoop = [false, false, false, false];
+  state.fxOn = DEFAULT_FXON(); state.dlSpill = false; state.smp = DEFAULT_SMP(); state.smpLoop = false;
   DEFAULT_TABLES().forEach((t, k) => { tables[k] = t; });
   state.seq = defaultSeqs();
 }));
@@ -2573,8 +2517,8 @@ const RND = {
   posA: () => rnd(), posB: () => rnd(),
   wave: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
   pattern: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
-  // oscillator slots (Level is locked by default)
-  olevel: () => 0.5 + rnd() * 0.5, opan: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.6),
+  // oscillators: Level decides whether each one is heard on this side (see OSC_ON; oscGuard keeps at least one)
+  olevel: (side, d) => (rnd() < OSC_ON[d.slot] ? 0.5 + rnd() * 0.4 : 0), opan: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.6),
   byp: () => (rnd() < 0.8 ? 0 : rnd() * 0.5),
   pitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; },
   fine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
@@ -2605,28 +2549,30 @@ const RND = {
   arel: () => logr(0.03, 3),
   level: () => 0.5 + rnd() * 0.5,
   pan: () => (rnd() * 2 - 1) * 0.6,
-  // effects: full range, the synth is meant to surprise
-  drive: () => rnd(), dshape: () => rnd(), dmix: () => rnd(),
-  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.66 ? 0 : rnd()),
-  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.4 ? 0 : rnd()),
-  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.4 ? 0 : rnd() < 0.85 ? rnd() * 0.35 : rnd() < 0.8 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly 0–35%, rarely above 50%
-  rvsize: () => rnd(), rvdecay: () => logr(0.2, 20), rvdamp: () => rnd(), rvmix: () => (rnd() < 0.4 ? 0 : rnd() < 0.8 ? rnd() * 0.35 : 0.35 + rnd() * 0.65),
-  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten
+  // effects: settings over the full range (the synth is meant to surprise); every effect is always in the chain,
+  // so each mix is 0 (off on this side) often enough that a side hears about three effects on average
+  drive: () => rnd(), dshape: () => rnd(), dmix: () => (rnd() < 0.6 ? 0 : rnd()),
+  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.8 ? 0 : rnd()),
+  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.65 ? 0 : rnd()),
+  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.55 ? 0 : rnd() < 0.75 ? rnd() * 0.35 : rnd() < 0.6 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly up to 35%, rarely above 50%
+  rvsize: () => rnd(), rvdecay: () => logr(0.2, 20), rvdamp: () => rnd(), rvmix: () => (rnd() < 0.5 ? 0 : rnd() < 0.65 ? rnd() * 0.35 : 0.35 + rnd() * 0.65),
+  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten (and lofiGate turns it all off 70% of the time)
   lwow: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lflut: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lchar: () => rnd() ** 2,
   ldrop: () => (rnd() < 0.9 ? 0 : rnd() ** 2), lcodec: () => (rnd() < 0.66 ? 0 : rnd() ** 2),
   lnoise: () => rnd(), lnmix: () => (rnd() < 0.85 ? rnd() * 0.15 : 0.15 + rnd() * 0.2),   // never above 35%, mostly 0–15%
-  ottdepth: () => rnd(), otttime: () => logr(0.1, 4),
+  ottdepth: () => (rnd() < 0.5 ? 0 : 0.05 + rnd() ** 1.5 * 0.55), otttime: () => logr(0.1, 4),
   ottlo: () => logr(40, 500), otthi: () => logr(600, 10000),
   ottgl: () => (rnd() * 2 - 1) * 3, ottgm: () => (rnd() * 2 - 1) * 3, ottgh: () => (rnd() * 2 - 1) * 3,   // mixed signs enforced in mixOttGains
   ottout: () => 0,
 };
 const TABLE_CHOICES = Object.keys(PRESETS).filter(n => n !== 'Sine');
-const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side))));
+const OSC_ON = [0.85, 0.4, 0.3, 0.4];   // chance each oscillator is heard on a side: Wavetable 1, Wavetable 2, Sub, Sampler
+const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side, d))));
 // Keep morphs dramatic: a side's new value lands at least 15% of the knob's throw away from the other side.
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -2636,22 +2582,37 @@ function rvApart(d, side, other) {
 // A parameter is locked if its own padlock is on or its whole section is locked.
 // Section locks sit on top of the individual ones, so unlocking a section brings back each knob's own setting.
 const isLocked = d => !!state.locks[d.id] || !!state.secLocks[d.group];
-// only parameters that are part of the sound (each slot's current type) are randomized; the rest keep their remembered values
-const inGroup = (d, g) => (!g || d.group === g) && isActive(d);
-// OTT band gains: within ±3 dB, and never all boosting or all cutting on one side (per OTT slot)
+const inGroup = (d, g) => !g || d.group === g;
+const isFree = i => !isLocked(DEFS[i]) && !state.links[DEFS[i].id];
+/* OTT band gains: within ±3 dB, and never all boosting or all cutting on one side. A side where OTT is off
+   (Depth 0) gets flat band gains, so it is truly off there (and costs nothing when it's off on both sides). */
 function mixOttGains(side, g) {
-  for (let slot = 0; slot < 4; slot++) {
-    if (state.fxType[slot] !== 'ott' || !inGroup(DEFS[xi(slot, 'ottgl')], g)) continue;
-    const ix = ['ottgl', 'ottgm', 'ottgh'].map(k => xi(slot, k));
-    const free = ix.filter(i => !isLocked(DEFS[i]) && !state.links[DEFS[i].id]);
-    if (!free.length) continue;
-    const val = i => MorphEngine.denorm(DEFS[i], state[side][i]);
-    const sg = ix.map(val).filter(x => Math.abs(x) > 0.05).map(Math.sign);
-    if (sg.length === 3 && sg.every(x => x === sg[0])) {
-      const i = free[Math.floor(rnd() * free.length)];
-      state[side][i] = norm(DEFS[i], -val(i));
-    }
+  if (!inGroup(DEFS[IX.ottgl], g)) return;
+  const ix = ['ottgl', 'ottgm', 'ottgh'].map(k => IX[k]), free = ix.filter(isFree);
+  if (!free.length) return;
+  if (state[side][IX.ottdepth] === 0) { free.forEach(i => { state[side][i] = norm(DEFS[i], 0); }); return; }
+  const val = i => MorphEngine.denorm(DEFS[i], state[side][i]);
+  const sg = ix.map(val).filter(x => Math.abs(x) > 0.05).map(Math.sign);
+  if (sg.length === 3 && sg.every(x => x === sg[0])) {
+    const i = free[Math.floor(rnd() * free.length)];
+    state[side][i] = norm(DEFS[i], -val(i));
   }
+}
+// Lo-fi is off on a side 70% of the time: every amount at 0
+const LOFI_AMOUNTS = ['lwow', 'lflut', 'lchar', 'lnmix', 'ldrop', 'lcodec'];
+function lofiGate(side, g) {
+  if (!inGroup(DEFS[IX.lwow], g) || rnd() >= 0.7) return;
+  LOFI_AMOUNTS.map(k => IX[k]).filter(isFree).forEach(i => { state[side][i] = 0; });
+}
+// at least one oscillator is heard on each side: if every Level came up 0, one free oscillator comes on (by the same odds)
+function oscGuard(side) {
+  const lv = s => oi(s, 'olevel');
+  if (OSC_KIND.some((_, s) => state[side][lv(s)] > 0)) return;
+  const free = OSC_KIND.map((_, s) => s).filter(s => isFree(lv(s)));
+  if (!free.length) return;
+  let r = rnd() * free.reduce((t, s) => t + OSC_ON[s], 0), s = free[0];
+  for (const k of free) { if (r < OSC_ON[k]) { s = k; break; } r -= OSC_ON[k]; }
+  state[side][lv(s)] = norm(DEFS[lv(s)], 0.5 + rnd() * 0.4);
 }
 // Formant, Modulation, Delay and Reverb mixes (in whichever slots hold them): at most two above 50%, and at most one above 90%
 function effectMixRules(side, g) {
@@ -2667,8 +2628,8 @@ function effectMixRules(side, g) {
 // Wavetable slot that goes through the filter is nearly pure, the filter leaves band-pass for low-pass and its cutoff moves toward the open end.
 function sineGuard(side) {
   const ci = IX.cutoff, mi = IX.mode, cd = DEFS[ci], md = DEFS[mi];
-  for (let s = 0; s < 4; s++) {
-    if (state.oscType[s] !== 'wt' || state[side][oi(s, 'byp')] > 0.5 || isLocked(cd) || state.links[cd.id]) continue;
+  for (const s of WT_SLOTS) {
+    if (state[side][oi(s, 'olevel')] === 0 || state[side][oi(s, 'byp')] > 0.5 || isLocked(cd) || state.links[cd.id]) continue;
     MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
     MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
@@ -2684,7 +2645,7 @@ function sineGuard(side) {
 }
 /* Loudness guard: a filter that passes almost none of the oscillators' harmonics (a band or high-pass far above
    them, a low-pass shut below them) leaves a side near silent. For middle C (plus each slot's pitch), the harmonics
-   of every active slot go through its Bypass split and the filter, at the filter envelope's peak and at sustain.
+   of every oscillator heard on that side go through its Bypass split and the filter, at the filter envelope's peak and at sustain.
    If less than 1% of the power (-20 dB) gets through at both, that side's filter is re-rolled (up to 10 times),
    and as a last resort it opens up as a low-pass. */
 function filterMag2(f, fc, reso, mode) {
@@ -2695,7 +2656,7 @@ function filterMag2(f, fc, reso, mode) {
 }
 // harmonics [frequency, power] of slot s on this side, for a note
 function slotHarmonics(s, side, f0) {
-  const t = state.oscType[s], val = key => MorphEngine.denorm(DEFS[oi(s, key)], state[side][oi(s, key)]), harm = [];
+  const t = OSC_KIND[s], val = key => MorphEngine.denorm(DEFS[oi(s, key)], state[side][oi(s, key)]), harm = [];
   let re, im;
   if (t === 'wt') {
     MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
@@ -2703,7 +2664,7 @@ function slotHarmonics(s, side, f0) {
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
     re = W.fr[0]; im = W.fr[1];
   } else if (t === 'smp') {   // the spectrum of the sample this side mostly plays, from its Start point, at this note's speed
-    const ref = state.smp[s][val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? (smpData[s].A && smpData[s].A.id === ref.id ? smpData[s].A : smpData[s].B && smpData[s].B.id === ref.id ? smpData[s].B : null) : smpFor(ref);
+    const ref = state.smp[val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? (smpData.A && smpData.A.id === ref.id ? smpData.A : smpData.B && smpData.B.id === ref.id ? smpData.B : null) : smpFor(ref);
     if (!data) return [[f0, 1]];
     const N = 2048, st = Math.floor(val('sstart') * Math.max(0, data.d.length - N)), fr = new Float64Array(N), fi = new Float64Array(N);
     for (let i = 0; i < N; i++) fr[i] = (data.d[st + i] || 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
@@ -2717,9 +2678,9 @@ function slotHarmonics(s, side, f0) {
 function passedDb(side) {
   const val = i => MorphEngine.denorm(DEFS[i], state[side][i]);
   const cut = val(IX.cutoff), reso = val(IX.reso), mode = val(IX.mode), env = val(IX.envamt), kt = val(IX.keytrack), fsus = val(IX.fsus);
-  const p1 = state.oscType[0] === 'wt' ? val(oi(0, 'pitch')) : 0;
-  const slots = [0, 1, 2, 3].filter(s => state.oscType[s] !== 'off').map(s => {
-    const t = state.oscType[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : p1 + 12 * val(oi(s, 'soct')));
+  const p1 = val(oi(0, 'pitch'));   // the Sub follows Wavetable 1
+  const slots = OSC_KIND.map((t, s) => s).filter(s => state[side][oi(s, 'olevel')] > 0).map(s => {
+    const t = OSC_KIND[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : p1 + 12 * val(oi(s, 'soct')));
     return { note, harm: slotHarmonics(s, side, 440 * Math.pow(2, (note - 69) / 12)), lv: val(oi(s, 'olevel')) ** 2, byp: val(oi(s, 'byp')) };
   });
   let dry = 0, best = 0;
@@ -2754,12 +2715,10 @@ function randomizeSide(side, g, raw) {
     if (state.links[d.id]) return;   // shared values only change with Randomize all or Randomize linked
     state[side][i] = raw ? rvRaw(d) : rvApart(d, side, state[other][i]);
   });
-  if (!raw) { mixOttGains(side, g); effectMixRules(side, g); }
-  for (let s = 0; s < 4; s++) {   // each Wavetable slot's table for this side, unless its section is locked
-    const grp = `Osc ${s + 1}`;
-    if (state.oscType[s] === 'wt' && (!g || g === grp) && !state.secLocks[grp]) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }
-    if (state.oscType[s] === 'smp' && (!g || g === grp) && !state.secLocks[grp]) state.smp[s][side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
-  }
+  if (!raw) { oscGuard(side); lofiGate(side, g); mixOttGains(side, g); effectMixRules(side, g); }
+  const mine = s => (!g || g === OSC_NAMES[s]) && !state.secLocks[OSC_NAMES[s]];
+  for (const s of WT_SLOTS) if (mine(s)) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }   // each Wavetable's table for this side, unless its section is locked
+  if (mine(SMP_SLOT)) state.smp[side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
   if (!raw) { sineGuard(side); loudnessGuard(side); }
 }
 $('rndA').addEventListener('click', () => bulk(() => randomizeSide('A')));
@@ -2767,43 +2726,14 @@ $('rndB').addEventListener('click', () => bulk(() => randomizeSide('B')));
 function randomizeLinked(g, raw) {   // linked knobs only: one new value shared by both sides
   DEFS.forEach((d, i) => { if (inGroup(d, g) && state.links[d.id] && !d.single && !isLocked(d)) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, 'A'); });
 }
-/* Slot types are shared by both sides, so they change with Randomize all (and launch) and with a slot's
-   both-sides dice, never with a side's own buttons or dice (that would change the other end too). A locked
-   section keeps its type. There is never more than one Sub.
-   Randomize all: slot 1 is never Off; slots 2-4 are often Off. FX slots get four different effects from all
-   seven, kept in chain order (so OTT, when it comes up, is last). A slot's dice pick any engine but Off
-   (any effect not used in another slot) at even odds. */
-const OSC_ODDS = [[['wt', 0.6], ['smp', 0.25], ['sub', 0.15]], [['sub', 0.3], ['wt', 0.2], ['smp', 0.1], ['off', 0.4]],
-  [['wt', 0.15], ['smp', 0.1], ['off', 0.75]], [['wt', 0.15], ['smp', 0.1], ['off', 0.75]]];
-const FX_POOL = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'];
-const pickOdds = odds => { const tot = odds.reduce((t, x) => t + x[1], 0); let r = rnd() * tot; for (const [t, w] of odds) { if (r < w) return t; r -= w; } return odds[odds.length - 1][0]; };
-// no second Sub: drop it from the odds when another slot already holds one
-const oscOdds = (s, odds) => odds.filter(([t]) => t !== 'sub' || !state.oscType.some((x, k) => k !== s && x === 'sub'));
-function randomizeTypes() {
-  for (let s = 0; s < 4; s++) if (!state.secLocks[`Osc ${s + 1}`]) state.oscType[s] = 'off';   // free slots start empty so the Sub rule sees only kept ones
-  for (let s = 0; s < 4; s++) if (!state.secLocks[`Osc ${s + 1}`]) state.oscType[s] = pickOdds(oscOdds(s, OSC_ODDS[s]));
-  const locked = s => !!state.secLocks[`FX ${s + 1}`], free = [0, 1, 2, 3].filter(s => !locked(s));
-  const taken = [0, 1, 2, 3].filter(locked).map(s => state.fxType[s]);
-  const chosen = FX_POOL.filter(t => !taken.includes(t)).map(t => [rnd(), t]).sort((a, b) => a[0] - b[0]).slice(0, free.length).map(x => x[1])
-    .sort((a, b) => FX_POOL.indexOf(a) - FX_POOL.indexOf(b));
-  free.forEach((s, k) => { state.fxType[s] = chosen[k]; });
-}
-function randomizeSlotType(g) {   // a slot's both-sides dice
-  if (state.secLocks[g]) return;
-  const m = /^(Osc|FX) (\d)$/.exec(g); if (!m) return;
-  const s = +m[2] - 1;
-  if (m[1] === 'Osc') state.oscType[s] = pickOdds(oscOdds(s, OSC_TYPES.filter(([t]) => t !== 'off').map(([t]) => [t, 1])));
-  else { const pool = FX_POOL.filter(t => !state.fxType.some((x, k) => k !== s && x === t)); state.fxType[s] = pool[Math.floor(rnd() * pool.length)]; }
-}
 function randomizeAll(g, raw) {
-  if (!g) randomizeTypes(); else randomizeSlotType(g);
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
-  for (let s = 0; s < 4; s++) if (state.fxType[s] === 'delay' && (!g || g === `FX ${s + 1}`) && !state.secLocks[`FX ${s + 1}`]) state.dlSpill[s] = rnd() < 0.5;   // Cut or Spill
-  updateDlUI();
+  const mine = grp => (!g || g === grp) && !state.secLocks[grp];
+  if (mine('Delay')) state.dlSpill = rnd() < 0.5;   // Cut or Spill
   // Loop: usually on when either side plays a sustained sample, usually off for plucks and hits
-  for (let s = 0; s < 4; s++) if (state.oscType[s] === 'smp' && (!g || g === `Osc ${s + 1}`) && !state.secLocks[`Osc ${s + 1}`]) {
-    const sus = ['A', 'B'].some(k => { const r = state.smp[s][k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
-    state.smpLoop[s] = rnd() < (sus ? 0.8 : 0.15);
+  if (mine('Sampler')) {
+    const sus = ['A', 'B'].some(k => { const r = state.smp[k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
+    state.smpLoop = rnd() < (sus ? 0.8 : 0.15);
   }
   randomizeLinked(g, raw);
   state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
@@ -2883,8 +2813,8 @@ function openEditor(slot, side) {
 }
 function closeEditor() { ed.classList.remove('open'); const b = $('wt' + edSide + edSlot); if (b && b.offsetParent) b.focus({ preventScroll:true }); }
 const tab = () => tables[edSlot][edSide];
-const edTitle = () => `Osc ${edSlot + 1} wavetable ${edSide}: ${tab().name}`;
-document.addEventListener('click', e => { const b = e.target.closest('[data-wt]'); if (b && !e.target.closest('select, .seg') && state.oscType[+b.dataset.wt] === 'wt') openEditor(+b.dataset.wt, b.dataset.side); });
+const edTitle = () => `${OSC_NAMES[edSlot]}, table ${edSide}: ${tab().name}`;
+document.addEventListener('click', e => { const b = e.target.closest('[data-wt]'); if (b && !e.target.closest('select, .seg') && OSC_KIND[+b.dataset.wt] === 'wt') openEditor(+b.dataset.wt, b.dataset.side); });
 $('edDone').addEventListener('click', closeEditor);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ed.classList.contains('open')) closeEditor(); });
 
@@ -3047,14 +2977,13 @@ $('edFile').addEventListener('change', async () => {
    heading, plus the delay Cut / Spill switch.
    ===================================================================== */
 // every section heading gets three dice (randomize this section on side A, side B, or both) and a padlock
-// (lock the whole section); FX slots also get an On/Off switch
+// (lock the whole section); effects also get an On/Off switch, a bypass for auditioning (never morphed or randomized)
 const DICE = '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5.3" cy="5.3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="10.7" cy="10.7" r="1.2" fill="currentColor"/></svg>';
 document.querySelectorAll('.group[data-group]').forEach(sec => {
   const g = sec.dataset.group, h = sec.querySelector('h2');
   h.classList.add('fxh');
   h.insertAdjacentHTML('beforeend', `<span class="tools"><button type="button" class="lock sectool da" data-dice="${g}" data-side="A" aria-label="Randomize ${g} on side A">${DICE}</button><button type="button" class="lock sectool db" data-dice="${g}" data-side="B" aria-label="Randomize ${g} on side B">${DICE}</button><button type="button" class="lock sectool" data-dice="${g}" aria-label="Randomize ${g} on both sides">${DICE}</button><button type="button" class="lock sectool" data-seclock="${g}" aria-pressed="false"></button></span>`);
-  const m = /^FX (\d)$/.exec(g);
-  if (m) h.insertAdjacentHTML('beforeend', `<button type="button" class="fxsw" data-fx="${m[1] - 1}" aria-label="${g} on"></button>`);
+  if (sec.dataset.kind === 'fx') h.insertAdjacentHTML('beforeend', `<button type="button" class="fxsw" data-fx="${sec.dataset.slot}" aria-label="${g} on"></button>`);
 });
 function updateFxUI() {
   document.querySelectorAll('[data-fx]').forEach(b => {
@@ -3070,121 +2999,64 @@ document.addEventListener('click', e => {
 });
 updateFxUI();
 
-/* delay time changes: Cut or Spill, per FX slot */
-for (let s = 0; s < 4; s++) {
-  sections[`FX ${s + 1}`].querySelector('.eng[data-eng="delay"]').insertAdjacentHTML('beforeend', `
+/* delay time changes: Cut or Spill */
+sections.Delay.querySelector('.gbody').insertAdjacentHTML('beforeend', `
   <div class="blendrow"><span class="opt"><span>Time changes</span><span class="seg" role="group" aria-label="What happens when the delay time changes">
-    <button type="button" data-dlmode="${s}" data-v="0">Cut</button><button type="button" data-dlmode="${s}" data-v="1">Spill</button></span></span></div>`);
-}
-function updateDlUI() { document.querySelectorAll('[data-dlmode]').forEach(b => b.setAttribute('aria-pressed', state.dlSpill[+b.dataset.dlmode] === (b.dataset.v === '1'))); }
+    <button type="button" data-dlmode data-v="0">Cut</button><button type="button" data-dlmode data-v="1">Spill</button></span></span></div>`);
+function updateDlUI() { document.querySelectorAll('[data-dlmode]').forEach(b => b.setAttribute('aria-pressed', state.dlSpill === (b.dataset.v === '1'))); }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-dlmode]'); if (!b) return;
-  const s = +b.dataset.dlmode, v = b.dataset.v === '1';
-  state.dlSpill[s] = v; updateDlUI(); if (ready) send({ type:'dlmode', i:s, v }); save();
+  state.dlSpill = b.dataset.v === '1'; updateDlUI(); if (ready) send({ type:'dlmode', v: state.dlSpill }); save();
 });
 updateDlUI();
 /* =====================================================================
-   SLOTS
-   Engine and effect pickers, fixed slot heights, and showing only the
-   current type's controls. Types are shared by both sides.
-   ===================================================================== */
-// which type containers a slot of type t shows: its own, plus '*' (Level, Pan, Bypass) on any oscillator that isn't Off
-const engShown = (eng, t) => eng === t || (eng === '*' && t !== 'off');
-function updateSlotsUI() {
-  if (typeof updateSamplerUI === 'function') updateSamplerUI();
-  for (let s = 0; s < 4; s++) {
-    const t = state.oscType[s], sec = sections[`Osc ${s + 1}`];
-    sec.querySelector('.typesel').value = t;
-    sec.dataset.type = t;
-    sec.classList.toggle('slotoff', t === 'off');
-    sec.querySelectorAll('.eng').forEach(e => { e.hidden = !engShown(e.dataset.eng, t); });
-    const f = state.fxType[s], fsec = sections[`FX ${s + 1}`];
-    fsec.querySelector('.typesel').value = f;
-    fsec.querySelectorAll('.eng').forEach(e => { e.hidden = e.dataset.eng !== f; });
-  }
-}
-/* Slots sit in fixed positions: each slot's body is as tall as the largest type it can hold, measured on the
-   page (so it follows the screen width), and switching type never moves anything below it. */
-function fixSlotHeights() {
-  DEFS.forEach((d, i) => { if (d.kind) updateKnob(i); });   // hidden types' knobs need their text to measure true
-  for (const sec of Object.values(sections)) {
-    const kind = sec.dataset.kind; if (kind !== 'osc' && kind !== 'fx') continue;
-    const body = sec.querySelector('.gbody'), engs = [...body.querySelectorAll('.eng')], was = engs.map(e => e.hidden);
-    body.style.minHeight = '';
-    let max = 0;
-    for (const [t] of kind === 'osc' ? OSC_TYPES : FX_TYPES) {
-      engs.forEach(e => { e.hidden = kind === 'osc' ? !engShown(e.dataset.eng, t) : e.dataset.eng !== t; });
-      max = Math.max(max, body.offsetHeight);
-    }
-    engs.forEach((e, k) => { e.hidden = was[k]; });
-    body.style.minHeight = max + 'px';
-  }
-}
-if (document.fonts) document.fonts.ready.then(fixSlotHeights);
-// Knobs of a type that has just been shown were not kept up to date while hidden
-const refreshSlot = (kind, slot) => DEFS.forEach((d, i) => { if (d.kind === kind && d.slot === slot && isActive(d)) updateKnob(i); });
-
-document.addEventListener('change', e => {
-  const sel = e.target.closest('.typesel'); if (!sel) return;
-  pushUndo();
-  if (sel.dataset.osc !== undefined) {
-    const s = +sel.dataset.osc; state.oscType[s] = sel.value;
-    if (sel.value !== 'wt' && ed.classList.contains('open') && edSlot === s) closeEditor();
-    updateSlotsUI(); refreshSlot('osc', s);
-  } else {
-    const s = +sel.dataset.fxsel; state.fxType[s] = sel.value;
-    updateSlotsUI(); refreshSlot('fx', s);
-  }
-  sendSlots(); drawWaves(); save();
-});
-/* =====================================================================
    SAMPLER CONTROLS
-   On a Sampler slot's wave cards: a sample menu per side (built-in samples,
+   On the Sampler's wave cards: a sample menu per side (built-in samples,
    the loaded file if any, and "Load file…") and One-shot / Loop.
    ===================================================================== */
 const smpFile = document.createElement('input');
 smpFile.type = 'file'; smpFile.accept = 'audio/*'; smpFile.hidden = true;
 document.body.appendChild(smpFile);
-let smpPending = null;   // { s, k } waiting for a file
-// the menus and One-shot / Loop live in each slot's wave cards (see waveCards in knobs.js)
+let smpPending = null;   // the side waiting for a file
+// the menus and One-shot / Loop live in the Sampler's wave cards (see waveCards in knobs.js)
 function updateSamplerUI() {
   document.querySelectorAll('[data-smpsel]').forEach(sel => {
-    const ref = state.smp[+sel.dataset.smpsel][sel.dataset.side];
+    const ref = state.smp[sel.dataset.side];
     sel.innerHTML = FACTORY_NAMES.map(n => `<option value="f:${n}">${n}</option>`).join('')
       + (ref && ref.id ? `<option value="u:${ref.id}">${ref.name.replace(/[<&]/g, '')}</option>` : '') + '<option value="load">Load file…</option>';
     sel.value = ref ? (ref.id ? 'u:' + ref.id : 'f:' + ref.name) : 'load';
   });
-  document.querySelectorAll('[data-smploop]').forEach(b => b.setAttribute('aria-pressed', state.smpLoop[+b.dataset.smploop] === (b.dataset.v === '1')));
+  document.querySelectorAll('[data-smploop]').forEach(b => b.setAttribute('aria-pressed', state.smpLoop === (b.dataset.v === '1')));
 }
-function setSample(s, k, ref) {
+function setSample(k, ref) {
   pushUndo();
-  state.smp[s][k] = ref; resolveSamples();
-  if (ready) postSample(s, k);
+  state.smp[k] = ref; resolveSamples();
+  if (ready) postSample(k);
   updateSamplerUI(); drawWaves(); save();
 }
 document.addEventListener('change', e => {
   const sel = e.target.closest('[data-smpsel]'); if (!sel) return;
-  const s = +sel.dataset.smpsel, k = sel.dataset.side;
-  if (sel.value === 'load') { smpPending = { s, k }; updateSamplerUI(); smpFile.click(); return; }
-  if (sel.value.startsWith('f:')) setSample(s, k, { name: sel.value.slice(2) });
+  const k = sel.dataset.side;
+  if (sel.value === 'load') { smpPending = k; updateSamplerUI(); smpFile.click(); return; }
+  if (sel.value.startsWith('f:')) setSample(k, { name: sel.value.slice(2) });
 });
 smpFile.addEventListener('change', async () => {
   const file = smpFile.files[0], p = smpPending; smpFile.value = ''; smpPending = null;
   if (!file || !p) return;
-  const note = $('smpNote' + p.s);
+  const note = $('smpNote');
   try {
     note.textContent = 'Loading…';
     const d = await decodeSampleFile(file), id = 'u' + Date.now().toString(36), name = file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Sample';
     await idb.put(id, { name, sr: SMP_SR, d }).catch(() => { note.textContent = 'Could not store the file; it will be gone after a reload.'; });
-    smpData[p.s][p.k] = { d, sr: SMP_SR, name, id };   // in hand already, no need to wait for IndexedDB
-    setSample(p.s, p.k, { name, id });
+    smpData[p] = { d, sr: SMP_SR, name, id };   // in hand already, no need to wait for IndexedDB
+    setSample(p, { name, id });
     if (note.textContent === 'Loading…') note.textContent = '';
   } catch (err) { note.textContent = 'That file could not be read as audio.'; }
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-smploop]'); if (!b) return;
-  const s = +b.dataset.smploop; state.smpLoop[s] = b.dataset.v === '1';
-  updateSamplerUI(); if (ready) send({ type:'smpLoop', i:s, v: state.smpLoop[s] }); save();
+  state.smpLoop = b.dataset.v === '1';
+  updateSamplerUI(); if (ready) send({ type:'smpLoop', i: SMP_SLOT, v: state.smpLoop }); save();
 });
 updateSamplerUI();
 /* =====================================================================
@@ -3200,7 +3072,6 @@ function applyLayout() {
   const desk = isDesk(), app = $('app');
   document.body.classList.toggle('desk', desk);
   app.style.zoom = desk ? Math.min(innerWidth / DESK_W, innerHeight / DESK_H) : '';
-  fixSlotHeights();
   document.documentElement.style.setProperty('--kbh', $('kb').getBoundingClientRect().height + 'px');   // the editors leave the bottom panel visible
   drawWaves();
 }
@@ -3634,7 +3505,7 @@ $('sqClear').addEventListener('click', () => editSeq(s => s.steps.forEach(st => 
 const pick = a => a[Math.floor(Math.random() * a.length)];
 // with the oscillator already shifted up an octave, keep generated patterns within two octaves
 // if any Wavetable slot is pitched up an octave or more on either side, generated patterns stay within 2 octaves
-const octCap = () => ([0, 1, 2, 3].some(s => state.oscType[s] === 'wt' && ['A', 'B'].some(k => MorphEngine.denorm(DEFS[oi(s, 'pitch')], state[k][oi(s, 'pitch')]) >= 12)) ? 2 : 3);
+const octCap = () => (WT_SLOTS.some(s => ['A', 'B'].some(k => MorphEngine.denorm(DEFS[oi(s, 'pitch')], state[k][oi(s, 'pitch')]) >= 12)) ? 2 : 3);
 function randArpSettings() {   // now: random generator settings, Arp or Riff
   setGen(Math.random() < 0.5 ? 'Arp' : 'Riff');
   $('sqChord').value = pick(Object.keys(CHORDS)); $('sqMode').value = pick(MODES);
@@ -3847,7 +3718,6 @@ setPanel('seq', true);   // the sequencer is the starting view
 
 labelOct();
 updateIcons();
-updateSlotsUI();
 applyLayout();
 refreshAll();
 updateBlendUI();

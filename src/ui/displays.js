@@ -93,15 +93,13 @@ function drawEnvViz(id, pre) {
   label(c, time(T), c.w - 5, 12, 'right');
 }
 /* OTT: where the bands split, and each band's level going in (outline) and coming out (filled) */
-const ottLive = [null, null, null, null];
-let ottQueued = false;
-function drawOttViz(slot) {
-  if (state.fxType[slot] !== 'ott') return;
-  const c = prep($('vzOT' + slot)); if (!c) return;
-  const val = key => MorphEngine.denorm(DEFS[xi(slot, key)], resolveNorm(xi(slot, key)));
+let ottLive = null, ottQueued = false;
+function drawOttViz() {
+  const c = prep($('vzOT')); if (!c) return;
+  const val = key => MorphEngine.denorm(DEFS[IX[key]], resolveNorm(IX[key]));
   const fx = f => Math.log(f / 20) / Math.log(1000) * c.w, yOf = db => c.h - 4 - (Math.max(-72, Math.min(0, db)) + 72) / 72 * (c.h - 34);
   const lo = val('ottlo'), hi = val('otthi'), gains = ['ottgl', 'ottgm', 'ottgh'].map(val);
-  const edges = [0, fx(lo), fx(hi), c.w], col = mixColor(state.morph), live = ottLive[slot];
+  const edges = [0, fx(lo), fx(hi), c.w], col = mixColor(state.morph), live = ottLive;
   c.g.strokeStyle = css('--line'); c.g.lineWidth = 1;
   [fx(lo), fx(hi)].forEach(x => { c.g.beginPath(); c.g.moveTo(x, 0); c.g.lineTo(x, c.h); c.g.stroke(); });
   for (let b = 0; b < 3; b++) {
@@ -117,17 +115,13 @@ function drawOttViz(slot) {
   label(c, Math.round(lo) + ' Hz', fx(lo) + 3, 25, 'left');
   label(c, (hi / 1000).toFixed(1) + ' kHz', fx(hi) + 3, 25, 'left');
 }
-const drawOttAll = () => { for (let s = 0; s < 4; s++) drawOttViz(s); };
-function onOtt(d) { ottLive[d.slot] = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttAll(); }); } }
+function onOtt(d) { ottLive = d; if (!ottQueued) { ottQueued = true; requestAnimationFrame(() => { ottQueued = false; drawOttViz(); }); } }
 // one cycle of a slot's sound for side 'A', 'B' or 'now' (what you hear), for the wave cards
 const slotVal = (s, key, which) => { const i = oi(s, key); return MorphEngine.denorm(DEFS[i], which === 'now' ? resolveNorm(i) : state[which][i]); };
 const CYC = new Float32Array(256);
-function slotCycle(s, which) {
-  const t = state.oscType[s];
-  if (t === 'sub') {
-    const shape = slotVal(s, 'sshape', which), g = 1 + 7 * slotVal(s, 'sdrive', which), tg = Math.tanh(g);
-    for (let n = 0; n < 256; n++) CYC[n] = OscSub.sample(n / 256, 1 / 256, shape, g, tg);
-  } else CYC.fill(0);
+function subCycle(s, which) {
+  const shape = slotVal(s, 'sshape', which), g = 1 + 7 * slotVal(s, 'sdrive', which), tg = Math.tanh(g);
+  for (let n = 0; n < 256; n++) CYC[n] = OscSub.sample(n / 256, 1 / 256, shape, g, tg);
   return CYC;
 }
 // a sample's outline (or the blend of two, at mix), with a line at the Start point
@@ -149,8 +143,11 @@ function drawWaves() {
   requestAnimationFrame(() => {
     wavesQueued = false;
     const sp = state.spectral;
-    for (let s = 0; s < 4; s++) {
-      const t = state.oscType[s];
+    for (let s = 0; s < NOSC; s++) {
+      const t = OSC_KIND[s];
+      // a side where this oscillator is at Level 0 shows its card dimmed
+      ['A', 'B'].forEach(k => $('cv' + k + s).parentNode.classList.toggle('mute', state[k][oi(s, 'olevel')] === 0));
+      $('cvH' + s).parentNode.classList.toggle('mute', resolveNorm(oi(s, 'olevel')) === 0);
       if (t === 'wt') {
         MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], sp, W.fa[0], W.fa[1]);
         drawWave($('cvA' + s), synthDisplay(W.fa[0], W.fa[1]), css('--a'), { fit:true });
@@ -160,20 +157,18 @@ function drawWaves() {
         drawWave($('cvH' + s), synthDisplay(W.fr[0], W.fr[1]), mixColor(state.morph), { fit:true, lw:2.4 });
         $('nmA' + s).textContent = tables[s].A.name; $('nmB' + s).textContent = tables[s].B.name;
       } else if (t === 'smp') {
-        const oa = sampleOverview(smpData[s].A), ob = sampleOverview(smpData[s].B), mix = resolveNorm(oi(s, 'sample'));
+        const oa = sampleOverview(smpData.A), ob = sampleOverview(smpData.B), mix = resolveNorm(oi(s, 'sample'));
         drawOverview($('cvA' + s), oa, null, 0, css('--a'), slotVal(s, 'sstart', 'A'));
         drawOverview($('cvB' + s), ob, null, 0, css('--b'), slotVal(s, 'sstart', 'B'));
         drawOverview($('cvH' + s), oa, ob, mix, mixColor(state.morph), slotVal(s, 'sstart', 'now'));
-        $('nmA' + s).textContent = state.smp[s].A ? state.smp[s].A.name : ''; $('nmB' + s).textContent = state.smp[s].B ? state.smp[s].B.name : '';
       } else {
-        drawWave($('cvA' + s), slotCycle(s, 'A'), css('--a'), { fit:true });
-        drawWave($('cvB' + s), slotCycle(s, 'B'), css('--b'), { fit:true });
-        drawWave($('cvH' + s), slotCycle(s, 'now'), mixColor(state.morph), { fit:true, lw:2.4 });
-        const name = which => t === 'sub' ? FMT.sshape(slotVal(s, 'sshape', which)) : 'Off';
-        $('nmA' + s).textContent = name('A'); $('nmB' + s).textContent = name('B');
+        drawWave($('cvA' + s), subCycle(s, 'A'), css('--a'), { fit:true });
+        drawWave($('cvB' + s), subCycle(s, 'B'), css('--b'), { fit:true });
+        drawWave($('cvH' + s), subCycle(s, 'now'), mixColor(state.morph), { fit:true, lw:2.4 });
+        $('nmA' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'A')); $('nmB' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'B'));
       }
     }
-    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttAll(); drawLanes();
+    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
   });
 }
 function updateBlendUI() {}

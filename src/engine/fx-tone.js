@@ -14,6 +14,7 @@
    changes tone, not volume. The curve runs from warm and asymmetric (even harmonics) through a firmer knee
    to a sine wavefolder. */
 class FxDrive {
+  static get REST() { return { dmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) {
     this.sr = sr; this.H = FxDrive.osFilter();
     this.XL = new Float64Array(9); this.XR = new Float64Array(9);
@@ -71,6 +72,7 @@ class FxDrive {
 
 /* Formant filter: three band-pass resonances per channel; Vowel sweeps A-E-I-O-U, Shift moves them. */
 class FxFormant {
+  static get REST() { return { fmix: 0 }; }   // silent when these sit here on both sides (see MorphEngine.renderFx)
   constructor(sr) { this.sr = sr; this.fs = new Float64Array(12); }
   static get VOWELS() { return [[650, 1080, 2650], [400, 1700, 2600], [290, 1870, 2800], [400, 800, 2600], [350, 600, 2700]]; }   // a e i o u
   process(L, R, p, len, v, P) {

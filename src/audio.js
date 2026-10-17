@@ -1,4 +1,4 @@
-const spec = [0, 1, 2, 3].map(() => ({ A: null, B: null }));   // spectra per oscillator slot and side
+const spec = WT_SLOTS.map(() => ({ A: null, B: null }));   // spectra per Wavetable slot and side
 function analyzeTable(slot, side) {
   const t = tables[slot][side], sp = spec[slot][side] = { k: t.frames.length, re: [], im: [] };
   t.frames.forEach(f => { const a = MorphEngine.analyze(f); sp.re.push(a.re); sp.im.push(a.im); });
@@ -7,21 +7,21 @@ function analyzeFrame(slot, side, j) {
   const a = MorphEngine.analyze(tables[slot][side].frames[j]);
   spec[slot][side].re[j] = a.re; spec[slot][side].im[j] = a.im;
 }
-const analyzeAll = () => { for (let s = 0; s < 4; s++) { analyzeTable(s, 'A'); analyzeTable(s, 'B'); } };
+const analyzeAll = () => { for (const s of WT_SLOTS) { analyzeTable(s, 'A'); analyzeTable(s, 'B'); } };
 analyzeAll();
-/* sample data per slot and side, resolved from the patch's references: built-ins at once, files from IndexedDB
+/* the Sampler's data per side, resolved from the patch's references: built-ins at once, files from IndexedDB
    (they arrive a moment later, and are sent to the engine when they do) */
-const smpData = [0, 1, 2, 3].map(() => ({ A: null, B: null })), smpSent = [0, 1, 2, 3].map(() => ({ A: undefined, B: undefined }));
+const smpData = { A: null, B: null }, smpSent = { A: undefined, B: undefined };
 const smpFor = ref => (!ref ? null : !ref.id ? (FACTORY[ref.name] ? factoryData(ref.name) : null) : null);
 function resolveSamples() {
-  for (let s = 0; s < 4; s++) for (const k of ['A', 'B']) {
-    const ref = state.smp[s][k], cur = smpData[s][k];
-    if (!ref || !ref.id) { smpData[s][k] = smpFor(ref); continue; }
+  for (const k of ['A', 'B']) {
+    const ref = state.smp[k], cur = smpData[k];
+    if (!ref || !ref.id) { smpData[k] = smpFor(ref); continue; }
     if (cur && cur.id === ref.id) continue;
-    smpData[s][k] = null;
+    smpData[k] = null;
     idb.get(ref.id).then(v => {
-      const now = state.smp[s][k];
-      if (v && now && now.id === ref.id) { smpData[s][k] = { d: v.d, sr: v.sr, name: v.name, id: ref.id }; if (ready) postSample(s, k); drawWaves(); }
+      const now = state.smp[k];
+      if (v && now && now.id === ref.id) { smpData[k] = { d: v.d, sr: v.sr, name: v.name, id: ref.id }; if (ready) postSample(k); drawWaves(); }
     }).catch(() => {});
   }
 }
@@ -33,10 +33,9 @@ const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, OscSmp, FxDrive, FxFormant,
 let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
 const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
 const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });
-const sendSlots = () => { if (ready) send({ type:'slots', osc: state.oscType, fx: state.fxType }); };
 const postTable = (slot, side) => send({ type:'table', slot, side, re: spec[slot][side].re.slice(), im: spec[slot][side].im.slice() });
 // a sample is only posted when it changed (they are large)
-function postSample(s, k) { const x = smpData[s][k]; if (smpSent[s][k] === x) return; smpSent[s][k] = x; send({ type:'sample', slot:s, side:k, d: x ? x.d : null, sr: x ? x.sr : SMP_SR }); }
+function postSample(k) { const x = smpData[k]; if (smpSent[k] === x) return; smpSent[k] = x; send({ type:'sample', slot: SMP_SLOT, side:k, d: x ? x.d : null, sr: x ? x.sr : SMP_SR }); }
 const tableTimers = {};
 function sendTable(slot, side) {
   const k = slot + side;
@@ -45,13 +44,12 @@ function sendTable(slot, side) {
 }
 function sendAll() {   // runs during startup, before ready is set
   sendState();
-  for (let s = 0; s < 4; s++) { postTable(s, 'A'); postTable(s, 'B'); }
+  for (const s of WT_SLOTS) { postTable(s, 'A'); postTable(s, 'B'); }
   send({ type:'blend', v: state.spectral });
   state.fxOn.forEach((on, i) => send({ type:'bypass', i, on }));
-  state.dlSpill.forEach((v, i) => send({ type:'dlmode', i, v }));
-  for (let s = 0; s < 4; s++) { postSample(s, 'A'); postSample(s, 'B'); }
-  state.smpLoop.forEach((v, i) => send({ type:'smpLoop', i, v }));
-  send({ type:'slots', osc: state.oscType, fx: state.fxType });
+  send({ type:'dlmode', v: state.dlSpill });
+  postSample('A'); postSample('B');
+  send({ type:'smpLoop', i: SMP_SLOT, v: state.smpLoop });
   send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono });
   if (typeof buildSeq === 'function') { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); }
 }
@@ -112,7 +110,7 @@ registerProcessor('morph-engine', MorphProcessor);`;
       send = m => eng.handle(m);
       kind = 'compatibility mode (main thread)';
     }
-    smpSent.forEach(p => { p.A = p.B = undefined; });   // a fresh engine has no samples yet
+    smpSent.A = smpSent.B = undefined;   // a fresh engine has no samples yet
     sendAll();
     queue.forEach(m => send(m)); queue = [];
     ready = true;

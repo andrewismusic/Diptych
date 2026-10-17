@@ -37,37 +37,28 @@ const knobHTML = (d, i) => `<div class="kn">
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
   </div>`;
-/* A, what you hear, and B for every oscillator slot. On a Wavetable slot the A and B cards open the editor
-   (tap the wave or Edit); on a Sampler slot their labels are the sample menus and the middle card holds One-shot / Loop. */
-const sideCard = (s, k) => `<div class="wtcard ${k.toLowerCase()}" data-wt="${s}" data-side="${k}">
-      <canvas id="cv${k}${s}"></canvas><span class="wtlabel"><span class="nm" id="nm${k}${s}"></span>
-      <select class="smpsel" data-smpsel="${s}" data-side="${k}" aria-label="Osc ${s + 1} sample ${k}"></select>
-      <button type="button" class="ac" id="wt${k}${s}" data-wt="${s}" data-side="${k}" aria-label="Edit wavetable ${k} of Osc ${s + 1}">Edit ${k}</button></span></div>`;
-const waveCards = s => `<div class="wt">
-    ${sideCard(s, 'A')}
-    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm hear">What you hear</span>
-      <span class="seg smploop" role="group" aria-label="Osc ${s + 1} playback"><button type="button" data-smploop="${s}" data-v="0">One-shot</button><button type="button" data-smploop="${s}" data-v="1">Loop</button></span>
-      <span class="smpnote" id="smpNote${s}" role="status"></span></span></div>
-    ${sideCard(s, 'B')}
+/* A, what you hear, and B for every oscillator. On a Wavetable the A and B cards open the editor (tap the wave
+   or Edit); on the Sampler their labels are the sample menus and the middle card holds One-shot / Loop. */
+const sideCard = (s, k, t, name) => `<div class="wtcard ${k.toLowerCase()}" data-wt="${s}" data-side="${k}">
+      <canvas id="cv${k}${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<select class="smpsel" data-smpsel data-side="${k}" aria-label="Sample ${k}"></select>`
+        : `<span class="nm" id="nm${k}${s}"></span>`}${t === 'wt' ? `<button type="button" class="ac" id="wt${k}${s}" data-wt="${s}" data-side="${k}" aria-label="Edit wavetable ${k} of ${name}">Edit ${k}</button>` : ''}</span></div>`;
+const waveCards = (s, t, name) => `<div class="wt">
+    ${sideCard(s, 'A', t, name)}
+    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<span class="seg smploop" role="group" aria-label="Sampler playback"><button type="button" data-smploop data-v="0">One-shot</button><button type="button" data-smploop data-v="1">Loop</button></span>
+      <span class="smpnote" id="smpNote" role="status"></span>` : '<span class="nm hear">What you hear</span>'}</span></div>
+    ${sideCard(s, 'B', t, name)}
   </div>`;
-const options = list => list.map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
-/* One section per group. Oscillator and FX slot sections hold a container per type (data-eng),
-   and only the current type's is shown; '*' holds the knobs every oscillator type shares. */
+/* One section per group, in fixed positions. Oscillators show their wave cards above the knobs; OTT shows its bands. */
 const sections = {};
 function makeSection(d) {
   const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
-  let head = `<h2><span class="gname">${d.group}</span>`;
-  if (d.kind === 'osc') head += `<select class="typesel" data-osc="${d.slot}" aria-label="${d.group} engine">${options(OSC_TYPES)}</select>`;
-  if (d.kind === 'fx') head += `<select class="typesel" data-fxsel="${d.slot}" aria-label="${d.group} effect">${options(FX_TYPES)}</select>`;
-  head += '</h2>';
+  const head = `<h2><span class="gname">${d.group}</span></h2>`;
   let body;
-  if (d.kind === 'osc') body = waveCards(d.slot) + Object.keys(OSC_ENG).map(e => `<div class="eng" data-eng="${e}"><div class="knobs"></div></div>`).join('')
-    + '<div class="eng" data-eng="*"><div class="knobs"></div></div>';
-  else if (d.kind === 'fx') body = Object.keys(FX_ENG).map(e => `<div class="eng" data-eng="${e}">${e === 'ott'
-    ? `<canvas class="viz" id="vzOT${d.slot}" aria-label="OTT bands: split points, gain settings and live levels"></canvas>` : ''}<div class="knobs"></div></div>`).join('');
+  if (d.kind === 'osc') body = waveCards(d.slot, d.eng, d.group) + '<div class="knobs"></div>';
+  else if (d.kind === 'fx') body = (d.eng === 'ott' ? '<canvas class="viz" id="vzOT" aria-label="OTT bands: split points, gain settings and live levels"></canvas>' : '') + '<div class="knobs"></div>';
   else if (VIZ[d.group]) body = VIZ[d.group].map(b => `<div class="sub">${b.title ? `<div class="subh">${b.title}</div>` : ''}<canvas class="viz" id="${b.viz}" aria-label="${b.name}: A, B and current shape"></canvas><div class="knobs"${b.sub ? ` data-sub="${b.sub}"` : ''}></div></div>`).join('');
   else body = '<div class="knobs"></div>';
-  if (d.kind) g.dataset.kind = d.kind;
+  if (d.kind) { g.dataset.kind = d.kind; g.dataset.type = d.eng; g.dataset.slot = d.slot; }
   g.innerHTML = head + `<div class="gbody">${body}</div>`;
   groupsEl.appendChild(g);
   return g;
@@ -77,7 +68,7 @@ DEFS.forEach((d, i) => {
   if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
   else {
     const g = sections[d.group] || (sections[d.group] = makeSection(d));
-    box = d.kind === 'osc' || d.kind === 'fx' ? g.querySelector(`.eng[data-eng="${d.eng || '*'}"] .knobs`) : g.querySelector(d.sub ? `.knobs[data-sub="${d.sub}"]` : '.knobs:not([data-sub])');
+    box = g.querySelector(d.sub ? `.knobs[data-sub="${d.sub}"]` : '.knobs:not([data-sub])');
   }
   box.insertAdjacentHTML('beforeend', knobHTML(d, i));
 });
@@ -155,7 +146,7 @@ function updateKnob(i) {
   hB.setAttribute('aria-valuenow', Math.round(b * 100)); hB.setAttribute('aria-valuetext', valText(i, b));
   cc.setAttribute('aria-valuenow', Math.round(c * 100)); cc.setAttribute('aria-valuetext', fmtCurve(c));
 }
-function refreshAll() { DEFS.forEach((d, i) => { if (isActive(d)) updateKnob(i); }); updateMorphUI(); }   // hidden knobs update when their type is shown
+function refreshAll() { DEFS.forEach((d, i) => updateKnob(i)); updateMorphUI(); }
 function setParam(side, i, x) {
   x = clamp(x);
   if (isLinked(i)) {   // linked or single-side: both sides always hold the same value

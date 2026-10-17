@@ -1,21 +1,12 @@
 /* ---------- state + persistence ----------
-   The slot build starts fresh: it saves under a new key and ignores patches from the fixed-chain version.
+   The fixed architecture (2026-10-17) starts fresh: it saves under a new key and ignores earlier patches, by decision.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v4', STORE_VER = 4;
-const DEFAULT_LOCKS = () => {
-  const l = { level: true, pan: true, pattern: true };
-  for (let s = 1; s <= 4; s++) { l[`o${s}.olevel`] = true; l[`o${s}.wave`] = true; l[`o${s}.sample`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
-  return l;
-};
-const DEFAULT_LINKS = () => {
-  const l = {};
-  for (let s = 1; s <= 4; s++) { for (const k of ['olevel', 'pitch', 'fine', 'spitch', 'sfine']) l[`o${s}.${k}`] = true; l[`x${s}.ottdepth`] = true; l[`x${s}.ottout`] = true; }
-  return l;
-};
-const DEFAULT_OSC = () => ['wt', 'off', 'off', 'off'];
-const DEFAULT_FX = () => ['drive', 'delay', 'reverb', 'ott'];
-const DEFAULT_SMP = () => [0, 1, 2, 3].map(() => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } }));   // sample references per slot
-const DEFAULT_TABLES = () => [0, 1, 2, 3].map(() => ({ A: makeTable('Basic shapes'), B: makeTable('Vowel formants') }));
+const STORE = 'diptych-v5', STORE_VER = 1;
+const DEFAULT_LOCKS = () => ({ level: true, pan: true, pattern: true, 'o1.wave': true, 'o2.wave': true, 'o4.sample': true, ottout: true });
+const DEFAULT_LINKS = () => ({ 'o1.pitch': true, 'o1.fine': true, 'o2.pitch': true, 'o2.fine': true, 'o4.spitch': true, 'o4.sfine': true, ottout: true });
+const DEFAULT_SMP = () => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } });   // the Sampler's sample references
+const DEFAULT_TABLES = () => WT_SLOTS.map(s => (s === 0 ? { A: makeTable('Basic shapes'), B: makeTable('Vowel formants') } : { A: makeTable('Harmonic stack'), B: makeTable('Pulse width') }));
+const DEFAULT_FXON = () => FX_KIND.map(() => true);
 const state = {
   A: DEFS.map((_, i) => defaultNorm('A', i)),
   B: DEFS.map((_, i) => defaultNorm('B', i)),
@@ -27,17 +18,15 @@ const state = {
   linkMem: {},
   mono: false,
   links: DEFAULT_LINKS(),
-  oscType: DEFAULT_OSC(),
-  fxType: DEFAULT_FX(),
-  fxOn: [true, true, true, true],
-  dlSpill: [false, false, false, false],
+  fxOn: DEFAULT_FXON(),   // bypass switches for auditioning: never morphed or randomized
+  dlSpill: false,
   smp: DEFAULT_SMP(),
-  smpLoop: [false, false, false, false],
+  smpLoop: false,
   seq: null,
   bpm: 120,
   walk: true,
 };
-const tables = DEFAULT_TABLES();   // tables[slot].A / .B, one pair per oscillator slot
+const tables = DEFAULT_TABLES();   // tables[slot].A / .B for each Wavetable slot (slots 0 and 1)
 
 function enc(f) {
   const i16 = new Int16Array(f.length);
@@ -53,15 +42,10 @@ function dec(b) {
   return Float32Array.from(i16, x => x / 32767);
 }
 const decTable = t => (t && Array.isArray(t.frames) && t.frames.length ? { name: String(t.name || 'Custom'), frames: t.frames.slice(0, MAXF).map(dec) } : null);
-// a saved type that no longer exists (FM, moved to its own page in ver 3) becomes the given stand-in
-const pickList = (saved, list, n, fallback, standIn) => (Array.isArray(saved) && saved.length === n ? saved.map(x => (list.some(t => t[0] === x) ? x : standIn)) : fallback);
+const okRef = r => r && typeof r.name === 'string' && (r.id ? typeof r.id === 'string' : !!FACTORY[r.name]);
 try {
   const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
   if (saved && Array.isArray(saved.ids) && Array.isArray(saved.A) && saved.ids.length === saved.A.length && saved.B.length === saved.A.length) {
-    // ver 2: back to one filter. Filter 1's ids ('f1.cutoff') become plain ('cutoff'); Filter 2 and the slots' filter blend are dropped.
-    const v1id = id => (!(saved.ver >= 2) && id.startsWith('f1.') ? id.slice(3) : id);
-    if (!(saved.ver >= 2)) for (const k of ['locks', 'links', 'linkMem']) if (saved[k]) saved[k] = Object.fromEntries(Object.entries(saved[k]).map(([id, v]) => [v1id(id), v]));
-    saved.ids = saved.ids.map(v1id);
     saved.ids.forEach((id, k) => {
       const i = IX[id]; if (i === undefined) return;
       state.A[i] = clamp(+saved.A[k]); state.B[i] = clamp(+saved.B[k]);
@@ -70,18 +54,13 @@ try {
     state.morph = clamp(+saved.morph || 0);
     for (const k of ['locks', 'links', 'secLocks', 'linkMem']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
     state.mono = !!saved.mono;
-    state.oscType = pickList(saved.oscType, OSC_TYPES, 4, state.oscType, 'off');
-    state.fxType = pickList(saved.fxType, FX_TYPES, 4, state.fxType, 'drive');
-    if (Array.isArray(saved.fxOn) && saved.fxOn.length === 4) state.fxOn = saved.fxOn.map(Boolean);
-    if (Array.isArray(saved.dlSpill) && saved.dlSpill.length === 4) state.dlSpill = saved.dlSpill.map(Boolean);
-    const okRef = r => r && typeof r.name === 'string' && (r.id ? typeof r.id === 'string' : !!FACTORY[r.name]);
-    if (Array.isArray(saved.smp) && saved.smp.length === 4) saved.smp.forEach((p, s) => ['A', 'B'].forEach(k => { if (p && okRef(p[k])) state.smp[s][k] = { name: p[k].name, ...(p[k].id ? { id: p[k].id } : {}) }; }));
-    if (Array.isArray(saved.smpLoop) && saved.smpLoop.length === 4) state.smpLoop = saved.smpLoop.map(Boolean);
-    if (!(saved.ver >= 4)) for (let s = 1; s <= 4; s++) { state.locks[`o${s}.sample`] = true; state.links[`o${s}.spitch`] = true; state.links[`o${s}.sfine`] = true; }   // the Sampler arrived in ver 4
+    if (Array.isArray(saved.fxOn) && saved.fxOn.length === NFX) state.fxOn = saved.fxOn.map(Boolean);
+    state.dlSpill = !!saved.dlSpill; state.smpLoop = !!saved.smpLoop;
+    if (saved.smp) ['A', 'B'].forEach(k => { const r = saved.smp[k]; if (okRef(r)) state.smp[k] = { name: r.name, ...(r.id ? { id: r.id } : {}) }; });
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;
-    if (Array.isArray(saved.tables)) saved.tables.slice(0, 4).forEach((t, s) => {
+    if (Array.isArray(saved.tables)) saved.tables.slice(0, WT_SLOTS.length).forEach((t, s) => {
       ['A', 'B'].forEach(side => { const d = t && decTable(t[side]); if (d) tables[s][side] = d; });
     });
   }

@@ -3,16 +3,20 @@
    curve: 'lin' | 'log' | 'int' | 'pow2'   snap: switch instead of blending
    single: 'A' | 'B' belongs to one side only and never morphs
 
-   Oscillator and FX slots hold every parameter of every type, so each slot
-   remembers all its types' settings. Ids: global 'glide', 'cutoff',
-   slots 'o1.<key>' and 'x1.<key>'. `key` is the parameter's
+   The architecture is fixed (2026-10-17), so any two patches can morph into
+   each other: four oscillators (two Wavetables, a Sub, a Sampler) and all seven
+   effects in a fixed order. An oscillator at Level 0, or an effect at Mix 0,
+   is silent and costs no CPU.
+   Ids: global 'glide', 'cutoff'; oscillator parameters 'o1.<key>' (o1 and o2
+   are the Wavetables, o3 the Sub, o4 the Sampler); effect parameters use their
+   plain key ('dlmix'), since each effect appears once. `key` is the parameter's
    own name; formats (FMT) and randomize rules (RND) are looked up by key.
-   kind: 'osc' | 'fx' with slot (0-based); eng: the type it belongs
-   to (null = every type of that slot).
+   kind: 'osc' | 'fx' with slot (0-based); eng: the slot's engine or effect.
    ===================================================================== */
-const OSC_TYPES = [['off', 'Off'], ['wt', 'Wavetable'], ['smp', 'Sampler'], ['sub', 'Sub']];
-const FX_TYPES = [['drive', 'Drive'], ['formant', 'Formant filter'], ['mod', 'Modulation'], ['delay', 'Delay'], ['reverb', 'Reverb'], ['lofi', 'Lo-fi'], ['ott', 'OTT']];
-const typeName = (list, t) => (list.find(x => x[0] === t) || [t, t])[1];
+const OSC_KIND = ['wt', 'wt', 'sub', 'smp'], OSC_NAMES = ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler'];
+const FX_KIND = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'], FX_NAMES = ['Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT'];
+const NOSC = OSC_KIND.length, NFX = FX_KIND.length;
+const WT_SLOTS = [0, 1], SUB_SLOT = 2, SMP_SLOT = 3, DELAY_SLOT = FX_KIND.indexOf('delay'), OTT_SLOT = FX_KIND.indexOf('ott');
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
 const OSC_COMMON = [
   P_('olevel', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('opan', 'Pan', -1, 1, 'lin', 0, 0), P_('byp', 'Bypass', 0, 1, 'lin', 0, 0),
@@ -57,23 +61,22 @@ const FX_ENG = {
     P_('otthi', 'High split', 600, 10000, 'log', 2500, 2500), P_('ottgl', 'Low gain', -12, 12, 'lin', 0, 0), P_('ottgm', 'Mid gain', -12, 12, 'lin', 0, 0),
     P_('ottgh', 'High gain', -12, 12, 'lin', 0, 0), P_('ottout', 'Output', -12, 12, 'lin', 0, 0)],
 };
+// The default patch is one Wavetable: the other oscillators start at Level 0
+const OSC_LEVEL = [0.8, 0, 0, 0];
 const DEFS = [];
-for (let s = 0; s < 4; s++) {
-  const group = `Osc ${s + 1}`, add = (p, eng) => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
-  OSC_COMMON.forEach(p => add(p, null));
-  Object.entries(OSC_ENG).forEach(([eng, ps]) => ps.forEach(p => add(p, eng)));
-}
+OSC_KIND.forEach((eng, s) => {
+  const group = OSC_NAMES[s], add = p => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
+  OSC_ENG[eng].forEach(add);
+  OSC_COMMON.forEach(p => add(p.key === 'olevel' ? { ...p, a: OSC_LEVEL[s], b: OSC_LEVEL[s] } : p));
+});
 VOICE.forEach(p => DEFS.push({ ...p, id: p.key, group:'Voice' }));
 FILTER.forEach(p => DEFS.push({ ...p, id: p.key, group:'Filter' }));
 ENVS.forEach(([group, ps]) => ps.forEach(p => DEFS.push({ ...p, id: p.key, group })));
-for (let s = 0; s < 4; s++) Object.entries(FX_ENG).forEach(([eng, ps]) => ps.forEach(p => DEFS.push({ ...p, id: `x${s + 1}.${p.key}`, group: `FX ${s + 1}`, kind:'fx', slot:s, eng })));
+FX_KIND.forEach((eng, s) => FX_ENG[eng].forEach(p => DEFS.push({ ...p, id: p.key, group: FX_NAMES[s], kind:'fx', slot:s, eng })));
 DEFS.push({ ...P_('pattern', 'Pattern', 0, 1, 'lin', 0, 1), id:'pattern', group:'Sequencer' });
 const IX = {}; DEFS.forEach((d, i) => { IX[d.id] = i; });
-// index of a slot parameter: oi(0, 'wave') -> IX['o1.wave'], xi(3, 'ottdepth') -> IX['x4.ottdepth']
-const oi = (s, key) => IX[`o${s + 1}.${key}`], xi = (s, key) => IX[`x${s + 1}.${key}`];
-// Is this parameter part of the sound right now? (its slot's current type, or a global)
-const isActive = d => d.kind === 'osc' ? state.oscType[d.slot] !== 'off' && (!d.eng || d.eng === state.oscType[d.slot])
-  : d.kind === 'fx' ? d.eng === state.fxType[d.slot] : true;
+// index of an oscillator parameter: oi(0, 'wave') -> IX['o1.wave']; effect parameters are IX.dlmix and so on
+const oi = (s, key) => IX[`o${s + 1}.${key}`];
 const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' s');
 const pct = v => Math.round(v * 100) + '%';
 const FMT = {

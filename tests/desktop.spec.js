@@ -6,8 +6,8 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
   test(`${w}x${h}: everything fits without scrolling`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     await openSynth(page);
-    for (const t of ['wt', 'smp', 'sub', 'off']) {   // whatever the slots hold, nothing moves or overflows
-      await page.evaluate(t => { const s = sections['Osc 1'].querySelector('.typesel'); s.value = t; s.dispatchEvent(new Event('change', { bubbles: true })); }, t);
+    for (const t of ['launch', 'every effect off']) {   // switching effects off dims their knobs but must not move anything
+      if (t !== 'launch') await page.evaluate(() => document.querySelectorAll('[data-fx]').forEach(b => b.click()));
       const m = await page.evaluate(() => {
         const main = document.querySelector('main'), app = $('app').getBoundingClientRect();
         const cut = [...document.querySelectorAll('main .group')].filter(g => g.scrollHeight > g.clientHeight + 1 || g.getBoundingClientRect().bottom > main.getBoundingClientRect().bottom + 1).map(g => g.dataset.group);
@@ -16,7 +16,7 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
       });
       expect(m.desk).toBe(true);
       expect(m.docScroll).toBeLessThanOrEqual(0); expect(m.docSide).toBeLessThanOrEqual(0);
-      expect(m.main, `main overflows with Osc 1 = ${t}`).toBeLessThanOrEqual(1);
+      expect(m.main, `main overflows (${t})`).toBeLessThanOrEqual(1);
       expect(m.appBottom).toBeLessThanOrEqual(1); expect(m.appRight).toBeLessThanOrEqual(1);
       expect(m.cut, t).toEqual([]);
     }

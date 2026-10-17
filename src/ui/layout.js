@@ -11,7 +11,6 @@ function applyLayout() {
   const desk = isDesk(), app = $('app');
   document.body.classList.toggle('desk', desk);
   app.style.zoom = desk ? Math.min(innerWidth / DESK_W, innerHeight / DESK_H) : '';
-  fixSlotHeights();
   document.documentElement.style.setProperty('--kbh', $('kb').getBoundingClientRect().height + 'px');   // the editors leave the bottom panel visible
   drawWaves();
 }

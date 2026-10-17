@@ -1,6 +1,6 @@
 // Effects must stay level-matched to the dry sound (DESIGN.md sections 1, 6 and 11).
-// Each case renders a sustained three-note chord through one effect in FX slot 1 with the other slots
-// switched off, and compares its average level (0.8 s to 2.5 s) with all four slots off.
+// Each case renders a sustained three-note chord through one effect with every other effect switched off,
+// and compares its average level (0.8 s to 2.5 s) with every effect off.
 // Run with LEVELS_REPORT=1 to print every measurement.
 import { test, expect } from '@playwright/test';
 import { openSynth } from './helpers.js';
@@ -45,9 +45,8 @@ for (const signal of ['dark', 'bright']) {
         const rows = await page.evaluate(({ type, settings, bright }) => {
           const base = bright ? { cutoff: 18000, reso: 0, envamt: 0 } : {};
           const notes = [[48, 0, 9999], [55, 0, 9999], [63, 0, 9999]];
-          const slot1 = o => Object.fromEntries(Object.entries(o).map(([k, v]) => ['x1.' + k, v]));
-          const lvl = (over, on) => T.db(T.stereoRms(T.render({ patch: T.flat({ ...base, ...slot1(over) }), notes, blocks: 940,
-            fx: [type, 'drive', 'drive', 'drive'], fxOn: [on ? 1 : 0, 0, 0, 0] }), 0.8, 2.5));
+          const lvl = (over, on) => T.db(T.stereoRms(T.render({ patch: T.flat({ ...base, ...over }), notes, blocks: 940,
+            fxOn: on ? T.only(type) : T.noFx }), 0.8, 2.5));
           const dry = lvl({}, false);
           return settings.map(s => ({ s, d: lvl(s, true) - dry }));
         }, { type: FX[fx], settings, bright: signal === 'bright' });
@@ -62,7 +61,7 @@ test('OTT at default Depth barely moves peaks', async ({ page }) => {
   await openSynth(page);
   const d = await page.evaluate(() => {
     const notes = [[48, 0, 200], [55, 300, 500], [63, 600, 900]];   // gaps between notes, where OTT could spike
-    const pk = on => { const r = T.render({ patch: T.flat({ 'x1.ottdepth': 0.13 }), notes, blocks: 1000, fx: ['ott', 'drive', 'drive', 'drive'], fxOn: [on, 0, 0, 0] });
+    const pk = on => { const r = T.render({ patch: T.flat({ ottdepth: 0.13 }), notes, blocks: 1000, fxOn: on ? T.only('ott') : T.noFx });
       return Math.max(T.peak(r.L), T.peak(r.R)); };
     return T.db(pk(1)) - T.db(pk(0));
   });

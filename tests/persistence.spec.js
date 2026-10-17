@@ -1,18 +1,18 @@
 // Persistence (DESIGN.md section 10): patches survive reloads, Undo after launch brings back the
-// previous session, parameters are matched by id, and patches from the fixed-chain version are ignored.
+// previous session, parameters are matched by id, and patches from earlier versions are ignored.
 import { test, expect } from '@playwright/test';
 import { openSynth } from './helpers.js';
 
-const KEY = 'diptych-v4';
+const KEY = 'diptych-v5';
 const snapshot = page => page.evaluate(() => JSON.stringify({ A: state.A, B: state.B, C: state.C, links: state.links, locks: state.locks,
-  osc: state.oscType, fx: state.fxType, fxOn: state.fxOn, dlSpill: state.dlSpill,
+  fxOn: state.fxOn, dlSpill: state.dlSpill, smp: state.smp, smpLoop: state.smpLoop,
   tables: tables.map(t => [t.A.name, t.B.name, t.A.frames.length, t.B.frames.length]), seq: state.seq }));
 const frames = page => page.evaluate(() => tables.flatMap(t => [...t.A.frames, ...t.B.frames]).map(f => Array.from(f)));
 const waitForSave = page => page.waitForTimeout(700);   // saves are debounced by 400 ms
 
-test('Undo after a relaunch restores the previous session exactly, slot types included', async ({ page }) => {
+test('Undo after a relaunch restores the previous session exactly, switches included', async ({ page }) => {
   await openSynth(page, { seed: 31, storage: {} });
-  await page.evaluate(() => { state.links.reso = true; state.locks.fatk = true; state.fxOn[2] = false; state.dlSpill[1] = true; save(); });
+  await page.evaluate(() => { state.links.reso = true; state.locks.fatk = true; state.fxOn[2] = false; state.dlSpill = !state.dlSpill; state.smpLoop = !state.smpLoop; save(); });
   await waitForSave(page);
   const before = await snapshot(page), framesBefore = await frames(page);
   await page.reload();
@@ -30,12 +30,12 @@ test('locked parameters and locked sections survive a relaunch', async ({ page }
   await openSynth(page, { seed: 32, storage: {} });
   await page.evaluate(() => {
     state.A[IX.level] = 0.37; state.B[IX.level] = 0.61;
-    state.secLocks['Osc 2'] = true; state.oscType[1] = 'sub'; save();
+    state.secLocks['Wavetable 2'] = true; tables[1].A = makeTable('Sync sweep'); save();
   });
   await waitForSave(page);
   await page.reload();
-  expect(await page.evaluate(() => ({ lv: [state.A[IX.level], state.B[IX.level]], osc2: state.oscType[1] })))
-    .toEqual({ lv: [0.37, 0.61], osc2: 'sub' });
+  expect(await page.evaluate(() => ({ lv: [state.A[IX.level], state.B[IX.level]], t: tables[1].A.name })))
+    .toEqual({ lv: [0.37, 0.61], t: 'Sync sweep' });
 });
 
 test('parameters are matched by id: unknown ids are ignored, missing ones get defaults', async ({ page }) => {
@@ -58,12 +58,11 @@ test('parameters are matched by id: unknown ids are ignored, missing ones get de
   expect(got.n).toBe(got.nDefs);
 });
 
-test('patches from the fixed-chain version (diptych-v3) are ignored', async ({ page }) => {
-  const old = JSON.stringify({ ver: 9, ids: ['cutoff'], A: [0.1], B: [0.1], C: [0], bpm: 77, oscType: ['sub', 'sub', 'sub', 'sub'] });
-  await openSynth(page, { seed: 34, storage: { 'diptych-v3': old } });
+test('patches from earlier versions (diptych-v4, slot types) are ignored', async ({ page }) => {
+  const old = JSON.stringify({ ver: 4, ids: ['cutoff'], A: [0.1], B: [0.1], C: [0], bpm: 77, oscType: ['sub', 'sub', 'sub', 'sub'] });
+  await openSynth(page, { seed: 34, storage: { 'diptych-v4': old } });
   await page.click('#undo');
-  expect(await page.evaluate(() => ({ osc: state.oscType, cutoff: state.A[IX.cutoff] === defaultNorm('A', IX.cutoff) })))
-    .toEqual({ osc: ['wt', 'off', 'off', 'off'], cutoff: true });
+  expect(await page.evaluate(() => state.A[IX.cutoff] === defaultNorm('A', IX.cutoff) && state.bpm !== 77)).toBe(true);
 });
 
 test('a corrupt saved patch falls back to defaults instead of breaking the page', async ({ page }) => {
@@ -72,33 +71,4 @@ test('a corrupt saved patch falls back to defaults instead of breaking the page'
   await openSynth(page, { seed: 35, storage: { [KEY]: '{not json' } });
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => state.A.length === DEFS.length)).toBe(true);
-});
-
-test('ver 1 patches (two filters) migrate: Filter 1 becomes the filter, Filter 2 and the slot blend are dropped', async ({ page }) => {
-  await openSynth(page, { seed: 36, storage: {} });
-  await waitForSave(page);
-  const saved = JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY));
-  const ren = id => ['cutoff', 'reso', 'mode', 'envamt', 'keytrack'].includes(id) ? 'f1.' + id : id;
-  saved.ver = 1; saved.ids = saved.ids.map(ren);
-  const ci = saved.ids.indexOf('f1.cutoff'); saved.A[ci] = 0.42; saved.B[ci] = 0.43;
-  saved.ids.push('f2.cutoff', 'o1.flt'); saved.A.push(0.9, 1); saved.B.push(0.9, 1); saved.C.push(0, 0);
-  saved.locks = { ...saved.locks, 'f1.reso': true };
-  await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(saved)]);
-  await page.reload();
-  await page.click('#undo');
-  const got = await page.evaluate(() => ({ a: state.A[IX.cutoff], b: state.B[IX.cutoff], resoLocked: !!state.locks.reso }));
-  expect(got.a).toBeCloseTo(0.42, 6); expect(got.b).toBeCloseTo(0.43, 6);
-  expect(got.resoLocked).toBe(true);
-  await waitForSave(page);
-  expect(JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY)).ver).toBe(4);
-});
-
-test('ver 2 patches with FM slots load, with those slots Off', async ({ page }) => {
-  await openSynth(page, { seed: 37, storage: {} });
-  await waitForSave(page);
-  const saved = JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY));
-  saved.ver = 2; saved.oscType = ['fm', 'wt', 'sub', 'fm'];
-  await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(saved)]);
-  await page.reload(); await page.click('#undo');
-  expect(await page.evaluate(() => state.oscType)).toEqual(['off', 'wt', 'sub', 'off']);
 });

@@ -2,13 +2,14 @@
    DSP ENGINE
    Runs in an AudioWorklet when possible, otherwise on the main thread.
    Parameters arrive normalized and resolve every 16 samples as
-   lerp(A, B, bend(morph, curve)); only the parameters of each slot's
-   current type are resolved.
+   lerp(A, B, bend(morph, curve)).
 
-   Signal flow per voice: 4 oscillator slots (Off / Wavetable / Sampler / Sub)
-   -> each slot splits between the filter and around it (Bypass) -> amp
-   envelope -> master Level and Pan. Then the 4 FX slots in order,
-   and a final tanh soft clip.
+   The architecture is fixed: each slot's engine or effect comes from the
+   parameter list (its params' `eng`). Signal flow per voice: 4 oscillators
+   (Wavetable, Wavetable, Sub, Sampler) -> each splits between the filter and
+   around it (Bypass) -> amp envelope -> master Level and Pan. Then the 7
+   effects in order, and a final tanh soft clip. An oscillator at Level 0 is
+   skipped; an effect at rest (Mix 0) at the current morph goes idle (see renderFx).
 
    MorphEngine and the classes in the other engine files are stringified
    into the AudioWorklet (see audio.js), so they must stay self-contained:
@@ -20,16 +21,15 @@ class MorphEngine {
     const n = defs.length;
     this.A = new Float32Array(n); this.B = new Float32Array(n); this.C = new Float32Array(n);
     this.cur = new Float32Array(n); this.val = new Float32Array(n);
-    this.act = new Uint8Array(n); this.fresh = new Uint8Array(n);
     this.morph = 0; this.first = true; this.clock = 0; this.lastPitch = -1;
     this.I = {}; defs.forEach((d, i) => { this.I[d.id] = i; });
     // per-slot key -> index maps: oscillator slots and FX slots
     const keyMap = (kind, slot) => { const m = {}; defs.forEach((d, i) => { if (d.kind === kind && d.slot === slot) m[d.key] = i; }); return m; };
+    const engOf = (kind, slot) => (defs.find(d => d.kind === kind && d.slot === slot) || {}).eng;
+    this.nFx = 1 + Math.max(-1, ...defs.filter(d => d.kind === 'fx').map(d => d.slot));
     this.oP = [0, 1, 2, 3].map(s => keyMap('osc', s));
-    this.xP = [0, 1, 2, 3].map(s => keyMap('fx', s));
-    // oscillator slots: type, pending type, and a fade used to switch types without clicks
-    this.oscType = ['off', 'off', 'off', 'off']; this.oscNext = [null, null, null, null];
-    this.oFade = new Float64Array(4);
+    this.xP = Array.from({ length: this.nFx }, (_, s) => keyMap('fx', s));
+    this.oscType = [0, 1, 2, 3].map(s => engOf('osc', s) || 'off');
     this.cPrev = new Float64Array(16); this.cNext = new Float64Array(16); this.cD = new Float64Array(16);   // per slot: into the filter L/R, around it L/R
     this.banks = [0, 1, 2, 3].map(() => new WtBank());
     this.uL = new Float32Array(28); this.uR = new Float32Array(28); this.uOff = new Float32Array(28);
@@ -45,16 +45,20 @@ class MorphEngine {
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
       ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0,
       sp:new Float64Array(8), op:new Float64Array(8), sxf:new Int32Array(4), sold:new Uint8Array(4) });   // sampler: positions, old positions and crossfade on restart
-    // FX slots: instance, type, pending type, On/Off and the crossfade to dry used for On/Off and type switches
-    this.fxInst = [null, null, null, null]; this.fxType = [null, null, null, null]; this.fxNext = [null, null, null, null];
-    this.fxOn = [true, true, true, true]; this.fxBy = new Float64Array(4); this.dlSpill = [false, false, false, false];
-    this.byC = 1 - Math.exp(-1 / (0.015 * sr)); this.swStep = 1 / (0.015 * sr);   // On/Off: ~15 ms glide; type switch: 15 ms linear fade to dry
+    // Effects: instance, type, On/Off, idle, and the crossfade to dry used for On/Off and going idle
+    const nf = this.nFx;
+    this.fxType = Array.from({ length: nf }, (_, s) => engOf('fx', s));
+    this.fxInst = this.fxType.map((t, s) => this.makeFx(t, s));
+    this.fxOn = this.fxType.map(() => true); this.dlSpill = false; this.fxIdle = this.fxType.map(() => true); this.fxBy = new Float64Array(nf); this.fxFirst = true;
+    this.fxWarm = new Int32Array(nf); this.warmN = Math.round(0.025 * sr);   // a waking effect fills its buffers for 25 ms before fading in
+    // which parameters must sit at their neutral value (in real units) for an effect to be silent
+    this.fxRest = this.fxType.map((t, s) => Object.entries(MorphEngine.FX_CLASSES[t].REST).map(([k, v]) => [this.xP[s][k], v]));
+    this.byC = 1 - Math.exp(-1 / (0.015 * sr)); this.swStep = 1 / (0.015 * sr);   // On/Off: ~15 ms glide; going idle: 15 ms linear fade to dry
     this.dryL = new Float32Array(16); this.dryR = new Float32Array(16);
     // sequencer
     this.seq = null; this.playing = false; this.bpm = 120; this.walk = true;
     this.spos = 0; this.ei = 0; this.stick = 0; this.offs = []; this.reports = []; this.repCount = 0;
     this.mono = false; this.stack = [];
-    this.computeActive();
   }
 
   /* ---------- shared maths (also used by the UI) ---------- */
@@ -129,23 +133,6 @@ class MorphEngine {
   static get FX_CLASSES() { return { drive: FxDrive, formant: FxFormant, mod: FxModulation, delay: FxDelay, reverb: FxReverb, lofi: FxLofi, ott: FxOtt }; }
 
   /* ---------- slots ---------- */
-  // Only parameters of each slot's current (or incoming) type are resolved. A parameter that becomes
-  // active jumps straight to its value instead of gliding from a stale one.
-  computeActive() {
-    const ok = (d, t) => t !== null && t !== 'off' && (!d.eng || d.eng === t);
-    this.defs.forEach((d, i) => {
-      let a = 1;
-      if (d.kind === 'osc') a = ok(d, this.oscType[d.slot]) || ok(d, this.oscNext[d.slot]) ? 1 : 0;
-      else if (d.kind === 'fx') a = d.eng === this.fxType[d.slot] || d.eng === this.fxNext[d.slot] ? 1 : 0;
-      if (a && !this.act[i]) this.fresh[i] = 1;
-      this.act[i] = a;
-    });
-  }
-  swapOsc(s, t) {
-    this.oscType[s] = t; this.oscNext[s] = null;
-    for (const v of this.voices) { for (let j = 0; j < 7; j++) v.ph[s * 7 + j] = Math.random(); v.sph[s] = 0; this.smpStart(v, s, false); }
-    this.computeActive();
-  }
   /* (Re)start a voice's sample playback in slot s at the Start point. When a sounding note restarts, the old
      playback crossfades out over 5 ms (and a fresh one fades in), so restarts don't click. */
   smpStart(v, s, keepOld) {
@@ -162,18 +149,6 @@ class MorphEngine {
       case 'param': (m.side === 'A' ? this.A : this.B)[m.i] = m.v; break;
       case 'curve': this.C[m.i] = m.v; break;
       case 'morph': this.morph = m.v; break;
-      case 'slots':
-        for (let s = 0; s < 4; s++) {
-          const o = m.osc[s];
-          if (o === this.oscType[s]) this.oscNext[s] = null;
-          else if (this.oscType[s] === 'off' && this.oFade[s] <= 0) this.swapOsc(s, o);   // nothing sounding: switch at once
-          else this.oscNext[s] = o;
-          const f = m.fx[s];
-          if (!this.fxInst[s]) { this.fxInst[s] = this.makeFx(f, s); this.fxType[s] = f; this.fxBy[s] = this.fxOn[s] ? 1 : 0; }
-          else this.fxNext[s] = f === this.fxType[s] ? null : f;
-        }
-        this.computeActive();
-        break;
       case 'table': this.banks[m.slot].setTable(m.side, m.re, m.im); break;
       case 'sample': this.smp[m.slot][m.side] = m.d ? { d: m.d, sr: m.sr } : null; break;
       case 'smpLoop': this.smpLoop[m.i] = !!m.v; break;
@@ -192,7 +167,7 @@ class MorphEngine {
         break;
       case 'bpm': this.bpm = m.v; break;
       case 'walk': this.walk = !!m.v; break;
-      case 'dlmode': this.dlSpill[m.i] = !!m.v; break;
+      case 'dlmode': this.dlSpill = !!m.v; break;
       case 'bypass': this.fxOn[m.i] = !!m.on; break;
       case 'on': this.noteOn(m.note, m.vel); break;
       case 'off': this.noteOff(m.note); break;
@@ -293,13 +268,12 @@ class MorphEngine {
 
   /* ---------- per-block work ---------- */
   resolve() {
-    const m = this.morph, defs = this.defs, act = this.act, fresh = this.fresh;
+    const m = this.morph, defs = this.defs;
     for (let i = 0; i < defs.length; i++) {
-      if (!act[i]) continue;
       const d = defs[i];
       const mm = MorphEngine.bend(m, this.C[i]);
       const target = d.snap ? (mm < 0.5 ? this.A[i] : this.B[i]) : this.A[i] + (this.B[i] - this.A[i]) * mm;
-      if (this.first || fresh[i] || d.snap || d.curve === 'int') { this.cur[i] = target; fresh[i] = 0; }
+      if (this.first || d.snap || d.curve === 'int' || Math.abs(target - this.cur[i]) < 1e-5) this.cur[i] = target;   // lands exactly, so Level 0 and Mix 0 really reach 0
       else this.cur[i] += (target - this.cur[i]) * 0.08;   // de-zipper
       this.val[i] = MorphEngine.denorm(d, this.cur[i]);
     }
@@ -312,18 +286,12 @@ class MorphEngine {
       const len = Math.min(16, n - p);
       this.resolve();
       this.seqRun(len);
-      // oscillator type switches: fade the slot out (about 8 ms), switch once it is silent, fade back in
-      const fStep = len / (0.008 * sr);
-      for (let s = 0; s < 4; s++) {
-        if (this.oscNext[s] !== null) {
-          let silent = this.oFade[s] <= 0;
-          for (let j = 0; j < 4 && silent; j++) if (this.cPrev[s * 4 + j] !== 0) silent = false;
-          if (silent) this.swapOsc(s, this.oscNext[s]);
-          else this.oFade[s] = Math.max(0, this.oFade[s] - fStep);
-        } else if (this.oscType[s] !== 'off') this.oFade[s] = Math.min(1, this.oFade[s] + fStep);
-      }
       const v = this.val;
-      for (let s = 0; s < 4; s++) if (this.oscType[s] === 'wt') { const P = this.oP[s]; this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave]); }
+      for (let s = 0; s < 4; s++) if (this.oscType[s] === 'wt') {   // a silent Wavetable doesn't rebuild (it catches up, crossfading, when it is heard again)
+        const P = this.oP[s], o = s * 4;
+        if (v[P.olevel] === 0 && this.banks[s].ready && !this.cPrev[o] && !this.cPrev[o + 1] && !this.cPrev[o + 2] && !this.cPrev[o + 3]) continue;
+        this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave]);
+      }
       this.renderVoices(L, R, p, len);
       this.renderFx(L, R, p, len);
       p += len;
@@ -341,7 +309,7 @@ class MorphEngine {
       const t = this.oscType[s], P = this.oP[s], o = s * 4;
       const live = t !== 'off' && !(t === 'wt' && !this.banks[s].ready);
       if (live) {
-        const lv = v[P.olevel] / 0.8 * this.oFade[s], pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
+        const lv = v[P.olevel] / 0.8, pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
         const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv, byp = v[P.byp];
         CN[o] = pl * (1 - byp); CN[o + 1] = pr * (1 - byp); CN[o + 2] = pl * byp; CN[o + 3] = pr * byp;
       } else for (let j = 0; j < 4; j++) CN[o + j] = 0;
@@ -484,25 +452,33 @@ class MorphEngine {
     for (let s = 0; s < 4; s++) { const bk = this.banks[s]; if (bk.ready) bk.xf = Math.min(1, bk.xf + bk.xfInc * len); }
     C0.set(CN);
   }
-  // FX slots in order. Each runs even while switched off (so tails stay current) and is crossfaded
-  // with its dry input. A type switch fades linearly to dry over 15 ms, swaps at exactly dry, then fades back in.
+  // Is effect s silent right now? Its REST parameters sit at their neutral value at the current morph position.
+  fxAtRest(s) {
+    const D = this.defs;
+    for (const [i, v0] of this.fxRest[s]) if (MorphEngine.denorm(D[i], this.cur[i]) !== v0) return false;
+    return true;
+  }
+  /* Effects in order. Each runs even while switched off (so tails stay current) and is crossfaded with its dry input.
+     An effect at rest at the current morph position fades linearly to dry over 15 ms and goes idle: it costs nothing,
+     and it is replaced by a fresh instance, so when it is turned up again no stale echoes or reverb come back. On waking
+     it runs unheard for 25 ms (its delay lines start empty, and Lo-fi and Drive delay the sound slightly), then fades in.
+     Judging rest at the current position (not on both sides) keeps each end of the morph exactly as it is when the
+     other side changes: an effect at rest at full A is idle there, whatever B does. */
   renderFx(L, R, p, len) {
     const v = this.val, dryL = this.dryL, dryR = this.dryR;
-    for (let s = 0; s < 4; s++) {
-      const inst = this.fxInst[s]; if (!inst) continue;
-      const switching = this.fxNext[s] !== null;
-      if (switching && this.fxBy[s] <= 0) {
-        this.fxInst[s] = this.makeFx(this.fxNext[s], s); this.fxType[s] = this.fxNext[s]; this.fxNext[s] = null;
-        this.computeActive();   // its parameters resolve from the next sub-block; this one passes dry
-        continue;
-      }
-      const tgt = this.fxOn[s] ? 1 : 0, c = this.byC, sw = this.swStep;
-      if (inst instanceof FxDelay) inst.spill = this.dlSpill[s];
+    if (this.fxFirst) { this.fxFirst = false; for (let s = 0; s < this.nFx; s++) { const r = this.fxAtRest(s); this.fxIdle[s] = r; this.fxBy[s] = r || !this.fxOn[s] ? 0 : 1; } }
+    for (let s = 0; s < this.nFx; s++) {
+      const rest = this.fxAtRest(s);
+      if (this.fxIdle[s]) { if (rest) continue; this.fxIdle[s] = false; this.fxBy[s] = 0; this.fxWarm[s] = this.warmN; }
+      else if (rest && this.fxBy[s] <= 0) { this.fxIdle[s] = true; this.fxInst[s] = this.makeFx(this.fxType[s], s); continue; }
+      const warm = this.fxWarm[s] > 0; if (warm) this.fxWarm[s] -= len;
+      const inst = this.fxInst[s], tgt = this.fxOn[s] && !warm ? 1 : 0, c = this.byC, sw = this.swStep;
+      if (inst instanceof FxDelay) inst.spill = this.dlSpill;
       for (let i = 0; i < len; i++) { dryL[i] = L[p + i]; dryR[i] = R[p + i]; }
       inst.process(L, R, p, len, v, this.xP[s]);
       let by = this.fxBy[s];
       for (let i = 0; i < len; i++) {
-        by = switching ? (by > sw ? by - sw : 0) : by + (tgt - by) * c;
+        by = rest ? (by > sw ? by - sw : 0) : by + (tgt - by) * c;
         L[p + i] = dryL[i] + (L[p + i] - dryL[i]) * by; R[p + i] = dryR[i] + (R[p + i] - dryR[i]) * by;
       }
       this.fxBy[s] = by;

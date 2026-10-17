@@ -8,8 +8,8 @@ const RND = {
   posA: () => rnd(), posB: () => rnd(),
   wave: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
   pattern: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
-  // oscillator slots (Level is locked by default)
-  olevel: () => 0.5 + rnd() * 0.5, opan: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.6),
+  // oscillators: Level decides whether each one is heard on this side (see OSC_ON; oscGuard keeps at least one)
+  olevel: (side, d) => (rnd() < OSC_ON[d.slot] ? 0.5 + rnd() * 0.4 : 0), opan: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.6),
   byp: () => (rnd() < 0.8 ? 0 : rnd() * 0.5),
   pitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; },
   fine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
@@ -40,28 +40,30 @@ const RND = {
   arel: () => logr(0.03, 3),
   level: () => 0.5 + rnd() * 0.5,
   pan: () => (rnd() * 2 - 1) * 0.6,
-  // effects: full range, the synth is meant to surprise
-  drive: () => rnd(), dshape: () => rnd(), dmix: () => rnd(),
-  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.66 ? 0 : rnd()),
-  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.4 ? 0 : rnd()),
-  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.4 ? 0 : rnd() < 0.85 ? rnd() * 0.35 : rnd() < 0.8 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly 0–35%, rarely above 50%
-  rvsize: () => rnd(), rvdecay: () => logr(0.2, 20), rvdamp: () => rnd(), rvmix: () => (rnd() < 0.4 ? 0 : rnd() < 0.8 ? rnd() * 0.35 : 0.35 + rnd() * 0.65),
-  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten
+  // effects: settings over the full range (the synth is meant to surprise); every effect is always in the chain,
+  // so each mix is 0 (off on this side) often enough that a side hears about three effects on average
+  drive: () => rnd(), dshape: () => rnd(), dmix: () => (rnd() < 0.6 ? 0 : rnd()),
+  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.8 ? 0 : rnd()),
+  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.65 ? 0 : rnd()),
+  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.55 ? 0 : rnd() < 0.75 ? rnd() * 0.35 : rnd() < 0.6 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly up to 35%, rarely above 50%
+  rvsize: () => rnd(), rvdecay: () => logr(0.2, 20), rvdamp: () => rnd(), rvmix: () => (rnd() < 0.5 ? 0 : rnd() < 0.65 ? rnd() * 0.35 : 0.35 + rnd() * 0.65),
+  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten (and lofiGate turns it all off 70% of the time)
   lwow: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lflut: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lchar: () => rnd() ** 2,
   ldrop: () => (rnd() < 0.9 ? 0 : rnd() ** 2), lcodec: () => (rnd() < 0.66 ? 0 : rnd() ** 2),
   lnoise: () => rnd(), lnmix: () => (rnd() < 0.85 ? rnd() * 0.15 : 0.15 + rnd() * 0.2),   // never above 35%, mostly 0–15%
-  ottdepth: () => rnd(), otttime: () => logr(0.1, 4),
+  ottdepth: () => (rnd() < 0.5 ? 0 : 0.05 + rnd() ** 1.5 * 0.55), otttime: () => logr(0.1, 4),
   ottlo: () => logr(40, 500), otthi: () => logr(600, 10000),
   ottgl: () => (rnd() * 2 - 1) * 3, ottgm: () => (rnd() * 2 - 1) * 3, ottgh: () => (rnd() * 2 - 1) * 3,   // mixed signs enforced in mixOttGains
   ottout: () => 0,
 };
 const TABLE_CHOICES = Object.keys(PRESETS).filter(n => n !== 'Sine');
-const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side))));
+const OSC_ON = [0.85, 0.4, 0.3, 0.4];   // chance each oscillator is heard on a side: Wavetable 1, Wavetable 2, Sub, Sampler
+const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side, d))));
 // Keep morphs dramatic: a side's new value lands at least 15% of the knob's throw away from the other side.
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -71,22 +73,37 @@ function rvApart(d, side, other) {
 // A parameter is locked if its own padlock is on or its whole section is locked.
 // Section locks sit on top of the individual ones, so unlocking a section brings back each knob's own setting.
 const isLocked = d => !!state.locks[d.id] || !!state.secLocks[d.group];
-// only parameters that are part of the sound (each slot's current type) are randomized; the rest keep their remembered values
-const inGroup = (d, g) => (!g || d.group === g) && isActive(d);
-// OTT band gains: within ±3 dB, and never all boosting or all cutting on one side (per OTT slot)
+const inGroup = (d, g) => !g || d.group === g;
+const isFree = i => !isLocked(DEFS[i]) && !state.links[DEFS[i].id];
+/* OTT band gains: within ±3 dB, and never all boosting or all cutting on one side. A side where OTT is off
+   (Depth 0) gets flat band gains, so it is truly off there (and costs nothing when it's off on both sides). */
 function mixOttGains(side, g) {
-  for (let slot = 0; slot < 4; slot++) {
-    if (state.fxType[slot] !== 'ott' || !inGroup(DEFS[xi(slot, 'ottgl')], g)) continue;
-    const ix = ['ottgl', 'ottgm', 'ottgh'].map(k => xi(slot, k));
-    const free = ix.filter(i => !isLocked(DEFS[i]) && !state.links[DEFS[i].id]);
-    if (!free.length) continue;
-    const val = i => MorphEngine.denorm(DEFS[i], state[side][i]);
-    const sg = ix.map(val).filter(x => Math.abs(x) > 0.05).map(Math.sign);
-    if (sg.length === 3 && sg.every(x => x === sg[0])) {
-      const i = free[Math.floor(rnd() * free.length)];
-      state[side][i] = norm(DEFS[i], -val(i));
-    }
+  if (!inGroup(DEFS[IX.ottgl], g)) return;
+  const ix = ['ottgl', 'ottgm', 'ottgh'].map(k => IX[k]), free = ix.filter(isFree);
+  if (!free.length) return;
+  if (state[side][IX.ottdepth] === 0) { free.forEach(i => { state[side][i] = norm(DEFS[i], 0); }); return; }
+  const val = i => MorphEngine.denorm(DEFS[i], state[side][i]);
+  const sg = ix.map(val).filter(x => Math.abs(x) > 0.05).map(Math.sign);
+  if (sg.length === 3 && sg.every(x => x === sg[0])) {
+    const i = free[Math.floor(rnd() * free.length)];
+    state[side][i] = norm(DEFS[i], -val(i));
   }
+}
+// Lo-fi is off on a side 70% of the time: every amount at 0
+const LOFI_AMOUNTS = ['lwow', 'lflut', 'lchar', 'lnmix', 'ldrop', 'lcodec'];
+function lofiGate(side, g) {
+  if (!inGroup(DEFS[IX.lwow], g) || rnd() >= 0.7) return;
+  LOFI_AMOUNTS.map(k => IX[k]).filter(isFree).forEach(i => { state[side][i] = 0; });
+}
+// at least one oscillator is heard on each side: if every Level came up 0, one free oscillator comes on (by the same odds)
+function oscGuard(side) {
+  const lv = s => oi(s, 'olevel');
+  if (OSC_KIND.some((_, s) => state[side][lv(s)] > 0)) return;
+  const free = OSC_KIND.map((_, s) => s).filter(s => isFree(lv(s)));
+  if (!free.length) return;
+  let r = rnd() * free.reduce((t, s) => t + OSC_ON[s], 0), s = free[0];
+  for (const k of free) { if (r < OSC_ON[k]) { s = k; break; } r -= OSC_ON[k]; }
+  state[side][lv(s)] = norm(DEFS[lv(s)], 0.5 + rnd() * 0.4);
 }
 // Formant, Modulation, Delay and Reverb mixes (in whichever slots hold them): at most two above 50%, and at most one above 90%
 function effectMixRules(side, g) {
@@ -102,8 +119,8 @@ function effectMixRules(side, g) {
 // Wavetable slot that goes through the filter is nearly pure, the filter leaves band-pass for low-pass and its cutoff moves toward the open end.
 function sineGuard(side) {
   const ci = IX.cutoff, mi = IX.mode, cd = DEFS[ci], md = DEFS[mi];
-  for (let s = 0; s < 4; s++) {
-    if (state.oscType[s] !== 'wt' || state[side][oi(s, 'byp')] > 0.5 || isLocked(cd) || state.links[cd.id]) continue;
+  for (const s of WT_SLOTS) {
+    if (state[side][oi(s, 'olevel')] === 0 || state[side][oi(s, 'byp')] > 0.5 || isLocked(cd) || state.links[cd.id]) continue;
     MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
     MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
@@ -119,7 +136,7 @@ function sineGuard(side) {
 }
 /* Loudness guard: a filter that passes almost none of the oscillators' harmonics (a band or high-pass far above
    them, a low-pass shut below them) leaves a side near silent. For middle C (plus each slot's pitch), the harmonics
-   of every active slot go through its Bypass split and the filter, at the filter envelope's peak and at sustain.
+   of every oscillator heard on that side go through its Bypass split and the filter, at the filter envelope's peak and at sustain.
    If less than 1% of the power (-20 dB) gets through at both, that side's filter is re-rolled (up to 10 times),
    and as a last resort it opens up as a low-pass. */
 function filterMag2(f, fc, reso, mode) {
@@ -130,7 +147,7 @@ function filterMag2(f, fc, reso, mode) {
 }
 // harmonics [frequency, power] of slot s on this side, for a note
 function slotHarmonics(s, side, f0) {
-  const t = state.oscType[s], val = key => MorphEngine.denorm(DEFS[oi(s, key)], state[side][oi(s, key)]), harm = [];
+  const t = OSC_KIND[s], val = key => MorphEngine.denorm(DEFS[oi(s, key)], state[side][oi(s, key)]), harm = [];
   let re, im;
   if (t === 'wt') {
     MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
@@ -138,7 +155,7 @@ function slotHarmonics(s, side, f0) {
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
     re = W.fr[0]; im = W.fr[1];
   } else if (t === 'smp') {   // the spectrum of the sample this side mostly plays, from its Start point, at this note's speed
-    const ref = state.smp[s][val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? (smpData[s].A && smpData[s].A.id === ref.id ? smpData[s].A : smpData[s].B && smpData[s].B.id === ref.id ? smpData[s].B : null) : smpFor(ref);
+    const ref = state.smp[val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? (smpData.A && smpData.A.id === ref.id ? smpData.A : smpData.B && smpData.B.id === ref.id ? smpData.B : null) : smpFor(ref);
     if (!data) return [[f0, 1]];
     const N = 2048, st = Math.floor(val('sstart') * Math.max(0, data.d.length - N)), fr = new Float64Array(N), fi = new Float64Array(N);
     for (let i = 0; i < N; i++) fr[i] = (data.d[st + i] || 0) * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N));
@@ -152,9 +169,9 @@ function slotHarmonics(s, side, f0) {
 function passedDb(side) {
   const val = i => MorphEngine.denorm(DEFS[i], state[side][i]);
   const cut = val(IX.cutoff), reso = val(IX.reso), mode = val(IX.mode), env = val(IX.envamt), kt = val(IX.keytrack), fsus = val(IX.fsus);
-  const p1 = state.oscType[0] === 'wt' ? val(oi(0, 'pitch')) : 0;
-  const slots = [0, 1, 2, 3].filter(s => state.oscType[s] !== 'off').map(s => {
-    const t = state.oscType[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : p1 + 12 * val(oi(s, 'soct')));
+  const p1 = val(oi(0, 'pitch'));   // the Sub follows Wavetable 1
+  const slots = OSC_KIND.map((t, s) => s).filter(s => state[side][oi(s, 'olevel')] > 0).map(s => {
+    const t = OSC_KIND[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : p1 + 12 * val(oi(s, 'soct')));
     return { note, harm: slotHarmonics(s, side, 440 * Math.pow(2, (note - 69) / 12)), lv: val(oi(s, 'olevel')) ** 2, byp: val(oi(s, 'byp')) };
   });
   let dry = 0, best = 0;
@@ -189,12 +206,10 @@ function randomizeSide(side, g, raw) {
     if (state.links[d.id]) return;   // shared values only change with Randomize all or Randomize linked
     state[side][i] = raw ? rvRaw(d) : rvApart(d, side, state[other][i]);
   });
-  if (!raw) { mixOttGains(side, g); effectMixRules(side, g); }
-  for (let s = 0; s < 4; s++) {   // each Wavetable slot's table for this side, unless its section is locked
-    const grp = `Osc ${s + 1}`;
-    if (state.oscType[s] === 'wt' && (!g || g === grp) && !state.secLocks[grp]) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }
-    if (state.oscType[s] === 'smp' && (!g || g === grp) && !state.secLocks[grp]) state.smp[s][side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
-  }
+  if (!raw) { oscGuard(side); lofiGate(side, g); mixOttGains(side, g); effectMixRules(side, g); }
+  const mine = s => (!g || g === OSC_NAMES[s]) && !state.secLocks[OSC_NAMES[s]];
+  for (const s of WT_SLOTS) if (mine(s)) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }   // each Wavetable's table for this side, unless its section is locked
+  if (mine(SMP_SLOT)) state.smp[side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
   if (!raw) { sineGuard(side); loudnessGuard(side); }
 }
 $('rndA').addEventListener('click', () => bulk(() => randomizeSide('A')));
@@ -202,43 +217,14 @@ $('rndB').addEventListener('click', () => bulk(() => randomizeSide('B')));
 function randomizeLinked(g, raw) {   // linked knobs only: one new value shared by both sides
   DEFS.forEach((d, i) => { if (inGroup(d, g) && state.links[d.id] && !d.single && !isLocked(d)) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, 'A'); });
 }
-/* Slot types are shared by both sides, so they change with Randomize all (and launch) and with a slot's
-   both-sides dice, never with a side's own buttons or dice (that would change the other end too). A locked
-   section keeps its type. There is never more than one Sub.
-   Randomize all: slot 1 is never Off; slots 2-4 are often Off. FX slots get four different effects from all
-   seven, kept in chain order (so OTT, when it comes up, is last). A slot's dice pick any engine but Off
-   (any effect not used in another slot) at even odds. */
-const OSC_ODDS = [[['wt', 0.6], ['smp', 0.25], ['sub', 0.15]], [['sub', 0.3], ['wt', 0.2], ['smp', 0.1], ['off', 0.4]],
-  [['wt', 0.15], ['smp', 0.1], ['off', 0.75]], [['wt', 0.15], ['smp', 0.1], ['off', 0.75]]];
-const FX_POOL = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'];
-const pickOdds = odds => { const tot = odds.reduce((t, x) => t + x[1], 0); let r = rnd() * tot; for (const [t, w] of odds) { if (r < w) return t; r -= w; } return odds[odds.length - 1][0]; };
-// no second Sub: drop it from the odds when another slot already holds one
-const oscOdds = (s, odds) => odds.filter(([t]) => t !== 'sub' || !state.oscType.some((x, k) => k !== s && x === 'sub'));
-function randomizeTypes() {
-  for (let s = 0; s < 4; s++) if (!state.secLocks[`Osc ${s + 1}`]) state.oscType[s] = 'off';   // free slots start empty so the Sub rule sees only kept ones
-  for (let s = 0; s < 4; s++) if (!state.secLocks[`Osc ${s + 1}`]) state.oscType[s] = pickOdds(oscOdds(s, OSC_ODDS[s]));
-  const locked = s => !!state.secLocks[`FX ${s + 1}`], free = [0, 1, 2, 3].filter(s => !locked(s));
-  const taken = [0, 1, 2, 3].filter(locked).map(s => state.fxType[s]);
-  const chosen = FX_POOL.filter(t => !taken.includes(t)).map(t => [rnd(), t]).sort((a, b) => a[0] - b[0]).slice(0, free.length).map(x => x[1])
-    .sort((a, b) => FX_POOL.indexOf(a) - FX_POOL.indexOf(b));
-  free.forEach((s, k) => { state.fxType[s] = chosen[k]; });
-}
-function randomizeSlotType(g) {   // a slot's both-sides dice
-  if (state.secLocks[g]) return;
-  const m = /^(Osc|FX) (\d)$/.exec(g); if (!m) return;
-  const s = +m[2] - 1;
-  if (m[1] === 'Osc') state.oscType[s] = pickOdds(oscOdds(s, OSC_TYPES.filter(([t]) => t !== 'off').map(([t]) => [t, 1])));
-  else { const pool = FX_POOL.filter(t => !state.fxType.some((x, k) => k !== s && x === t)); state.fxType[s] = pool[Math.floor(rnd() * pool.length)]; }
-}
 function randomizeAll(g, raw) {
-  if (!g) randomizeTypes(); else randomizeSlotType(g);
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
-  for (let s = 0; s < 4; s++) if (state.fxType[s] === 'delay' && (!g || g === `FX ${s + 1}`) && !state.secLocks[`FX ${s + 1}`]) state.dlSpill[s] = rnd() < 0.5;   // Cut or Spill
-  updateDlUI();
+  const mine = grp => (!g || g === grp) && !state.secLocks[grp];
+  if (mine('Delay')) state.dlSpill = rnd() < 0.5;   // Cut or Spill
   // Loop: usually on when either side plays a sustained sample, usually off for plucks and hits
-  for (let s = 0; s < 4; s++) if (state.oscType[s] === 'smp' && (!g || g === `Osc ${s + 1}`) && !state.secLocks[`Osc ${s + 1}`]) {
-    const sus = ['A', 'B'].some(k => { const r = state.smp[s][k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
-    state.smpLoop[s] = rnd() < (sus ? 0.8 : 0.15);
+  if (mine('Sampler')) {
+    const sus = ['A', 'B'].some(k => { const r = state.smp[k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
+    state.smpLoop = rnd() < (sus ? 0.8 : 0.15);
   }
   randomizeLinked(g, raw);
   state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
