@@ -47,9 +47,8 @@ function sendAll() {   // runs during startup, before ready is set
   for (const s of WT_SLOTS) { postTable(s, 'A'); postTable(s, 'B'); }
   send({ type:'blend', v: state.spectral });
   state.fxOn.forEach((on, i) => send({ type:'bypass', i, on }));
-  send({ type:'dlmode', v: state.dlSpill });
+  state.oscOn.forEach((on, i) => send({ type:'oscOn', i, on }));
   postSample('A'); postSample('B');
-  send({ type:'smpLoop', i: SMP_SLOT, v: state.smpLoop });
   send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono });
   if (typeof buildSeq === 'function') { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); }
 }

@@ -2,6 +2,7 @@
    PARAMETER REGISTRY
    curve: 'lin' | 'log' | 'int' | 'pow2'   snap: switch instead of blending
    single: 'A' | 'B' belongs to one side only and never morphs
+   opts: a two-way switch per side (shown as buttons, not a knob; no curve)
 
    The architecture is fixed (2026-10-17), so any two patches can morph into
    each other: four oscillators (two Wavetables, a Sub, a Sampler) and all seven
@@ -31,6 +32,7 @@ const OSC_ENG = {
   smp: [
     P_('sample', 'Sample', 0, 1, 'lin', 0, 1), P_('sstart', 'Start', 0, 1, 'lin', 0, 0),
     P_('spitch', 'Pitch', -24, 24, 'int', 0, 0), P_('sfine', 'Fine', -100, 100, 'lin', 0, 0), P_('strack', 'Key track', 0, 1, 'lin', 1, 1),
+    P_('sloop', 'Playback', 0, 1, 'int', 0, 0, { opts: ['One-shot', 'Loop'] }),   // each side's sample plays with its own setting
   ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
 };
@@ -53,7 +55,8 @@ const FX_ENG = {
   mod: [P_('mtype', 'Type', 0, 1, 'lin', 0, 0), P_('mrate', 'Rate', 0.02, 10, 'log', 0.4, 0.4), P_('mdepth', 'Depth', 0, 1, 'lin', 0.5, 0.5),
     P_('mfb', 'Feedback', 0, 1, 'lin', 0.3, 0.3), P_('mmix', 'Mix', 0, 1, 'lin', 0, 0)],
   delay: [P_('dltime', 'Time', 0, 11, 'int', 7, 7), P_('dlfb', 'Feedback', 0, 0.95, 'lin', 0.4, 0.4), P_('dlpp', 'Ping-pong', 0, 1, 'lin', 0.6, 0.6),
-    P_('dltone', 'Tone', 0, 1, 'lin', 0.5, 0.5), P_('dlmix', 'Mix', 0, 1, 'lin', 0, 0.3)],
+    P_('dltone', 'Tone', 0, 1, 'lin', 0.5, 0.5), P_('dlmix', 'Mix', 0, 1, 'lin', 0, 0.3),
+    P_('dlspill', 'Time changes', 0, 1, 'int', 0, 0, { opts: ['Cut', 'Spill'], snap: true })],   // switches to B's setting halfway through the morph
   reverb: [P_('rvsize', 'Size', 0, 1, 'lin', 0.5, 0.7), P_('rvdecay', 'Decay', 0.2, 20, 'log', 1.5, 3), P_('rvdamp', 'Damping', 0, 1, 'lin', 0.5, 0.4), P_('rvmix', 'Mix', 0, 1, 'lin', 0.12, 0.3)],
   lofi: [P_('lwow', 'Wow', 0, 1, 'lin', 0, 0), P_('lflut', 'Flutter', 0, 1, 'lin', 0, 0), P_('lchar', 'Character', 0, 1, 'lin', 0, 0),
     P_('lnoise', 'Noise', 0, 1, 'lin', 0, 0), P_('lnmix', 'Noise mix', 0, 1, 'lin', 0, 0), P_('ldrop', 'Dropouts', 0, 1, 'lin', 0, 0), P_('lcodec', 'Codec', 0, 1, 'lin', 0, 0)],
@@ -85,6 +88,7 @@ const FMT = {
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
   sample: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'), sstart: pct,
   spitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', sfine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`, strack: pct,
+  sloop: v => ['One-shot', 'Loop'][v], dlspill: v => ['Cut', 'Spill'][v],
   sshape: v => (v < 0.02 ? 'Sine' : Math.abs(v - 0.5) < 0.02 ? 'Triangle' : v > 0.98 ? 'Square' : pct(v)), sdrive: pct,
   posA: pct, posB: pct,
   drive: pct, dshape: pct, dmix: pct,

@@ -23,7 +23,10 @@ test.describe('Randomize all (shaped)', () => {
         const linkedPitch = WT_SLOTS.map(s => [MorphEngine.denorm(DEFS[oi(s, 'pitch')], state.A[oi(s, 'pitch')]), MorphEngine.denorm(DEFS[oi(s, 'fine')], state.A[oi(s, 'fine')])]);
         // effects heard on each side: not every one of its rest settings at rest
         const heard = ['A', 'B'].map(k => FX_KIND.filter(t => Object.entries(MorphEngine.FX_CLASSES[t].REST).some(([key, v]) => MorphEngine.denorm(DEFS[IX[key]], state[k][IX[key]]) !== v)).length);
-        runs.push({ vals, spreadFails, lockedChanged, linkedPitch, heard, passed: [passedDb('A'), passedDb('B')] });
+        // the oscillators heard together, against one full-level sawtooth (level match)
+        const mixDb = ['A', 'B'].map(k => { let p = 0, clamped = false; OSC_KIND.forEach((_, s) => { const lv = state[k][oi(s, 'olevel')]; if (lv > 0) { p += oscPower(s, k) * (lv / 0.8) ** 2; if (lv >= 1 || lv <= 0.05) clamped = true; } });
+          return { db: 10 * Math.log10(p / LEVEL_RMS ** 2), clamped, n: OSC_KIND.filter((_, s) => state[k][oi(s, 'olevel')] > 0).length }; });
+        runs.push({ vals, spreadFails, lockedChanged, linkedPitch, heard, mixDb, passed: [passedDb('A'), passedDb('B')] });
       }
       return runs;
     }, RUNS);
@@ -41,10 +44,18 @@ test.describe('Randomize all (shaped)', () => {
     for (const v of sides) expect(v.olevel.some(x => x > 0)).toBe(true);
     [0.86, 0.41, 0.31, 0.41].forEach((want, s) => near(share(sides, v => v.olevel[s] > 0), want, 0.06));
   });
-  test('each side hears about three effects on average', () => {
-    const n = S.flatMap(r => r.heard), mean = n.reduce((a, b) => a + b, 0) / n.length;
-    expect(mean).toBeGreaterThan(2.2); expect(mean).toBeLessThan(3.3);
+  test('level match: whichever oscillators a side hears, together they sit at one sawtooth\'s level', () => {
+    const m = S.flatMap(r => r.mixDb), free = m.filter(x => !x.clamped);
+    expect(free.length / m.length).toBeGreaterThan(0.85);
+    for (const x of free) expect(Math.abs(x.db)).toBeLessThan(0.01);
+    for (const x of m) expect(x.db).toBeLessThan(0.01);   // a Level at 100% can leave a quiet sample short, never over
+    expect(share(m, x => x.n > 1)).toBeGreaterThan(0.6);  // more than one oscillator on most sides
   });
+  test('each side hears about 2.3 effects on average', () => {
+    const n = S.flatMap(r => r.heard), mean = n.reduce((a, b) => a + b, 0) / n.length;
+    expect(mean).toBeGreaterThan(1.9); expect(mean).toBeLessThan(2.7);
+  });
+  test('Cut / Spill is 50/50 on each side', () => near(share(all('dlspill'), x => x === 1), 0.5, 0.06));
   test('Wave stays at full range (A 0%, B 100%) in every Wavetable slot', () => {
     for (const r of S) { (r.vals.A.wave || []).forEach(x => expect(x).toBe(0)); (r.vals.B.wave || []).forEach(x => expect(x).toBe(1)); }
   });
@@ -52,8 +63,8 @@ test.describe('Randomize all (shaped)', () => {
     const fails = S.flatMap(r => r.spreadFails);
     expect(fails, fails.join(', ')).toEqual([]);
   });
-  test('effects off on a side: Drive 60%, Formant 80%, Modulation 65%, Delay 55%, Reverb 50%, OTT 50%', () => {
-    for (const [k, want] of [['dmix', 0.6], ['fmix', 0.8], ['mmix', 0.65], ['dlmix', 0.55], ['rvmix', 0.5], ['ottdepth', 0.5]]) near(share(all(k), x => x === 0), want, 0.06);
+  test('effects on for a side: Drive 20%, Formant 10%, Modulation 40%, Delay 50%, Reverb 50%, OTT 50%', () => {
+    for (const [k, want] of [['dmix', 0.2], ['fmix', 0.1], ['mmix', 0.4], ['dlmix', 0.5], ['rvmix', 0.5], ['ottdepth', 0.5]]) near(share(all(k), x => x > 0), want, 0.06);
   });
   test('effect mixes: at most two above 50% and at most one above 90%', () => {
     for (const v of perSide()) {
@@ -75,12 +86,12 @@ test.describe('Randomize all (shaped)', () => {
     for (const k of ['glide', 'vrfade']) expect(share(S, r => r.vals.A[k][0] === 0 && r.vals.B[k][0] === 0), k).toBeGreaterThan(0.1);
     expect(share(S.filter(r => r.vals.A.unison), r => r.vals.A.unison[0] === 0 && r.vals.B.unison[0] === 0)).toBeGreaterThan(0.1);
   });
-  test('lo-fi: off entirely on a side 70% of the time; otherwise Noise mix never above 35%, Wow, Flutter, Codec off 66%, Dropouts off 90%', () => {
+  test('lo-fi: off entirely on a side 90% of the time; otherwise Noise mix never above 35%, Wow, Flutter, Codec off 66%, Dropouts off 90%', () => {
     const sides = perSide(), on = sides.filter(v => ['lwow', 'lflut', 'lchar', 'lnmix', 'ldrop', 'lcodec'].some(k => v[k][0] !== 0));
-    near(1 - on.length / sides.length, 0.7, 0.05);
+    near(1 - on.length / sides.length, 0.9, 0.04);
     for (const x of all('lnmix')) expect(x).toBeLessThanOrEqual(0.35 + 1e-9);
-    for (const k of ['lwow', 'lflut', 'lcodec']) near(share(on, v => v[k][0] === 0), 0.66, 0.08);
-    expect(share(on, v => v.ldrop[0] === 0)).toBeGreaterThan(0.84);
+    for (const k of ['lwow', 'lflut', 'lcodec']) near(share(on, v => v[k][0] === 0), 0.66, 0.13);   // about 80 sides with Lo-fi on
+    expect(share(on, v => v.ldrop[0] === 0)).toBeGreaterThan(0.8);
   });
   test('OTT band gains within ±3 dB, never all boosting or all cutting; flat where OTT is off', () => {
     for (const v of perSide()) {

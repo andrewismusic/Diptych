@@ -6,8 +6,9 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
   test(`${w}x${h}: everything fits without scrolling`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     await openSynth(page);
-    for (const t of ['launch', 'every effect off']) {   // switching effects off dims their knobs but must not move anything
-      if (t !== 'launch') await page.evaluate(() => document.querySelectorAll('[data-fx]').forEach(b => b.click()));
+    for (const t of ['Basic', 'Basic, everything off', 'Full', 'Full, everything back on']) {   // both views; switching off dims but must not move anything
+      if (t.includes('off') || t.includes('back on')) await page.evaluate(() => document.querySelectorAll('[data-fx], [data-osc]').forEach(b => b.click()));
+      if (t === 'Full') await page.click('#viewFull');
       const m = await page.evaluate(() => {
         const main = document.querySelector('main'), app = $('app').getBoundingClientRect();
         const cut = [...document.querySelectorAll('main .group')].filter(g => g.scrollHeight > g.clientHeight + 1 || g.getBoundingClientRect().bottom > main.getBoundingClientRect().bottom + 1).map(g => g.dataset.group);
@@ -22,6 +23,14 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
     }
   });
 }
+
+test('the Basic view comes out larger than the Full view', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openSynth(page);
+  const size = () => page.evaluate(() => $('k' + IX.cutoff).getBoundingClientRect().width);
+  const basic = await size(); await page.click('#viewFull'); const full = await size();
+  expect(basic).toBeGreaterThan(full * 1.15);
+});
 
 test('knobs still drag when the layout is scaled down', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });

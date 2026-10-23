@@ -5,14 +5,14 @@ import { openSynth } from './helpers.js';
 
 const KEY = 'diptych-v5';
 const snapshot = page => page.evaluate(() => JSON.stringify({ A: state.A, B: state.B, C: state.C, links: state.links, locks: state.locks,
-  fxOn: state.fxOn, dlSpill: state.dlSpill, smp: state.smp, smpLoop: state.smpLoop,
+  fxOn: state.fxOn, oscOn: state.oscOn, smp: state.smp,
   tables: tables.map(t => [t.A.name, t.B.name, t.A.frames.length, t.B.frames.length]), seq: state.seq }));
 const frames = page => page.evaluate(() => tables.flatMap(t => [...t.A.frames, ...t.B.frames]).map(f => Array.from(f)));
 const waitForSave = page => page.waitForTimeout(700);   // saves are debounced by 400 ms
 
 test('Undo after a relaunch restores the previous session exactly, switches included', async ({ page }) => {
   await openSynth(page, { seed: 31, storage: {} });
-  await page.evaluate(() => { state.links.reso = true; state.locks.fatk = true; state.fxOn[2] = false; state.dlSpill = !state.dlSpill; state.smpLoop = !state.smpLoop; save(); });
+  await page.evaluate(() => { state.links.reso = true; state.locks.fatk = true; state.fxOn[2] = false; state.oscOn[1] = false; save(); });
   await waitForSave(page);
   const before = await snapshot(page), framesBefore = await frames(page);
   await page.reload();
@@ -71,4 +71,16 @@ test('a corrupt saved patch falls back to defaults instead of breaking the page'
   await openSynth(page, { seed: 35, storage: { [KEY]: '{not json' } });
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => state.A.length === DEFS.length)).toBe(true);
+});
+
+test('ver 1 patches: the one Loop and Cut / Spill setting becomes both sides\' setting', async ({ page }) => {
+  await openSynth(page, { seed: 38, storage: {} });
+  await waitForSave(page);
+  const saved = JSON.parse(await page.evaluate(k => localStorage.getItem(k), KEY));
+  saved.ver = 1; saved.smpLoop = true; saved.dlSpill = true;
+  const drop = ['o4.sloop', 'dlspill'].map(id => saved.ids.indexOf(id)).sort((a, b) => b - a);
+  for (const j of drop) for (const k of ['ids', 'A', 'B', 'C']) saved[k].splice(j, 1);
+  await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(saved)]);
+  await page.reload(); await page.click('#undo');
+  expect(await page.evaluate(() => ['o4.sloop', 'dlspill'].flatMap(id => [state.A[IX[id]], state.B[IX[id]]]))).toEqual([1, 1, 1, 1]);
 });

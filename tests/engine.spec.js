@@ -26,9 +26,9 @@ test('random patches never produce NaN and stay within full scale', async ({ pag
 test('CPU: 8 notes, all four oscillators and all seven effects stay well under real time', async ({ page }) => {
   await openSynth(page);
   const ratio = await page.evaluate(() => {
-    const patch = T.flat({ 'o1.unison': 1, 'o2.unison': 1, 'o2.olevel': 0.8, 'o3.olevel': 0.8, 'o4.olevel': 0.8, 'o3.sshape': 0.8, 'o2.byp': 0.5, 'o4.byp': 0.5,
+    const patch = T.flat({ 'o4.sloop': 1, 'o1.unison': 1, 'o2.unison': 1, 'o2.olevel': 0.8, 'o3.olevel': 0.8, 'o4.olevel': 0.8, 'o3.sshape': 0.8, 'o2.byp': 0.5, 'o4.byp': 0.5,
       drive: 0.5, dmix: 0.5, fmix: 0.5, mmix: 0.5, lchar: 0.5, lwow: 0.5, lcodec: 0.5, lnmix: 0.2, dlmix: 0.5, rvmix: 0.5, ottdepth: 1 });
-    const o = { patch, samples: { A: 'Vocal ah', B: 'Bell' }, smpLoop: true, notes: [36, 48, 55, 60, 63, 67, 72, 84].map(n => [n, 0, 9999]) };
+    const o = { patch, samples: { A: 'Vocal ah', B: 'Bell' }, notes: [36, 48, 55, 60, 63, 67, 72, 84].map(n => [n, 0, 9999]) };
     T.render({ ...o, blocks: 200 });   // warm up the JIT
     return T.render({ ...o, blocks: 750 }).ms / 2000;   // 2 s
   });
@@ -118,8 +118,8 @@ test('the Sub follows Wavetable 1 pitch, an octave or two below', async ({ page 
 
 // render the Sampler alone with a built-in sample on both sides
 const smpRender = (page, o) => page.evaluate(o => {
-  const r = T.render({ fxOn: T.noFx, blocks: o.blocks || 400, notes: o.notes, samples: { A: o.name, B: o.name }, smpLoop: !!o.loop,
-    patch: T.flat({ cutoff: 18000, envamt: 0, asus: 1, arel: 0.01, 'o1.olevel': 0, 'o4.olevel': 0.8, ...(o.over || {}) }), events: o.events });
+  const r = T.render({ fxOn: T.noFx, blocks: o.blocks || 400, notes: o.notes, samples: { A: o.name, B: o.name },
+    patch: T.flat({ cutoff: 18000, envamt: 0, asus: 1, arel: 0.01, 'o1.olevel': 0, 'o4.olevel': 0.8, 'o4.sloop': o.loop ? 1 : 0, ...(o.over || {}) }), events: o.events });
   const hz = (a, b) => {   // autocorrelation: the lag (40 to 600 samples) where the sound best matches itself
     let best = 0, bl = 0;
     for (let lag = 40; lag <= 600; lag++) { let c = 0, e = 0; for (let i = a; i < b; i++) { c += r.R[i] * r.R[i + lag]; e += r.R[i + lag] ** 2; } c /= Math.sqrt(e + 1e-12); if (c > best) { best = c; bl = lag; } }
@@ -154,4 +154,26 @@ test('Sampler: restarting a sounding note and looping do not click', async ({ pa
   const w = Math.round(2.4 * 48000);
   const l = await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999]], blocks: 1000, loop: true, click: [w - 2000, w + 2000, w - 30000, w - 10000] });
   expect(l.ratio, 'loop wrap').toBeLessThan(1.3);
+});
+
+test('Loop is per side: at full A only A\'s setting counts, and the oscillator On/Off fades without clicking', async ({ page }) => {
+  await openSynth(page);
+  const late = Math.round(3.2 * 48000);   // Vocal ah is 2.4 s long
+  const aOnly = await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999]], blocks: 1300, late, over: { 'o4.sloop': [1, 0] } });
+  const bOnly = await smpRender(page, { name: 'Vocal ah', notes: [[60, 0, 9999]], blocks: 1300, late, over: { 'o4.sloop': [0, 1] } });
+  expect(aOnly.rmsLate).toBeGreaterThan(0.01);   // morph is at A: A loops
+  expect(bOnly.rmsLate).toBeLessThan(1e-4);      // B's Loop is not heard at full A
+  const r = await clickCheck(page, { events: { 300: { type:'oscOn', i:0, on:false }, 400: { type:'oscOn', i:0, on:true } } },
+    { steady: [[100, 290], [500, 700]], change: [[300, 330], [400, 430]] });
+  expect(r.ratio, 'oscillator On/Off').toBeLessThan(1.1);
+});
+
+test('Cut / Spill is per side and switches halfway through the morph', async ({ page }) => {
+  await openSynth(page);
+  const r = await page.evaluate(() => {
+    let seen = []; const P = T.flat({ dlspill: [0, 1], dlmix: 0.5 });
+    const at = m => { T.render({ patch: P, morph: m, blocks: 10, setup: e => { const p = e.renderFx.bind(e); e.renderFx = (...a) => { p(...a); seen.push(e.fxInst[DELAY_SLOT].spill); }; } }); const x = seen[seen.length - 1]; seen = []; return x; };
+    return [at(0), at(0.45), at(0.55), at(1)];
+  });
+  expect(r).toEqual([false, false, true, true]);
 });

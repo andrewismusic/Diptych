@@ -61,7 +61,11 @@ test('patch buttons: Copy, Swap, Reset, Undo and the dice work without errors', 
   await page.click('#copyAB');
   expect(await page.evaluate(() => tables.every(t => t.A.name === t.B.name))).toBe(true);
   await page.click('#swap'); await page.click('#rndAll'); await page.click('#rndA'); await page.click('#rndLinked');
-  for (const g of ['Wavetable 1', 'Sampler', 'Filter', 'OTT']) await page.click(`[data-dice="${g}"]:not([data-side])`);
+  for (const g of ['Wavetable 1', 'Sampler', 'Filter', 'OTT']) {   // in the Basic view the dice sit in each section's overlay
+    await page.click(`section[data-group="${g}"] .gname`);
+    await page.click(`[data-dice="${g}"]:not([data-side])`);
+    await page.click(`section[data-group="${g}"] .gdone`);
+  }
   const before = await snap();
   await page.click('#resetAll');
   // the default patch: Wavetable 1 heard, the other oscillators at Level 0
@@ -173,4 +177,53 @@ test.describe('phone', () => {
     await page.waitForFunction(() => smpData.B && smpData.B.d.length === 44100, null, { timeout: 5000 });
     expect(await page.evaluate(() => state.smp.B.name)).toBe('test-sine');
   });
+});
+
+/* Basic view and section overlays (ui/overlay.js), on desktop and on a phone */
+for (const [name, size] of [['desktop', { width: 1440, height: 900 }], ['phone', { width: 390, height: 844 }]]) {
+  test(`${name}: a section's overlay shows all its controls without moving anything, and closes`, async ({ page }) => {
+    await page.setViewportSize(size);
+    await openSynth(page);
+    const rects = () => page.evaluate(() => [...document.querySelectorAll('main .group')].map(g => { const r = g.getBoundingClientRect(); return [Math.round(r.top + scrollY), Math.round(r.left), Math.round(r.width), Math.round(r.height)].join(); }));
+    const shown = g => page.evaluate(g => [...sections[g].querySelectorAll('.kn')].filter(k => k.offsetParent).length, g);
+    expect(await page.evaluate(() => document.body.classList.contains('full'))).toBe(false);   // Basic is the default
+    const before = await rects(), basic = await shown('Delay');
+    expect(basic).toBe(3);
+    await page.locator('section[data-group="Delay"] .gname').click();
+    expect(await shown('Delay')).toBe(5);
+    await expect(page.locator('section[data-group="Delay"] [data-dice="Delay"][data-side="A"]')).toBeVisible();
+    await expect(page.locator('section[data-group="Delay"] .swrow')).toBeVisible();
+    expect(await rects()).toEqual(before);   // the section keeps its place underneath
+    const m = await page.evaluate(() => { const c = sections.Delay.querySelector('.gcard').getBoundingClientRect(), kb = $('kb').getBoundingClientRect();
+      return { right: c.right <= innerWidth + 1, left: c.left >= -1, aboveKb: c.bottom <= kb.top + 1, kbOnScreen: kb.bottom <= innerHeight + 1 }; });
+    expect(m).toEqual({ right: true, left: true, aboveKb: true, kbOnScreen: true });
+    // a per-side switch in the overlay sets only that side
+    await page.locator('section[data-group="Delay"] .seg.b [data-v="1"]').click();
+    expect(await page.evaluate(() => state.B[IX.dlspill])).toBe(1);
+    await page.keyboard.press('Escape');
+    expect(await shown('Delay')).toBe(3);
+    await page.locator('section[data-group="Filter"] .gname').click();
+    await page.locator('section[data-group="Filter"] .gdone').click();
+    expect(await page.locator('.group.open').count()).toBe(0);
+    expect(await rects()).toEqual(before);
+  });
+}
+
+test('the Full view shows every control, and the choice is remembered', async ({ page }) => {
+  await openSynth(page);
+  const hidden = () => page.evaluate(() => [...document.querySelectorAll('main .kn')].filter(k => !k.offsetParent).length);
+  expect(await hidden()).toBeGreaterThan(20);
+  await page.click('#viewFull');
+  expect(await hidden()).toBe(0);
+  await page.reload();
+  expect(await page.evaluate(() => document.body.classList.contains('full'))).toBe(true);
+  await page.click('#viewBasic');
+});
+
+test('oscillator On/Off is a bypass: it dims the section and is never randomized', async ({ page }) => {
+  await openSynth(page);
+  await page.click('section[data-group="Wavetable 2"] [data-osc]');
+  expect(await page.evaluate(() => [state.oscOn[1], sections['Wavetable 2'].classList.contains('fxoff')])).toEqual([false, true]);
+  await page.click('#rndAll');
+  expect(await page.evaluate(() => state.oscOn)).toEqual([true, false, true, true]);
 });

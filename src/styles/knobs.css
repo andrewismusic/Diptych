@@ -19,7 +19,7 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .seclocked .knobs{opacity:.75}
 .fxsw{min-height:26px;padding:2px 10px;font-size:.8rem;border-radius:13px}
 .fxsw[aria-pressed="false"]{color:var(--muted)}
-.fxoff .knobs,.fxoff .blendrow{opacity:.4}
+.fxoff .knobs,.fxoff .swrow,.fxoff .wt{opacity:.4}
 .viz{width:100%;max-width:calc(4 * 88px + 6px);height:88px;display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:2px 0 8px}
 .knob{width:72px;height:72px;touch-action:none;cursor:grab;position:relative;margin:2px 0}
 .knob.dragging{cursor:grabbing}
@@ -48,11 +48,35 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .wtcard.mute canvas{opacity:.3}   /* this side doesn't hear the oscillator (Level 0) */
 .wtlabel{align-items:center;min-height:24px}   /* room for the Sampler's menus, so every oscillator's cards line up */
 .smpsel{min-height:24px;padding:0 2px;font-size:.78rem;min-width:0;flex:1 1 auto;max-width:100%}
-.smploop button{min-height:24px;padding:0 6px;font-size:.76rem}
+.swb{min-height:24px;padding:0 7px;font-size:.76rem;flex:0 0 auto}
+.wtcard.a .swb[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:#fff}
+.wtcard.b .swb[aria-pressed="true"]{background:var(--b);border-color:var(--b);color:#fff}
+/* per-side switches (Cut / Spill): A's buttons and B's, in their colors */
+.swrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px;font-size:.88rem;color:var(--muted)}
+.swrow .swk{font-weight:600;align-self:center;margin-right:5px}
+.swrow .seg.a .swk{color:var(--a)} .swrow .seg.b .swk{color:var(--b)}
+.swrow .seg button{min-height:26px;padding:0 9px;font-size:.8rem}
+.swrow .seg button:nth-child(2){border-radius:6px 0 0 6px;margin-left:0}
+.swrow .seg.a button[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:#fff}
+.swrow .seg.b button[aria-pressed="true"]{background:var(--b);border-color:var(--b);color:#fff}
 .smpnote{color:var(--muted);font-size:.74rem}
 .smpnote:empty{display:none}
 .group[data-kind="osc"] .wt{margin-bottom:6px}
 .group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* oscillator and effect knobs keep the same height whatever their values say */
-.gname{font-weight:600;white-space:nowrap;margin-right:4px}
+.gname{font:inherit;font-weight:600;color:inherit;white-space:nowrap;margin-right:4px;border:0;background:none;padding:0;min-height:0;display:inline-flex;align-items:baseline;gap:5px;cursor:pointer}
+.gname:disabled{cursor:default;opacity:1}
+.gname .more{font-size:.75em;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:0 6px}
+.gname .more:empty{display:none}
+.full .gname{cursor:default} .full .gname .more{display:none}
+.fxh .fxsw{margin-left:auto}
+.gdone{display:none;margin-left:8px;min-height:26px;padding:0 12px;font-size:.82rem}
+/* Basic view: tiles show only their key controls; dice and padlocks live in the overlay */
+body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
+/* the overlay: the section's card lifts above the page; the section keeps its size underneath */
+.ovlback{position:fixed;left:0;right:0;top:0;bottom:var(--kbh,0px);background:rgba(10,8,20,.4);z-index:23}
+.group.open .gcard{position:fixed;left:8px;right:8px;bottom:calc(var(--kbh,0px) + 8px);max-height:calc(100dvh - var(--kbh,0px) - 24px);overflow:auto;z-index:24;
+  background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.group.open .gdone{display:inline-flex}
+.group.open .gname .more{display:none}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}

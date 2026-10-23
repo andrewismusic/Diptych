@@ -24,4 +24,5 @@ h1 span{font-weight:400;color:var(--muted)}
 .readout{color:var(--muted);font-size:.95rem}
 .readout b{color:var(--ink);font-weight:600}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
+.btns .view{margin-left:6px}
 

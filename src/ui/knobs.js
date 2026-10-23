@@ -2,7 +2,17 @@
    KNOBS
    ===================================================================== */
 // Sections with pictures. A section can be split into sub-blocks (parameters with a matching `sub`), each with its own picture.
-const VIZ = { 'Filter': [{ viz: 'vzF', name: 'Filter response' }, { sub: 'env', title: 'Envelope', viz: 'vzFE', name: 'Filter envelope' }], 'Amp envelope': [{ viz: 'vzAE', name: 'Amp envelope' }] };
+const VIZ = { 'Filter': [{ viz: 'vzF', name: 'Filter response' }, { sub: 'env', title: 'Envelope', viz: 'vzFE', name: 'Filter envelope', adv: true }], 'Amp envelope': [{ viz: 'vzAE', name: 'Amp envelope' }] };
+/* Basic view: each section shows only these key controls (by key, per engine or effect, or per section); the rest,
+   and anything marked adv, appear in the section's overlay (ui/overlay.js) or in the Full view. Sections not listed
+   show everything. */
+const BASIC = {
+  wt: ['posA', 'posB', 'unison', 'olevel'], sub: ['soct', 'sshape', 'sdrive', 'olevel'], smp: ['sstart', 'spitch', 'strack', 'olevel'],
+  Voice: ['glide', 'vdepth', 'vrate'], Filter: ['cutoff', 'reso', 'mode', 'envamt'],
+  drive: ['drive', 'dmix'], formant: ['fvowel', 'fmix'], mod: ['mtype', 'mrate', 'mmix'], delay: ['dltime', 'dlfb', 'dlmix'],
+  reverb: ['rvsize', 'rvdecay', 'rvmix'], lofi: ['lchar', 'lwow', 'lnmix'], ott: ['ottdepth', 'otttime'],
+};
+const isBasic = d => { const list = BASIC[d.eng] || BASIC[d.group]; return !list || list.includes(d.key); };
 const lockIcon = on => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="${on ? 'M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7' : 'M5.2 7V5.2a2.8 2.8 0 0 1 5.5-.8'}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const iconBtn = (id, label, single) => `<span class="icons"><button type="button" class="lock" data-plock="${id}" aria-pressed="false" aria-label="Lock ${label}"></button>${single ? '' : `<button type="button" class="lock" data-plink="${id}" aria-pressed="false" aria-label="Link ${label}"></button>`}</span>`;
 const linkIcon = on => `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${on
@@ -31,39 +41,42 @@ const knobSVG = (d, i) => `<svg viewBox="0 0 80 80" aria-hidden="false">
 </svg>`;
 
 const groupsEl = document.getElementById('groups');
-const knobHTML = (d, i) => `<div class="kn">
+const knobHTML = (d, i) => `<div class="kn${isBasic(d) ? '' : ' adv'}">
     <div class="kname">${d.label}</div>
     <div class="kwrap"><div class="knob" id="k${i}">${knobSVG(d, i)}</div>${iconBtn(d.id, d.label, d.single)}</div>
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
   </div>`;
 /* A, what you hear, and B for every oscillator. On a Wavetable the A and B cards open the editor (tap the wave
-   or Edit); on the Sampler their labels are the sample menus and the middle card holds One-shot / Loop. */
+   or Edit); on the Sampler their labels are the sample menus with each side's Loop switch. */
 const sideCard = (s, k, t, name) => `<div class="wtcard ${k.toLowerCase()}" data-wt="${s}" data-side="${k}">
-      <canvas id="cv${k}${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<select class="smpsel" data-smpsel data-side="${k}" aria-label="Sample ${k}"></select>`
+      <canvas id="cv${k}${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<select class="smpsel" data-smpsel data-side="${k}" aria-label="Sample ${k}"></select><button type="button" class="swb" data-sw="${oi(s, 'sloop')}" data-side="${k}" aria-pressed="false" aria-label="Loop sample ${k}">Loop</button>`
         : `<span class="nm" id="nm${k}${s}"></span>`}${t === 'wt' ? `<button type="button" class="ac" id="wt${k}${s}" data-wt="${s}" data-side="${k}" aria-label="Edit wavetable ${k} of ${name}">Edit ${k}</button>` : ''}</span></div>`;
 const waveCards = (s, t, name) => `<div class="wt">
     ${sideCard(s, 'A', t, name)}
-    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<span class="seg smploop" role="group" aria-label="Sampler playback"><button type="button" data-smploop data-v="0">One-shot</button><button type="button" data-smploop data-v="1">Loop</button></span>
-      <span class="smpnote" id="smpNote" role="status"></span>` : '<span class="nm hear">What you hear</span>'}</span></div>
+    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm hear">What you hear</span>${t === 'smp' ? '<span class="smpnote" id="smpNote" role="status"></span>' : ''}</span></div>
     ${sideCard(s, 'B', t, name)}
   </div>`;
 /* One section per group, in fixed positions. Oscillators show their wave cards above the knobs; OTT shows its bands. */
 const sections = {};
 function makeSection(d) {
   const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
-  const head = `<h2><span class="gname">${d.group}</span></h2>`;
+  const head = `<h2><button type="button" class="gname" aria-expanded="false"><span class="gt">${d.group}</span><span class="more"></span></button></h2>`;
   let body;
   if (d.kind === 'osc') body = waveCards(d.slot, d.eng, d.group) + '<div class="knobs"></div>';
-  else if (d.kind === 'fx') body = (d.eng === 'ott' ? '<canvas class="viz" id="vzOT" aria-label="OTT bands: split points, gain settings and live levels"></canvas>' : '') + '<div class="knobs"></div>';
-  else if (VIZ[d.group]) body = VIZ[d.group].map(b => `<div class="sub">${b.title ? `<div class="subh">${b.title}</div>` : ''}<canvas class="viz" id="${b.viz}" aria-label="${b.name}: A, B and current shape"></canvas><div class="knobs"${b.sub ? ` data-sub="${b.sub}"` : ''}></div></div>`).join('');
+  else if (d.kind === 'fx') body = (d.eng === 'ott' ? '<canvas class="viz adv" id="vzOT" aria-label="OTT bands: split points, gain settings and live levels"></canvas>' : '') + '<div class="knobs"></div>';
+  else if (VIZ[d.group]) body = VIZ[d.group].map(b => `<div class="sub${b.adv ? ' adv' : ''}">${b.title ? `<div class="subh">${b.title}</div>` : ''}<canvas class="viz" id="${b.viz}" aria-label="${b.name}: A, B and current shape"></canvas><div class="knobs"${b.sub ? ` data-sub="${b.sub}"` : ''}></div></div>`).join('');
   else body = '<div class="knobs"></div>';
   if (d.kind) { g.dataset.kind = d.kind; g.dataset.type = d.eng; g.dataset.slot = d.slot; }
-  g.innerHTML = head + `<div class="gbody">${body}</div>`;
+  g.innerHTML = `<div class="gcard">${head}<div class="gbody">${body}</div></div>`;
   groupsEl.appendChild(g);
   return g;
 }
+// a per-side two-way switch (Cut / Spill): a row with A's and B's buttons; the Sampler's Loop sits in its wave cards instead
+const switchRow = (d, i) => `<div class="swrow adv"><span>${d.label}</span>${['A', 'B'].map(k => `<span class="seg ${k.toLowerCase()}" role="group" aria-label="${d.label}, side ${k}"><span class="swk">${k}</span>${d.opts.map((o, v) =>
+  `<button type="button" data-sw="${i}" data-side="${k}" data-v="${v}">${o}</button>`).join('')}</span>`).join('')}</div>`;
 DEFS.forEach((d, i) => {
+  if (d.opts) { const g = sections[d.group] || (sections[d.group] = makeSection(d)); if (d.key !== 'sloop') g.querySelector('.gbody').insertAdjacentHTML('beforeend', switchRow(d, i)); return; }
   let box;
   if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
   else {
@@ -83,6 +96,10 @@ function setArc(el, from, to) {
   el.setAttribute('stroke-dashoffset', (-SWEEP * s).toFixed(3));
 }
 function updateKnob(i) {
+  if (DEFS[i].opts) {   // a per-side switch
+    document.querySelectorAll(`[data-sw="${i}"]`).forEach(b => { const v = Math.round(state[b.dataset.side][i]); b.setAttribute('aria-pressed', b.dataset.v === undefined ? v === 1 : +b.dataset.v === v); });
+    return;
+  }
   const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = resolveNorm(i);
   setArc($('arcA' + i), a, r);
   setArc($('arcB' + i), r, b);
@@ -247,6 +264,11 @@ function bindKnob(i) {
     t.addEventListener('blur', () => { if (!el.classList.contains('dragging')) { delete editing[i]; updateKnob(i); } });
   });
 }
-DEFS.forEach((_, i) => bindKnob(i));
+DEFS.forEach((d, i) => { if (!d.opts) bindKnob(i); });
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-sw]'); if (!b) return;
+  const i = +b.dataset.sw, k = b.dataset.side;
+  setParam(k, i, b.dataset.v === undefined ? 1 - Math.round(state[k][i]) : +b.dataset.v);
+});
 
 

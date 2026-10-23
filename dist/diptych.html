@@ -77,6 +77,7 @@ h1 span{font-weight:400;color:var(--muted)}
 .readout{color:var(--muted);font-size:.95rem}
 .readout b{color:var(--ink);font-weight:600}
 .btns{display:flex;gap:6px;flex-wrap:wrap}
+.btns .view{margin-left:6px}
 
 /* ---------- groups + knobs ---------- */
 main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
@@ -99,7 +100,7 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .seclocked .knobs{opacity:.75}
 .fxsw{min-height:26px;padding:2px 10px;font-size:.8rem;border-radius:13px}
 .fxsw[aria-pressed="false"]{color:var(--muted)}
-.fxoff .knobs,.fxoff .blendrow{opacity:.4}
+.fxoff .knobs,.fxoff .swrow,.fxoff .wt{opacity:.4}
 .viz{width:100%;max-width:calc(4 * 88px + 6px);height:88px;display:block;background:var(--surface);border:1px solid var(--line);border-radius:8px;margin:2px 0 8px}
 .knob{width:72px;height:72px;touch-action:none;cursor:grab;position:relative;margin:2px 0}
 .knob.dragging{cursor:grabbing}
@@ -128,12 +129,36 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .wtcard.mute canvas{opacity:.3}   /* this side doesn't hear the oscillator (Level 0) */
 .wtlabel{align-items:center;min-height:24px}   /* room for the Sampler's menus, so every oscillator's cards line up */
 .smpsel{min-height:24px;padding:0 2px;font-size:.78rem;min-width:0;flex:1 1 auto;max-width:100%}
-.smploop button{min-height:24px;padding:0 6px;font-size:.76rem}
+.swb{min-height:24px;padding:0 7px;font-size:.76rem;flex:0 0 auto}
+.wtcard.a .swb[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:#fff}
+.wtcard.b .swb[aria-pressed="true"]{background:var(--b);border-color:var(--b);color:#fff}
+/* per-side switches (Cut / Spill): A's buttons and B's, in their colors */
+.swrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px;font-size:.88rem;color:var(--muted)}
+.swrow .swk{font-weight:600;align-self:center;margin-right:5px}
+.swrow .seg.a .swk{color:var(--a)} .swrow .seg.b .swk{color:var(--b)}
+.swrow .seg button{min-height:26px;padding:0 9px;font-size:.8rem}
+.swrow .seg button:nth-child(2){border-radius:6px 0 0 6px;margin-left:0}
+.swrow .seg.a button[aria-pressed="true"]{background:var(--a);border-color:var(--a);color:#fff}
+.swrow .seg.b button[aria-pressed="true"]{background:var(--b);border-color:var(--b);color:#fff}
 .smpnote{color:var(--muted);font-size:.74rem}
 .smpnote:empty{display:none}
 .group[data-kind="osc"] .wt{margin-bottom:6px}
 .group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* oscillator and effect knobs keep the same height whatever their values say */
-.gname{font-weight:600;white-space:nowrap;margin-right:4px}
+.gname{font:inherit;font-weight:600;color:inherit;white-space:nowrap;margin-right:4px;border:0;background:none;padding:0;min-height:0;display:inline-flex;align-items:baseline;gap:5px;cursor:pointer}
+.gname:disabled{cursor:default;opacity:1}
+.gname .more{font-size:.75em;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:0 6px}
+.gname .more:empty{display:none}
+.full .gname{cursor:default} .full .gname .more{display:none}
+.fxh .fxsw{margin-left:auto}
+.gdone{display:none;margin-left:8px;min-height:26px;padding:0 12px;font-size:.82rem}
+/* Basic view: tiles show only their key controls; dice and padlocks live in the overlay */
+body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
+/* the overlay: the section's card lifts above the page; the section keeps its size underneath */
+.ovlback{position:fixed;left:0;right:0;top:0;bottom:var(--kbh,0px);background:rgba(10,8,20,.4);z-index:23}
+.group.open .gcard{position:fixed;left:8px;right:8px;bottom:calc(var(--kbh,0px) + 8px);max-height:calc(100dvh - var(--kbh,0px) - 24px);overflow:auto;z-index:24;
+  background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+.group.open .gdone{display:inline-flex}
+.group.open .gname .more{display:none}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
 /* ---------- wavetable panel ---------- */
@@ -271,7 +296,7 @@ body.desk{overflow:hidden;height:100vh}
 .desk .group[data-group="Output"] .kn{width:46px} .desk .group[data-group="Output"] .knob{width:34px;height:34px}
 .desk .group h2{margin:0 0 3px;font-size:.85rem}
 .desk .group h2 .lock{width:20px;height:20px}
-.desk .fxsw{min-height:22px;padding:0 8px;font-size:.74rem}
+.desk .fxsw{min-height:20px;padding:0 8px;font-size:.72rem}
 .desk .group[data-kind="fx"]{padding-left:6px;padding-right:6px}
 .desk .group[data-kind="fx"] h2{gap:2px}
 .desk .group[data-kind="fx"] h2 .lock{width:17px;margin-left:1px}
@@ -289,9 +314,10 @@ body.desk{overflow:hidden;height:100vh}
 .desk .wtcard canvas{height:26px}
 .desk .wtlabel{font-size:.68rem;min-height:20px}
 .desk .group[data-kind="osc"] .wt{margin-bottom:3px}
-.desk .smpsel,.desk .smploop button{min-height:20px;font-size:.68rem}
-.desk .blendrow{margin-top:2px;font-size:.74rem}
-.desk .blendrow .seg button{min-height:22px;padding:0 8px;font-size:.74rem}
+.desk .smpsel,.desk .swb{min-height:20px;font-size:.68rem}
+.desk .swb{padding:0 5px}
+.desk .swrow{margin-top:2px;gap:3px 8px;font-size:.72rem}
+.desk .swrow .seg button{min-height:20px;padding:0 6px;font-size:.7rem}
 .desk .group[data-group="Filter"] .gbody{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .desk .sub + .sub{margin-top:0}
 .desk .subh{display:none}
@@ -313,6 +339,27 @@ body.desk{overflow:hidden;height:100vh}
 .desk .lanes{flex:1 1 auto;min-width:0}
 .desk .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
 .desk .seqctl button{min-height:26px;padding:1px 8px;font-size:.8rem}
+/* ---------- Basic view on desktop: tiles with larger knobs, sized by their key controls ---------- */
+.desk #app{position:relative}
+.desk .kb{position:relative;z-index:25}
+.desk:not(.full) .group:not(.open) .kn{width:62px}
+.desk:not(.full) .group:not(.open) .knob{width:48px;height:48px}
+.desk:not(.full) .group:not(.open) .kname,.desk:not(.full) .group:not(.open) .kval{font-size:.78rem}
+.desk:not(.full) .group:not(.open) .kab{max-width:62px;font-size:.62rem}
+.desk:not(.full) .group[data-kind="fx"]:not(.open) .kn{width:60px}   /* room to spare when the window's scale rounds widths */
+.desk:not(.full) .group:not(.open) .viz{height:52px}
+.desk:not(.full) .group:not(.open) .wtcard canvas{height:34px}
+.desk:not(.full) .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 4 / 12)}
+.desk:not(.full) .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3.6 / 12)}
+.desk:not(.full) .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) * 1.4 / 12)}
+.desk:not(.full) .group[data-group="Filter"]:not(.open) .gbody{grid-template-columns:1fr}
+/* effects: shares by key controls (two or three knobs; a two-knob tile needs a little more than 2/3 of a three-knob one) */
+.desk:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
+.desk:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
+/* the overlay sits over the sections, inside the scaled design */
+.desk .ovlback{bottom:0}
+.desk .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
+.desk .group.open .gdone{min-height:24px;font-size:.78rem}
 </style>
 </head>
 <body>
@@ -329,7 +376,8 @@ body.desk{overflow:hidden;height:100vh}
         <button type="button" id="copyBA">Copy B to A</button>
         <button type="button" id="swap">Swap</button>
         <button type="button" id="resetAll">Reset patch</button>
-            </div>
+        <span class="seg view" role="group" aria-label="View"><button type="button" id="viewBasic">Basic</button><button type="button" id="viewFull">Full</button></span>
+      </div>
     </div>
   </div>
 </header>
@@ -537,7 +585,9 @@ class MorphEngine {
     this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
     this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
     // Sampler per slot: a buffer per side ({ d, sr } or null), Loop, and per-block settings
-    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null })); this.smpLoop = [false, false, false, false];
+    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null }));   // Loop is a per-side switch parameter ('sloop')
+    // oscillator On/Off (a bypass for auditioning, never morphed): target and a ~15 ms glide
+    this.oscOn = [true, true, true, true]; this.oscBy = new Float64Array(4).fill(1);
     this.smpMix = new Float64Array(4); this.smpTrk = new Float64Array(4); this.smpRA = new Float64Array(4); this.smpRB = new Float64Array(4);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
@@ -548,7 +598,7 @@ class MorphEngine {
     const nf = this.nFx;
     this.fxType = Array.from({ length: nf }, (_, s) => engOf('fx', s));
     this.fxInst = this.fxType.map((t, s) => this.makeFx(t, s));
-    this.fxOn = this.fxType.map(() => true); this.dlSpill = false; this.fxIdle = this.fxType.map(() => true); this.fxBy = new Float64Array(nf); this.fxFirst = true;
+    this.fxOn = this.fxType.map(() => true); this.fxIdle = this.fxType.map(() => true); this.fxBy = new Float64Array(nf); this.fxFirst = true;
     this.fxWarm = new Int32Array(nf); this.warmN = Math.round(0.025 * sr);   // a waking effect fills its buffers for 25 ms before fading in
     // which parameters must sit at their neutral value (in real units) for an effect to be silent
     this.fxRest = this.fxType.map((t, s) => Object.entries(MorphEngine.FX_CLASSES[t].REST).map(([k, v]) => [this.xP[s][k], v]));
@@ -650,7 +700,6 @@ class MorphEngine {
       case 'morph': this.morph = m.v; break;
       case 'table': this.banks[m.slot].setTable(m.side, m.re, m.im); break;
       case 'sample': this.smp[m.slot][m.side] = m.d ? { d: m.d, sr: m.sr } : null; break;
-      case 'smpLoop': this.smpLoop[m.i] = !!m.v; break;
       case 'blend': this.banks.forEach(b => { b.spectral = !!m.v; b.ver++; }); break;
       case 'seq':
         this.seq = m.seq;
@@ -666,8 +715,8 @@ class MorphEngine {
         break;
       case 'bpm': this.bpm = m.v; break;
       case 'walk': this.walk = !!m.v; break;
-      case 'dlmode': this.dlSpill = !!m.v; break;
       case 'bypass': this.fxOn[m.i] = !!m.on; break;
+      case 'oscOn': this.oscOn[m.i] = !!m.on; break;
       case 'on': this.noteOn(m.note, m.vel); break;
       case 'off': this.noteOff(m.note); break;
       case 'panic': this.stack = []; this.voices.forEach(v => { if (v.active) { v.aSt = 3; v.fSt = 3; } }); break;
@@ -804,11 +853,14 @@ class MorphEngine {
     const P0 = this.oP[0], t0 = this.oscType[0];   // the Sub follows slot 1's pitch
     const tune1 = t0 === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : 0;
     let nSl = 0;
+    const byK = 1 - Math.exp(-len / (0.015 * sr));
     for (let s = 0; s < 4; s++) {
       const t = this.oscType[s], P = this.oP[s], o = s * 4;
+      const tgt = this.oscOn[s] ? 1 : 0;
+      this.oscBy[s] += (tgt - this.oscBy[s]) * byK; if (Math.abs(tgt - this.oscBy[s]) < 1e-4) this.oscBy[s] = tgt;
       const live = t !== 'off' && !(t === 'wt' && !this.banks[s].ready);
       if (live) {
-        const lv = v[P.olevel] / 0.8, pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
+        const lv = v[P.olevel] / 0.8 * this.oscBy[s], pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
         const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv, byp = v[P.byp];
         CN[o] = pl * (1 - byp); CN[o + 1] = pr * (1 - byp); CN[o + 2] = pl * byp; CN[o + 3] = pr * byp;
       } else for (let j = 0; j < 4; j++) CN[o + j] = 0;
@@ -911,14 +963,14 @@ class MorphEngine {
                 q += uDt[b + j]; if (q >= 1) q -= 1; ph[pj] = q;
               }
             } else if (kind[a] === 4) {
-              const S = this.smp[sl], q = sl * 2, loop = this.smpLoop[sl], sp = vc.sp, op = vc.op;
+              const S = this.smp[sl], q = sl * 2, P = this.oP[sl], loopA = this.A[P.sloop] >= 0.5, loopB = this.B[P.sloop] >= 0.5, sp = vc.sp, op = vc.op;
               let ya = 0, yb = 0, oa = 0, ob = 0;
               if (S.A) { const d = S.A.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
-                ya = OscSmp.read(d, sp[q], loop, ls); sp[q] = OscSmp.advance(sp[q], this.smpRA[sl], n, loop, ls);
-                if (vc.sxf[sl] > 0 && vc.sold[sl]) { oa = OscSmp.read(d, op[q], loop, ls); op[q] = OscSmp.advance(op[q], this.smpRA[sl], n, loop, ls); } }
+                ya = OscSmp.read(d, sp[q], loopA, ls); sp[q] = OscSmp.advance(sp[q], this.smpRA[sl], n, loopA, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { oa = OscSmp.read(d, op[q], loopA, ls); op[q] = OscSmp.advance(op[q], this.smpRA[sl], n, loopA, ls); } }
               if (S.B) { const d = S.B.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
-                yb = OscSmp.read(d, sp[q + 1], loop, ls); sp[q + 1] = OscSmp.advance(sp[q + 1], this.smpRB[sl], n, loop, ls);
-                if (vc.sxf[sl] > 0 && vc.sold[sl]) { ob = OscSmp.read(d, op[q + 1], loop, ls); op[q + 1] = OscSmp.advance(op[q + 1], this.smpRB[sl], n, loop, ls); } }
+                yb = OscSmp.read(d, sp[q + 1], loopB, ls); sp[q + 1] = OscSmp.advance(sp[q + 1], this.smpRB[sl], n, loopB, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { ob = OscSmp.read(d, op[q + 1], loopB, ls); op[q + 1] = OscSmp.advance(op[q + 1], this.smpRB[sl], n, loopB, ls); } }
               const mix = this.smpMix[sl];
               let x = ya + (yb - ya) * mix;
               if (vc.sxf[sl] > 0) { const g = vc.sxf[sl] / Math.round(0.005 * sr); x = x * (1 - g) + (oa + (ob - oa) * mix) * g; vc.sxf[sl]--; }
@@ -972,7 +1024,7 @@ class MorphEngine {
       else if (rest && this.fxBy[s] <= 0) { this.fxIdle[s] = true; this.fxInst[s] = this.makeFx(this.fxType[s], s); continue; }
       const warm = this.fxWarm[s] > 0; if (warm) this.fxWarm[s] -= len;
       const inst = this.fxInst[s], tgt = this.fxOn[s] && !warm ? 1 : 0, c = this.byC, sw = this.swStep;
-      if (inst instanceof FxDelay) inst.spill = this.dlSpill;
+      if (inst instanceof FxDelay) inst.spill = v[this.xP[s].dlspill] >= 0.5;   // Cut / Spill: each side's own, switching halfway
       for (let i = 0; i < len; i++) { dryL[i] = L[p + i]; dryR[i] = R[p + i]; }
       inst.process(L, R, p, len, v, this.xP[s]);
       let by = this.fxBy[s];
@@ -1549,6 +1601,7 @@ class FxOtt {
    PARAMETER REGISTRY
    curve: 'lin' | 'log' | 'int' | 'pow2'   snap: switch instead of blending
    single: 'A' | 'B' belongs to one side only and never morphs
+   opts: a two-way switch per side (shown as buttons, not a knob; no curve)
 
    The architecture is fixed (2026-10-17), so any two patches can morph into
    each other: four oscillators (two Wavetables, a Sub, a Sampler) and all seven
@@ -1578,6 +1631,7 @@ const OSC_ENG = {
   smp: [
     P_('sample', 'Sample', 0, 1, 'lin', 0, 1), P_('sstart', 'Start', 0, 1, 'lin', 0, 0),
     P_('spitch', 'Pitch', -24, 24, 'int', 0, 0), P_('sfine', 'Fine', -100, 100, 'lin', 0, 0), P_('strack', 'Key track', 0, 1, 'lin', 1, 1),
+    P_('sloop', 'Playback', 0, 1, 'int', 0, 0, { opts: ['One-shot', 'Loop'] }),   // each side's sample plays with its own setting
   ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
 };
@@ -1600,7 +1654,8 @@ const FX_ENG = {
   mod: [P_('mtype', 'Type', 0, 1, 'lin', 0, 0), P_('mrate', 'Rate', 0.02, 10, 'log', 0.4, 0.4), P_('mdepth', 'Depth', 0, 1, 'lin', 0.5, 0.5),
     P_('mfb', 'Feedback', 0, 1, 'lin', 0.3, 0.3), P_('mmix', 'Mix', 0, 1, 'lin', 0, 0)],
   delay: [P_('dltime', 'Time', 0, 11, 'int', 7, 7), P_('dlfb', 'Feedback', 0, 0.95, 'lin', 0.4, 0.4), P_('dlpp', 'Ping-pong', 0, 1, 'lin', 0.6, 0.6),
-    P_('dltone', 'Tone', 0, 1, 'lin', 0.5, 0.5), P_('dlmix', 'Mix', 0, 1, 'lin', 0, 0.3)],
+    P_('dltone', 'Tone', 0, 1, 'lin', 0.5, 0.5), P_('dlmix', 'Mix', 0, 1, 'lin', 0, 0.3),
+    P_('dlspill', 'Time changes', 0, 1, 'int', 0, 0, { opts: ['Cut', 'Spill'], snap: true })],   // switches to B's setting halfway through the morph
   reverb: [P_('rvsize', 'Size', 0, 1, 'lin', 0.5, 0.7), P_('rvdecay', 'Decay', 0.2, 20, 'log', 1.5, 3), P_('rvdamp', 'Damping', 0, 1, 'lin', 0.5, 0.4), P_('rvmix', 'Mix', 0, 1, 'lin', 0.12, 0.3)],
   lofi: [P_('lwow', 'Wow', 0, 1, 'lin', 0, 0), P_('lflut', 'Flutter', 0, 1, 'lin', 0, 0), P_('lchar', 'Character', 0, 1, 'lin', 0, 0),
     P_('lnoise', 'Noise', 0, 1, 'lin', 0, 0), P_('lnmix', 'Noise mix', 0, 1, 'lin', 0, 0), P_('ldrop', 'Dropouts', 0, 1, 'lin', 0, 0), P_('lcodec', 'Codec', 0, 1, 'lin', 0, 0)],
@@ -1632,6 +1687,7 @@ const FMT = {
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
   sample: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'), sstart: pct,
   spitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', sfine: v => `${v > 0 ? '+' : ''}${v.toFixed(0)} ct`, strack: pct,
+  sloop: v => ['One-shot', 'Loop'][v], dlspill: v => ['Cut', 'Spill'][v],
   sshape: v => (v < 0.02 ? 'Sine' : Math.abs(v - 0.5) < 0.02 ? 'Triangle' : v > 0.98 ? 'Square' : pct(v)), sdrive: pct,
   posA: pct, posB: pct,
   drive: pct, dshape: pct, dmix: pct,
@@ -1802,7 +1858,7 @@ function sampleOverview(data, cols = 128) {
 /* ---------- state + persistence ----------
    The fixed architecture (2026-10-17) starts fresh: it saves under a new key and ignores earlier patches, by decision.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v5', STORE_VER = 1;
+const STORE = 'diptych-v5', STORE_VER = 2;
 const DEFAULT_LOCKS = () => ({ level: true, pan: true, pattern: true, 'o1.wave': true, 'o2.wave': true, 'o4.sample': true, ottout: true });
 const DEFAULT_LINKS = () => ({ 'o1.pitch': true, 'o1.fine': true, 'o2.pitch': true, 'o2.fine': true, 'o4.spitch': true, 'o4.sfine': true, ottout: true });
 const DEFAULT_SMP = () => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } });   // the Sampler's sample references
@@ -1819,10 +1875,9 @@ const state = {
   linkMem: {},
   mono: false,
   links: DEFAULT_LINKS(),
-  fxOn: DEFAULT_FXON(),   // bypass switches for auditioning: never morphed or randomized
-  dlSpill: false,
+  oscOn: [true, true, true, true],   // bypass switches for auditioning: never morphed or randomized
+  fxOn: DEFAULT_FXON(),
   smp: DEFAULT_SMP(),
-  smpLoop: false,
   seq: null,
   bpm: 120,
   walk: true,
@@ -1856,7 +1911,9 @@ try {
     for (const k of ['locks', 'links', 'secLocks', 'linkMem']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
     state.mono = !!saved.mono;
     if (Array.isArray(saved.fxOn) && saved.fxOn.length === NFX) state.fxOn = saved.fxOn.map(Boolean);
-    state.dlSpill = !!saved.dlSpill; state.smpLoop = !!saved.smpLoop;
+    if (Array.isArray(saved.oscOn) && saved.oscOn.length === NOSC) state.oscOn = saved.oscOn.map(Boolean);
+    // ver 2: Loop and Cut / Spill became per-side switches (they were one setting for both sides)
+    if (!(saved.ver >= 2)) for (const [k, id] of [['smpLoop', 'o4.sloop'], ['dlSpill', 'dlspill']]) state.A[IX[id]] = state.B[IX[id]] = saved[k] ? 1 : 0;
     if (saved.smp) ['A', 'B'].forEach(k => { const r = saved.smp[k]; if (okRef(r)) state.smp[k] = { name: r.name, ...(r.id ? { id: r.id } : {}) }; });
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
@@ -1925,9 +1982,8 @@ function sendAll() {   // runs during startup, before ready is set
   for (const s of WT_SLOTS) { postTable(s, 'A'); postTable(s, 'B'); }
   send({ type:'blend', v: state.spectral });
   state.fxOn.forEach((on, i) => send({ type:'bypass', i, on }));
-  send({ type:'dlmode', v: state.dlSpill });
+  state.oscOn.forEach((on, i) => send({ type:'oscOn', i, on }));
   postSample('A'); postSample('B');
-  send({ type:'smpLoop', i: SMP_SLOT, v: state.smpLoop });
   send({ type:'bpm', v: state.bpm }); send({ type:'walk', v: state.walk }); send({ type:'mono', v: state.mono });
   if (typeof buildSeq === 'function') { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); }
 }
@@ -2019,7 +2075,17 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) kick
    KNOBS
    ===================================================================== */
 // Sections with pictures. A section can be split into sub-blocks (parameters with a matching `sub`), each with its own picture.
-const VIZ = { 'Filter': [{ viz: 'vzF', name: 'Filter response' }, { sub: 'env', title: 'Envelope', viz: 'vzFE', name: 'Filter envelope' }], 'Amp envelope': [{ viz: 'vzAE', name: 'Amp envelope' }] };
+const VIZ = { 'Filter': [{ viz: 'vzF', name: 'Filter response' }, { sub: 'env', title: 'Envelope', viz: 'vzFE', name: 'Filter envelope', adv: true }], 'Amp envelope': [{ viz: 'vzAE', name: 'Amp envelope' }] };
+/* Basic view: each section shows only these key controls (by key, per engine or effect, or per section); the rest,
+   and anything marked adv, appear in the section's overlay (ui/overlay.js) or in the Full view. Sections not listed
+   show everything. */
+const BASIC = {
+  wt: ['posA', 'posB', 'unison', 'olevel'], sub: ['soct', 'sshape', 'sdrive', 'olevel'], smp: ['sstart', 'spitch', 'strack', 'olevel'],
+  Voice: ['glide', 'vdepth', 'vrate'], Filter: ['cutoff', 'reso', 'mode', 'envamt'],
+  drive: ['drive', 'dmix'], formant: ['fvowel', 'fmix'], mod: ['mtype', 'mrate', 'mmix'], delay: ['dltime', 'dlfb', 'dlmix'],
+  reverb: ['rvsize', 'rvdecay', 'rvmix'], lofi: ['lchar', 'lwow', 'lnmix'], ott: ['ottdepth', 'otttime'],
+};
+const isBasic = d => { const list = BASIC[d.eng] || BASIC[d.group]; return !list || list.includes(d.key); };
 const lockIcon = on => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7.5" rx="1.5" fill="currentColor"/><path d="${on ? 'M5.2 7V5.2a2.8 2.8 0 0 1 5.6 0V7' : 'M5.2 7V5.2a2.8 2.8 0 0 1 5.5-.8'}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const iconBtn = (id, label, single) => `<span class="icons"><button type="button" class="lock" data-plock="${id}" aria-pressed="false" aria-label="Lock ${label}"></button>${single ? '' : `<button type="button" class="lock" data-plink="${id}" aria-pressed="false" aria-label="Link ${label}"></button>`}</span>`;
 const linkIcon = on => `<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">${on
@@ -2048,39 +2114,42 @@ const knobSVG = (d, i) => `<svg viewBox="0 0 80 80" aria-hidden="false">
 </svg>`;
 
 const groupsEl = document.getElementById('groups');
-const knobHTML = (d, i) => `<div class="kn">
+const knobHTML = (d, i) => `<div class="kn${isBasic(d) ? '' : ' adv'}">
     <div class="kname">${d.label}</div>
     <div class="kwrap"><div class="knob" id="k${i}">${knobSVG(d, i)}</div>${iconBtn(d.id, d.label, d.single)}</div>
     <div class="kval" id="v${i}"></div>
     <div class="kab"><span class="a" id="va${i}"></span><span class="b" id="vb${i}"></span></div>
   </div>`;
 /* A, what you hear, and B for every oscillator. On a Wavetable the A and B cards open the editor (tap the wave
-   or Edit); on the Sampler their labels are the sample menus and the middle card holds One-shot / Loop. */
+   or Edit); on the Sampler their labels are the sample menus with each side's Loop switch. */
 const sideCard = (s, k, t, name) => `<div class="wtcard ${k.toLowerCase()}" data-wt="${s}" data-side="${k}">
-      <canvas id="cv${k}${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<select class="smpsel" data-smpsel data-side="${k}" aria-label="Sample ${k}"></select>`
+      <canvas id="cv${k}${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<select class="smpsel" data-smpsel data-side="${k}" aria-label="Sample ${k}"></select><button type="button" class="swb" data-sw="${oi(s, 'sloop')}" data-side="${k}" aria-pressed="false" aria-label="Loop sample ${k}">Loop</button>`
         : `<span class="nm" id="nm${k}${s}"></span>`}${t === 'wt' ? `<button type="button" class="ac" id="wt${k}${s}" data-wt="${s}" data-side="${k}" aria-label="Edit wavetable ${k} of ${name}">Edit ${k}</button>` : ''}</span></div>`;
 const waveCards = (s, t, name) => `<div class="wt">
     ${sideCard(s, 'A', t, name)}
-    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel">${t === 'smp' ? `<span class="seg smploop" role="group" aria-label="Sampler playback"><button type="button" data-smploop data-v="0">One-shot</button><button type="button" data-smploop data-v="1">Loop</button></span>
-      <span class="smpnote" id="smpNote" role="status"></span>` : '<span class="nm hear">What you hear</span>'}</span></div>
+    <div class="wtcard"><canvas id="cvH${s}"></canvas><span class="wtlabel"><span class="nm hear">What you hear</span>${t === 'smp' ? '<span class="smpnote" id="smpNote" role="status"></span>' : ''}</span></div>
     ${sideCard(s, 'B', t, name)}
   </div>`;
 /* One section per group, in fixed positions. Oscillators show their wave cards above the knobs; OTT shows its bands. */
 const sections = {};
 function makeSection(d) {
   const g = document.createElement('section'); g.className = 'group'; g.dataset.group = d.group;
-  const head = `<h2><span class="gname">${d.group}</span></h2>`;
+  const head = `<h2><button type="button" class="gname" aria-expanded="false"><span class="gt">${d.group}</span><span class="more"></span></button></h2>`;
   let body;
   if (d.kind === 'osc') body = waveCards(d.slot, d.eng, d.group) + '<div class="knobs"></div>';
-  else if (d.kind === 'fx') body = (d.eng === 'ott' ? '<canvas class="viz" id="vzOT" aria-label="OTT bands: split points, gain settings and live levels"></canvas>' : '') + '<div class="knobs"></div>';
-  else if (VIZ[d.group]) body = VIZ[d.group].map(b => `<div class="sub">${b.title ? `<div class="subh">${b.title}</div>` : ''}<canvas class="viz" id="${b.viz}" aria-label="${b.name}: A, B and current shape"></canvas><div class="knobs"${b.sub ? ` data-sub="${b.sub}"` : ''}></div></div>`).join('');
+  else if (d.kind === 'fx') body = (d.eng === 'ott' ? '<canvas class="viz adv" id="vzOT" aria-label="OTT bands: split points, gain settings and live levels"></canvas>' : '') + '<div class="knobs"></div>';
+  else if (VIZ[d.group]) body = VIZ[d.group].map(b => `<div class="sub${b.adv ? ' adv' : ''}">${b.title ? `<div class="subh">${b.title}</div>` : ''}<canvas class="viz" id="${b.viz}" aria-label="${b.name}: A, B and current shape"></canvas><div class="knobs"${b.sub ? ` data-sub="${b.sub}"` : ''}></div></div>`).join('');
   else body = '<div class="knobs"></div>';
   if (d.kind) { g.dataset.kind = d.kind; g.dataset.type = d.eng; g.dataset.slot = d.slot; }
-  g.innerHTML = head + `<div class="gbody">${body}</div>`;
+  g.innerHTML = `<div class="gcard">${head}<div class="gbody">${body}</div></div>`;
   groupsEl.appendChild(g);
   return g;
 }
+// a per-side two-way switch (Cut / Spill): a row with A's and B's buttons; the Sampler's Loop sits in its wave cards instead
+const switchRow = (d, i) => `<div class="swrow adv"><span>${d.label}</span>${['A', 'B'].map(k => `<span class="seg ${k.toLowerCase()}" role="group" aria-label="${d.label}, side ${k}"><span class="swk">${k}</span>${d.opts.map((o, v) =>
+  `<button type="button" data-sw="${i}" data-side="${k}" data-v="${v}">${o}</button>`).join('')}</span>`).join('')}</div>`;
 DEFS.forEach((d, i) => {
+  if (d.opts) { const g = sections[d.group] || (sections[d.group] = makeSection(d)); if (d.key !== 'sloop') g.querySelector('.gbody').insertAdjacentHTML('beforeend', switchRow(d, i)); return; }
   let box;
   if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
   else {
@@ -2100,6 +2169,10 @@ function setArc(el, from, to) {
   el.setAttribute('stroke-dashoffset', (-SWEEP * s).toFixed(3));
 }
 function updateKnob(i) {
+  if (DEFS[i].opts) {   // a per-side switch
+    document.querySelectorAll(`[data-sw="${i}"]`).forEach(b => { const v = Math.round(state[b.dataset.side][i]); b.setAttribute('aria-pressed', b.dataset.v === undefined ? v === 1 : +b.dataset.v === v); });
+    return;
+  }
   const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = resolveNorm(i);
   setArc($('arcA' + i), a, r);
   setArc($('arcB' + i), r, b);
@@ -2264,7 +2337,12 @@ function bindKnob(i) {
     t.addEventListener('blur', () => { if (!el.classList.contains('dragging')) { delete editing[i]; updateKnob(i); } });
   });
 }
-DEFS.forEach((_, i) => bindKnob(i));
+DEFS.forEach((d, i) => { if (!d.opts) bindKnob(i); });
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-sw]'); if (!b) return;
+  const i = +b.dataset.sw, k = b.dataset.side;
+  setParam(k, i, b.dataset.v === undefined ? 1 - Math.round(state[k][i]) : +b.dataset.v);
+});
 
 
 /* ---------- wave displays ---------- */
@@ -2464,7 +2542,7 @@ const undoStack = [];
 const cloneTables = () => tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) }));
 function snapshot() {
   return { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: state.morph, spectral: state.spectral, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
-           fxOn: state.fxOn.slice(), dlSpill: state.dlSpill, smp: JSON.parse(JSON.stringify(state.smp)), smpLoop: state.smpLoop,
+           oscOn: state.oscOn.slice(), fxOn: state.fxOn.slice(), smp: JSON.parse(JSON.stringify(state.smp)),
            tables: cloneTables(), seq: JSON.parse(JSON.stringify(state.seq)) };
 }
 function pushUndo() { undoStack.push(snapshot()); if (undoStack.length > 30) undoStack.shift(); $('undo').disabled = false; }
@@ -2472,14 +2550,14 @@ $('undo').addEventListener('click', () => {
   const s = undoStack.pop(); if (!s) return;
   applyBulk(() => {
     Object.assign(state, { A: s.A, B: s.B, C: s.C, morph: s.morph, spectral: s.spectral, links: s.links, linkMem: s.linkMem,
-      fxOn: s.fxOn, dlSpill: s.dlSpill, smp: s.smp, smpLoop: s.smpLoop, seq: s.seq });
+      oscOn: s.oscOn, fxOn: s.fxOn, smp: s.smp, seq: s.seq });
     s.tables.forEach((t, k) => { tables[k] = t; });
   });
   $('undo').disabled = !undoStack.length;
 });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
-  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); updateDlUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
+  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
   if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
   if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
   if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
@@ -2503,7 +2581,7 @@ $('swap').addEventListener('click', () => bulk(() => {
 $('resetAll').addEventListener('click', () => bulk(() => {
   state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
   state.spectral = true; state.links = DEFAULT_LINKS(); state.linkMem = {};
-  state.fxOn = DEFAULT_FXON(); state.dlSpill = false; state.smp = DEFAULT_SMP(); state.smpLoop = false;
+  state.oscOn = [true, true, true, true]; state.fxOn = DEFAULT_FXON(); state.smp = DEFAULT_SMP();
   DEFAULT_TABLES().forEach((t, k) => { tables[k] = t; });
   state.seq = defaultSeqs();
 }));
@@ -2526,6 +2604,7 @@ const RND = {
   sample: side => (side === 'A' ? 0 : 1), sstart: () => (rnd() < 0.6 ? 0 : rnd() * 0.4),
   spitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; }, sfine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
   strack: () => (rnd() < 0.85 ? 1 : rnd() < 0.5 ? 0 : rnd()),
+  sloop: () => 0,   // set after the sample is picked: usually on for sustained samples (see randomizeSide)
   soct: () => (rnd() < 0.6 ? -1 : -2), sshape: () => rnd(), sdrive: () => rnd() ** 2 * 0.8,
   unison: () => (rnd() < 0.4 ? 0 : rnd()),
   glide: () => (rnd() < 0.5 ? 0 : rnd() < 0.9 ? rnd() * 0.1 : 0.1 + rnd() ** 2 * 0.5),   // half off; 95% under 100 ms
@@ -2549,14 +2628,16 @@ const RND = {
   arel: () => logr(0.03, 3),
   level: () => 0.5 + rnd() * 0.5,
   pan: () => (rnd() * 2 - 1) * 0.6,
-  // effects: settings over the full range (the synth is meant to surprise); every effect is always in the chain,
-  // so each mix is 0 (off on this side) often enough that a side hears about three effects on average
-  drive: () => rnd(), dshape: () => rnd(), dmix: () => (rnd() < 0.6 ? 0 : rnd()),
-  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.8 ? 0 : rnd()),
-  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.65 ? 0 : rnd()),
-  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.55 ? 0 : rnd() < 0.75 ? rnd() * 0.35 : rnd() < 0.6 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly up to 35%, rarely above 50%
+  // effects: settings over the full range (the synth is meant to surprise); every effect is always in the chain, so each
+  // is on for a side only so often (owner's odds, 2026-10-22): Drive 20%, Formant 10%, Modulation 40%, Delay 50%,
+  // Reverb 50%, OTT 50%, Lo-fi 10% (lofiGate). A side hears about 2.3 effects on average.
+  drive: () => rnd(), dshape: () => rnd(), dmix: () => (rnd() < 0.8 ? 0 : rnd()),
+  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.9 ? 0 : rnd()),
+  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.6 ? 0 : rnd()),
+  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.5 ? 0 : rnd() < 0.75 ? rnd() * 0.35 : rnd() < 0.6 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly up to 35%, rarely above 50%
+  dlspill: () => (rnd() < 0.5 ? 1 : 0),
   rvsize: () => rnd(), rvdecay: () => logr(0.2, 20), rvdamp: () => rnd(), rvmix: () => (rnd() < 0.5 ? 0 : rnd() < 0.65 ? rnd() * 0.35 : 0.35 + rnd() * 0.65),
-  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten (and lofiGate turns it all off 70% of the time)
+  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten (and lofiGate turns it all off 90% of the time)
   lwow: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lflut: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lchar: () => rnd() ** 2,
   ldrop: () => (rnd() < 0.9 ? 0 : rnd() ** 2), lcodec: () => (rnd() < 0.66 ? 0 : rnd() ** 2),
   lnoise: () => rnd(), lnmix: () => (rnd() < 0.85 ? rnd() * 0.15 : 0.15 + rnd() * 0.2),   // never above 35%, mostly 0–15%
@@ -2572,7 +2653,7 @@ const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side, d))));
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar', 'sloop', 'dlspill']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -2598,10 +2679,10 @@ function mixOttGains(side, g) {
     state[side][i] = norm(DEFS[i], -val(i));
   }
 }
-// Lo-fi is off on a side 70% of the time: every amount at 0
+// Lo-fi is off on a side 90% of the time: every amount at 0
 const LOFI_AMOUNTS = ['lwow', 'lflut', 'lchar', 'lnmix', 'ldrop', 'lcodec'];
 function lofiGate(side, g) {
-  if (!inGroup(DEFS[IX.lwow], g) || rnd() >= 0.7) return;
+  if (!inGroup(DEFS[IX.lwow], g) || rnd() >= 0.9) return;
   LOFI_AMOUNTS.map(k => IX[k]).filter(isFree).forEach(i => { state[side][i] = 0; });
 }
 // at least one oscillator is heard on each side: if every Level came up 0, one free oscillator comes on (by the same odds)
@@ -2623,6 +2704,43 @@ function effectMixRules(side, g) {
   while (ix.filter(i => val(i) > 0.5).length > 2 && hi.length) state[side][hi.pop()] = rnd() * 0.5;
   let top = shuffle(ix.filter(i => val(i) > 0.9 && free(i)));
   while (ix.filter(i => val(i) > 0.9).length > 1 && top.length) state[side][top.pop()] = 0.5 + rnd() * 0.4;
+}
+/* Level match: whichever oscillators a side hears, together they come out about as loud as one full-level sawtooth
+   (RMS 0.58, the level built-in and loaded samples are matched to). Each heard oscillator's own loudness (its wave,
+   the Sub's shape and drive, the sample from its Start point) times its Level is summed as power, and the free Levels
+   are scaled together, keeping their balance. Before this, a side hearing three oscillators came out about 5 dB louder
+   than a side hearing one. */
+const LEVEL_RMS = 0.58;
+function oscPower(s, side) {
+  const t = OSC_KIND[s], val = key => MorphEngine.denorm(DEFS[oi(s, key)], state[side][oi(s, key)]);
+  if (t === 'wt') {
+    MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
+    MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
+    MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], val('wave'), true, W.fr[0], W.fr[1]);
+    let p = 0; for (let h = 1; h <= 512; h++) p += (W.fr[0][h] ** 2 + W.fr[1][h] ** 2) / 2;
+    return p;
+  }
+  if (t === 'sub') {
+    const g = 1 + 7 * val('sdrive'), tg = Math.tanh(g); let p = 0;
+    for (let n = 0; n < 256; n++) p += OscSub.sample(n / 256, 1 / 256, val('sshape'), g, tg) ** 2;
+    return p / 256;
+  }
+  const ref = state.smp[val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? [smpData.A, smpData.B].find(x => x && x.id === ref.id) : smpFor(ref);
+  if (!data) return LEVEL_RMS ** 2;
+  const a = Math.floor(val('sstart') * (data.d.length - 1)), b = Math.min(data.d.length, a + Math.round(0.3 * data.sr));
+  let p = 0; for (let i = a; i < b; i++) p += data.d[i] ** 2;
+  return b > a ? p / (b - a) : 0;
+}
+function levelMatch(side) {
+  let fixed = 0, free = 0; const freeS = [];
+  OSC_KIND.forEach((_, s) => {
+    const i = oi(s, 'olevel'), lv = state[side][i]; if (lv === 0) return;
+    const pw = oscPower(s, side) * (lv / 0.8) ** 2;   // Level 80% is unity
+    if (isFree(i)) { free += pw; freeS.push(i); } else fixed += pw;
+  });
+  if (!freeS.length || free <= 0) return;
+  const k = Math.sqrt(Math.max(0, LEVEL_RMS ** 2 - fixed) / free);
+  freeS.forEach(i => { state[side][i] = Math.max(0.05, Math.min(1, state[side][i] * k)); });
 }
 // A near-sine wave through a low-pass set low, a high-pass set high, or a band-pass can be close to silent, so when a
 // Wavetable slot that goes through the filter is nearly pure, the filter leaves band-pass for low-pass and its cutoff moves toward the open end.
@@ -2718,8 +2836,13 @@ function randomizeSide(side, g, raw) {
   if (!raw) { oscGuard(side); lofiGate(side, g); mixOttGains(side, g); effectMixRules(side, g); }
   const mine = s => (!g || g === OSC_NAMES[s]) && !state.secLocks[OSC_NAMES[s]];
   for (const s of WT_SLOTS) if (mine(s)) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }   // each Wavetable's table for this side, unless its section is locked
-  if (mine(SMP_SLOT)) state.smp[side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
-  if (!raw) { sineGuard(side); loudnessGuard(side); }
+  if (mine(SMP_SLOT)) {
+    state.smp[side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
+    // Loop: usually on for a sustained sample, usually off for plucks and hits
+    const li = oi(SMP_SLOT, 'sloop'), f = FACTORY[state.smp[side].name];
+    if (isFree(li)) state[side][li] = rnd() < (f.sustained ? 0.8 : 0.15) ? 1 : 0;
+  }
+  if (!raw) { levelMatch(side); sineGuard(side); loudnessGuard(side); }
 }
 $('rndA').addEventListener('click', () => bulk(() => randomizeSide('A')));
 $('rndB').addEventListener('click', () => bulk(() => randomizeSide('B')));
@@ -2728,15 +2851,8 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
 }
 function randomizeAll(g, raw) {
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
-  const mine = grp => (!g || g === grp) && !state.secLocks[grp];
-  if (mine('Delay')) state.dlSpill = rnd() < 0.5;   // Cut or Spill
-  // Loop: usually on when either side plays a sustained sample, usually off for plucks and hits
-  if (mine('Sampler')) {
-    const sus = ['A', 'B'].some(k => { const r = state.smp[k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
-    state.smpLoop = rnd() < (sus ? 0.8 : 0.15);
-  }
   randomizeLinked(g, raw);
-  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
+  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
 }
 $('rndLinked').addEventListener('click', () => bulk(() => randomizeLinked()));
@@ -2803,6 +2919,7 @@ presetSel.innerHTML = '<option value="">Choose…</option>' + Object.keys(PRESET
 new ResizeObserver(() => document.documentElement.style.setProperty('--kbh', $('kb').getBoundingClientRect().height + 'px')).observe($('kb'));
 
 function openEditor(slot, side) {
+  closeOverlay();
   edSlot = slot; edSide = side; edFrame = Math.min(edFrame, tab().frames.length - 1);
   ed.classList.toggle('b', side === 'B');
   $('edTitle').textContent = edTitle();
@@ -2977,48 +3094,38 @@ $('edFile').addEventListener('change', async () => {
    heading, plus the delay Cut / Spill switch.
    ===================================================================== */
 // every section heading gets three dice (randomize this section on side A, side B, or both) and a padlock
-// (lock the whole section); effects also get an On/Off switch, a bypass for auditioning (never morphed or randomized)
+// (lock the whole section); oscillators and effects also get an On/Off switch, a bypass for auditioning (never morphed or randomized)
 const DICE = '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5.3" cy="5.3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="10.7" cy="10.7" r="1.2" fill="currentColor"/></svg>';
 document.querySelectorAll('.group[data-group]').forEach(sec => {
   const g = sec.dataset.group, h = sec.querySelector('h2');
   h.classList.add('fxh');
   h.insertAdjacentHTML('beforeend', `<span class="tools"><button type="button" class="lock sectool da" data-dice="${g}" data-side="A" aria-label="Randomize ${g} on side A">${DICE}</button><button type="button" class="lock sectool db" data-dice="${g}" data-side="B" aria-label="Randomize ${g} on side B">${DICE}</button><button type="button" class="lock sectool" data-dice="${g}" aria-label="Randomize ${g} on both sides">${DICE}</button><button type="button" class="lock sectool" data-seclock="${g}" aria-pressed="false"></button></span>`);
-  if (sec.dataset.kind === 'fx') h.insertAdjacentHTML('beforeend', `<button type="button" class="fxsw" data-fx="${sec.dataset.slot}" aria-label="${g} on"></button>`);
+  if (sec.dataset.kind) h.insertAdjacentHTML('beforeend', `<button type="button" class="fxsw" data-${sec.dataset.kind}="${sec.dataset.slot}" aria-label="${g} on"></button>`);
 });
 function updateFxUI() {
-  document.querySelectorAll('[data-fx]').forEach(b => {
-    const k = +b.dataset.fx, on = state.fxOn[k];
+  document.querySelectorAll('[data-fx], [data-osc]').forEach(b => {
+    const on = b.dataset.fx !== undefined ? state.fxOn[+b.dataset.fx] : state.oscOn[+b.dataset.osc];
     b.setAttribute('aria-pressed', on); b.textContent = on ? 'On' : 'Off';
     b.closest('.group').classList.toggle('fxoff', !on);
   });
 }
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-fx]'); if (!b) return;
-  const k = +b.dataset.fx; state.fxOn[k] = !state.fxOn[k];
-  updateFxUI(); if (ready) send({ type:'bypass', i:k, on: state.fxOn[k] }); save();
+  const b = e.target.closest('[data-fx], [data-osc]'); if (!b) return;
+  if (b.dataset.fx !== undefined) { const k = +b.dataset.fx; state.fxOn[k] = !state.fxOn[k]; if (ready) send({ type:'bypass', i:k, on: state.fxOn[k] }); }
+  else { const k = +b.dataset.osc; state.oscOn[k] = !state.oscOn[k]; if (ready) send({ type:'oscOn', i:k, on: state.oscOn[k] }); }
+  updateFxUI(); save();
 });
 updateFxUI();
-
-/* delay time changes: Cut or Spill */
-sections.Delay.querySelector('.gbody').insertAdjacentHTML('beforeend', `
-  <div class="blendrow"><span class="opt"><span>Time changes</span><span class="seg" role="group" aria-label="What happens when the delay time changes">
-    <button type="button" data-dlmode data-v="0">Cut</button><button type="button" data-dlmode data-v="1">Spill</button></span></span></div>`);
-function updateDlUI() { document.querySelectorAll('[data-dlmode]').forEach(b => b.setAttribute('aria-pressed', state.dlSpill === (b.dataset.v === '1'))); }
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-dlmode]'); if (!b) return;
-  state.dlSpill = b.dataset.v === '1'; updateDlUI(); if (ready) send({ type:'dlmode', v: state.dlSpill }); save();
-});
-updateDlUI();
 /* =====================================================================
    SAMPLER CONTROLS
    On the Sampler's wave cards: a sample menu per side (built-in samples,
-   the loaded file if any, and "Load file…") and One-shot / Loop.
+   the loaded file if any, and "Load file…"). Each side's Loop is a switch parameter (see knobs.js).
    ===================================================================== */
 const smpFile = document.createElement('input');
 smpFile.type = 'file'; smpFile.accept = 'audio/*'; smpFile.hidden = true;
 document.body.appendChild(smpFile);
 let smpPending = null;   // the side waiting for a file
-// the menus and One-shot / Loop live in the Sampler's wave cards (see waveCards in knobs.js)
+// the menus live in the Sampler's wave cards (see waveCards in knobs.js)
 function updateSamplerUI() {
   document.querySelectorAll('[data-smpsel]').forEach(sel => {
     const ref = state.smp[sel.dataset.side];
@@ -3026,7 +3133,6 @@ function updateSamplerUI() {
       + (ref && ref.id ? `<option value="u:${ref.id}">${ref.name.replace(/[<&]/g, '')}</option>` : '') + '<option value="load">Load file…</option>';
     sel.value = ref ? (ref.id ? 'u:' + ref.id : 'f:' + ref.name) : 'load';
   });
-  document.querySelectorAll('[data-smploop]').forEach(b => b.setAttribute('aria-pressed', state.smpLoop === (b.dataset.v === '1')));
 }
 function setSample(k, ref) {
   pushUndo();
@@ -3053,12 +3159,61 @@ smpFile.addEventListener('change', async () => {
     if (note.textContent === 'Loading…') note.textContent = '';
   } catch (err) { note.textContent = 'That file could not be read as audio.'; }
 });
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-smploop]'); if (!b) return;
-  state.smpLoop = b.dataset.v === '1';
-  updateSamplerUI(); if (ready) send({ type:'smpLoop', i: SMP_SLOT, v: state.smpLoop }); save();
-});
 updateSamplerUI();
+/* =====================================================================
+   BASIC VIEW AND SECTION OVERLAYS
+   Basic view: every section shows its key controls (BASIC in knobs.js) in a
+   fixed place. Tapping a section's name opens all its controls in an overlay
+   on top of the page (the section keeps its size underneath, so nothing
+   moves); the bottom panel stays playable. Full view shows everything, as
+   before. The choice is a per-browser convenience, not part of the patch.
+   ===================================================================== */
+const ovlBack = document.createElement('div');
+ovlBack.className = 'ovlback'; ovlBack.hidden = true;
+document.body.appendChild(ovlBack);
+let ovlOpen = null;
+// each section's name says how many more controls its overlay holds
+for (const sec of Object.values(sections)) {
+  const n = sec.querySelectorAll('.kn.adv, .adv .kn, .swrow.adv').length;
+  sec.querySelector('.more').textContent = n ? `+${n}` : '';
+  if (!n) sec.querySelector('.gname').disabled = true;
+  sec.querySelector('h2').insertAdjacentHTML('beforeend', '<button type="button" class="gdone">Done</button>');
+}
+function openOverlay(sec) {
+  if (ovlOpen) closeOverlay();
+  sec.style.minHeight = sec.getBoundingClientRect().height / (parseFloat($('app').style.zoom) || 1) + 'px';   // keep its place
+  sec.classList.add('open'); ovlBack.hidden = false; ovlOpen = sec;
+  sec.querySelector('.gname').setAttribute('aria-expanded', 'true');
+  DEFS.forEach((d, i) => { if (d.group === sec.dataset.group) updateKnob(i); });
+  drawWaves();
+  sec.querySelector('.gdone').focus({ preventScroll: true });
+}
+function closeOverlay() {
+  const sec = ovlOpen; if (!sec) return;
+  sec.classList.remove('open'); sec.style.minHeight = ''; ovlBack.hidden = true; ovlOpen = null;
+  sec.querySelector('.gname').setAttribute('aria-expanded', 'false');
+  drawWaves();
+}
+document.addEventListener('click', e => {
+  const name = e.target.closest('.gname');
+  if (name && !document.body.classList.contains('full')) { const sec = name.closest('.group'); if (sec === ovlOpen) closeOverlay(); else openOverlay(sec); return; }
+  if (e.target.closest('.gdone') || e.target === ovlBack) closeOverlay();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ovlOpen) closeOverlay(); });
+
+let fullView = false;
+try { fullView = localStorage.getItem('diptych-view') === 'full'; } catch (e) {}
+function setView(full) {
+  closeOverlay();
+  fullView = full; document.body.classList.toggle('full', full);
+  $('viewBasic').setAttribute('aria-pressed', !full); $('viewFull').setAttribute('aria-pressed', full);
+  try { localStorage.setItem('diptych-view', full ? 'full' : 'basic'); } catch (e) {}
+  if (typeof applyLayout === 'function') applyLayout();
+}
+$('viewBasic').addEventListener('click', () => setView(false));
+$('viewFull').addEventListener('click', () => setView(true));
+document.body.classList.toggle('full', fullView);
+$('viewBasic').setAttribute('aria-pressed', !fullView); $('viewFull').setAttribute('aria-pressed', fullView);
 /* =====================================================================
    LAYOUT
    Phones and narrow windows: sections stacked, the page scrolls, the
@@ -3066,12 +3221,15 @@ updateSamplerUI();
    style): everything on one screen, laid out at a fixed design size and
    scaled to fit the window, so nothing ever scrolls.
    ===================================================================== */
-const DESK_W = 1440, DESK_H = 900;
+// the Full view is designed at 1440 x 900; the Basic view, with fewer controls, at 1280 x 800, so it comes out larger
+const deskSize = () => (document.body.classList.contains('full') ? [1440, 900] : [1280, 800]);
 const isDesk = () => innerWidth >= 1000 && innerWidth > innerHeight * 1.15;
 function applyLayout() {
   const desk = isDesk(), app = $('app');
   document.body.classList.toggle('desk', desk);
-  app.style.zoom = desk ? Math.min(innerWidth / DESK_W, innerHeight / DESK_H) : '';
+  const [dw, dh] = deskSize();
+  app.style.width = desk ? dw + 'px' : ''; app.style.height = desk ? dh + 'px' : '';
+  app.style.zoom = desk ? Math.min(innerWidth / dw, innerHeight / dh) : '';
   document.documentElement.style.setProperty('--kbh', $('kb').getBoundingClientRect().height + 'px');   // the editors leave the bottom panel visible
   drawWaves();
 }

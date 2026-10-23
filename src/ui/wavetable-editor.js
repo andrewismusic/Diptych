@@ -15,6 +15,7 @@ presetSel.innerHTML = '<option value="">Choose…</option>' + Object.keys(PRESET
 new ResizeObserver(() => document.documentElement.style.setProperty('--kbh', $('kb').getBoundingClientRect().height + 'px')).observe($('kb'));
 
 function openEditor(slot, side) {
+  closeOverlay();
   edSlot = slot; edSide = side; edFrame = Math.min(edFrame, tab().frames.length - 1);
   ed.classList.toggle('b', side === 'B');
   $('edTitle').textContent = edTitle();

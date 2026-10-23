@@ -17,6 +17,7 @@ const RND = {
   sample: side => (side === 'A' ? 0 : 1), sstart: () => (rnd() < 0.6 ? 0 : rnd() * 0.4),
   spitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; }, sfine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
   strack: () => (rnd() < 0.85 ? 1 : rnd() < 0.5 ? 0 : rnd()),
+  sloop: () => 0,   // set after the sample is picked: usually on for sustained samples (see randomizeSide)
   soct: () => (rnd() < 0.6 ? -1 : -2), sshape: () => rnd(), sdrive: () => rnd() ** 2 * 0.8,
   unison: () => (rnd() < 0.4 ? 0 : rnd()),
   glide: () => (rnd() < 0.5 ? 0 : rnd() < 0.9 ? rnd() * 0.1 : 0.1 + rnd() ** 2 * 0.5),   // half off; 95% under 100 ms
@@ -40,14 +41,16 @@ const RND = {
   arel: () => logr(0.03, 3),
   level: () => 0.5 + rnd() * 0.5,
   pan: () => (rnd() * 2 - 1) * 0.6,
-  // effects: settings over the full range (the synth is meant to surprise); every effect is always in the chain,
-  // so each mix is 0 (off on this side) often enough that a side hears about three effects on average
-  drive: () => rnd(), dshape: () => rnd(), dmix: () => (rnd() < 0.6 ? 0 : rnd()),
-  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.8 ? 0 : rnd()),
-  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.65 ? 0 : rnd()),
-  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.55 ? 0 : rnd() < 0.75 ? rnd() * 0.35 : rnd() < 0.6 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly up to 35%, rarely above 50%
+  // effects: settings over the full range (the synth is meant to surprise); every effect is always in the chain, so each
+  // is on for a side only so often (owner's odds, 2026-10-22): Drive 20%, Formant 10%, Modulation 40%, Delay 50%,
+  // Reverb 50%, OTT 50%, Lo-fi 10% (lofiGate). A side hears about 2.3 effects on average.
+  drive: () => rnd(), dshape: () => rnd(), dmix: () => (rnd() < 0.8 ? 0 : rnd()),
+  fvowel: () => rnd(), fshift: () => (rnd() * 2 - 1) * 12, freso: () => rnd(), fmix: () => (rnd() < 0.9 ? 0 : rnd()),
+  mtype: () => rnd(), mrate: () => logr(0.02, 10), mdepth: () => rnd(), mfb: () => rnd(), mmix: () => (rnd() < 0.6 ? 0 : rnd()),
+  dltime: () => Math.floor(rnd() * 12), dlfb: () => rnd() * 0.95, dlpp: () => rnd(), dltone: () => rnd(), dlmix: () => (rnd() < 0.5 ? 0 : rnd() < 0.75 ? rnd() * 0.35 : rnd() < 0.6 ? 0.35 + rnd() * 0.15 : 0.5 + rnd() * 0.5),   // mostly up to 35%, rarely above 50%
+  dlspill: () => (rnd() < 0.5 ? 1 : 0),
   rvsize: () => rnd(), rvdecay: () => logr(0.2, 20), rvdamp: () => rnd(), rvmix: () => (rnd() < 0.5 ? 0 : rnd() < 0.65 ? rnd() * 0.35 : 0.35 + rnd() * 0.65),
-  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten (and lofiGate turns it all off 70% of the time)
+  // lo-fi leans gentle: wow, flutter and codec are off two times in three, dropouts nine times in ten (and lofiGate turns it all off 90% of the time)
   lwow: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lflut: () => (rnd() < 0.66 ? 0 : rnd() ** 2), lchar: () => rnd() ** 2,
   ldrop: () => (rnd() < 0.9 ? 0 : rnd() ** 2), lcodec: () => (rnd() < 0.66 ? 0 : rnd() ** 2),
   lnoise: () => rnd(), lnmix: () => (rnd() < 0.85 ? rnd() * 0.15 : 0.15 + rnd() * 0.2),   // never above 35%, mostly 0–15%
@@ -63,7 +66,7 @@ const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side, d))));
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar', 'sloop', 'dlspill']);
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -89,10 +92,10 @@ function mixOttGains(side, g) {
     state[side][i] = norm(DEFS[i], -val(i));
   }
 }
-// Lo-fi is off on a side 70% of the time: every amount at 0
+// Lo-fi is off on a side 90% of the time: every amount at 0
 const LOFI_AMOUNTS = ['lwow', 'lflut', 'lchar', 'lnmix', 'ldrop', 'lcodec'];
 function lofiGate(side, g) {
-  if (!inGroup(DEFS[IX.lwow], g) || rnd() >= 0.7) return;
+  if (!inGroup(DEFS[IX.lwow], g) || rnd() >= 0.9) return;
   LOFI_AMOUNTS.map(k => IX[k]).filter(isFree).forEach(i => { state[side][i] = 0; });
 }
 // at least one oscillator is heard on each side: if every Level came up 0, one free oscillator comes on (by the same odds)
@@ -114,6 +117,43 @@ function effectMixRules(side, g) {
   while (ix.filter(i => val(i) > 0.5).length > 2 && hi.length) state[side][hi.pop()] = rnd() * 0.5;
   let top = shuffle(ix.filter(i => val(i) > 0.9 && free(i)));
   while (ix.filter(i => val(i) > 0.9).length > 1 && top.length) state[side][top.pop()] = 0.5 + rnd() * 0.4;
+}
+/* Level match: whichever oscillators a side hears, together they come out about as loud as one full-level sawtooth
+   (RMS 0.58, the level built-in and loaded samples are matched to). Each heard oscillator's own loudness (its wave,
+   the Sub's shape and drive, the sample from its Start point) times its Level is summed as power, and the free Levels
+   are scaled together, keeping their balance. Before this, a side hearing three oscillators came out about 5 dB louder
+   than a side hearing one. */
+const LEVEL_RMS = 0.58;
+function oscPower(s, side) {
+  const t = OSC_KIND[s], val = key => MorphEngine.denorm(DEFS[oi(s, key)], state[side][oi(s, key)]);
+  if (t === 'wt') {
+    MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
+    MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
+    MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], val('wave'), true, W.fr[0], W.fr[1]);
+    let p = 0; for (let h = 1; h <= 512; h++) p += (W.fr[0][h] ** 2 + W.fr[1][h] ** 2) / 2;
+    return p;
+  }
+  if (t === 'sub') {
+    const g = 1 + 7 * val('sdrive'), tg = Math.tanh(g); let p = 0;
+    for (let n = 0; n < 256; n++) p += OscSub.sample(n / 256, 1 / 256, val('sshape'), g, tg) ** 2;
+    return p / 256;
+  }
+  const ref = state.smp[val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? [smpData.A, smpData.B].find(x => x && x.id === ref.id) : smpFor(ref);
+  if (!data) return LEVEL_RMS ** 2;
+  const a = Math.floor(val('sstart') * (data.d.length - 1)), b = Math.min(data.d.length, a + Math.round(0.3 * data.sr));
+  let p = 0; for (let i = a; i < b; i++) p += data.d[i] ** 2;
+  return b > a ? p / (b - a) : 0;
+}
+function levelMatch(side) {
+  let fixed = 0, free = 0; const freeS = [];
+  OSC_KIND.forEach((_, s) => {
+    const i = oi(s, 'olevel'), lv = state[side][i]; if (lv === 0) return;
+    const pw = oscPower(s, side) * (lv / 0.8) ** 2;   // Level 80% is unity
+    if (isFree(i)) { free += pw; freeS.push(i); } else fixed += pw;
+  });
+  if (!freeS.length || free <= 0) return;
+  const k = Math.sqrt(Math.max(0, LEVEL_RMS ** 2 - fixed) / free);
+  freeS.forEach(i => { state[side][i] = Math.max(0.05, Math.min(1, state[side][i] * k)); });
 }
 // A near-sine wave through a low-pass set low, a high-pass set high, or a band-pass can be close to silent, so when a
 // Wavetable slot that goes through the filter is nearly pure, the filter leaves band-pass for low-pass and its cutoff moves toward the open end.
@@ -209,8 +249,13 @@ function randomizeSide(side, g, raw) {
   if (!raw) { oscGuard(side); lofiGate(side, g); mixOttGains(side, g); effectMixRules(side, g); }
   const mine = s => (!g || g === OSC_NAMES[s]) && !state.secLocks[OSC_NAMES[s]];
   for (const s of WT_SLOTS) if (mine(s)) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }   // each Wavetable's table for this side, unless its section is locked
-  if (mine(SMP_SLOT)) state.smp[side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
-  if (!raw) { sineGuard(side); loudnessGuard(side); }
+  if (mine(SMP_SLOT)) {
+    state.smp[side] = { name: FACTORY_NAMES[Math.floor(rnd() * FACTORY_NAMES.length)] };   // a built-in sample
+    // Loop: usually on for a sustained sample, usually off for plucks and hits
+    const li = oi(SMP_SLOT, 'sloop'), f = FACTORY[state.smp[side].name];
+    if (isFree(li)) state[side][li] = rnd() < (f.sustained ? 0.8 : 0.15) ? 1 : 0;
+  }
+  if (!raw) { levelMatch(side); sineGuard(side); loudnessGuard(side); }
 }
 $('rndA').addEventListener('click', () => bulk(() => randomizeSide('A')));
 $('rndB').addEventListener('click', () => bulk(() => randomizeSide('B')));
@@ -219,15 +264,8 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
 }
 function randomizeAll(g, raw) {
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
-  const mine = grp => (!g || g === grp) && !state.secLocks[grp];
-  if (mine('Delay')) state.dlSpill = rnd() < 0.5;   // Cut or Spill
-  // Loop: usually on when either side plays a sustained sample, usually off for plucks and hits
-  if (mine('Sampler')) {
-    const sus = ['A', 'B'].some(k => { const r = state.smp[k]; return r && !r.id && FACTORY[r.name] && FACTORY[r.name].sustained; });
-    state.smpLoop = rnd() < (sus ? 0.8 : 0.15);
-  }
   randomizeLinked(g, raw);
-  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
+  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
 }
 $('rndLinked').addEventListener('click', () => bulk(() => randomizeLinked()));

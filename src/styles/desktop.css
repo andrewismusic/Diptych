@@ -28,7 +28,7 @@ body.desk{overflow:hidden;height:100vh}
 .desk .group[data-group="Output"] .kn{width:46px} .desk .group[data-group="Output"] .knob{width:34px;height:34px}
 .desk .group h2{margin:0 0 3px;font-size:.85rem}
 .desk .group h2 .lock{width:20px;height:20px}
-.desk .fxsw{min-height:22px;padding:0 8px;font-size:.74rem}
+.desk .fxsw{min-height:20px;padding:0 8px;font-size:.72rem}
 .desk .group[data-kind="fx"]{padding-left:6px;padding-right:6px}
 .desk .group[data-kind="fx"] h2{gap:2px}
 .desk .group[data-kind="fx"] h2 .lock{width:17px;margin-left:1px}
@@ -46,9 +46,10 @@ body.desk{overflow:hidden;height:100vh}
 .desk .wtcard canvas{height:26px}
 .desk .wtlabel{font-size:.68rem;min-height:20px}
 .desk .group[data-kind="osc"] .wt{margin-bottom:3px}
-.desk .smpsel,.desk .smploop button{min-height:20px;font-size:.68rem}
-.desk .blendrow{margin-top:2px;font-size:.74rem}
-.desk .blendrow .seg button{min-height:22px;padding:0 8px;font-size:.74rem}
+.desk .smpsel,.desk .swb{min-height:20px;font-size:.68rem}
+.desk .swb{padding:0 5px}
+.desk .swrow{margin-top:2px;gap:3px 8px;font-size:.72rem}
+.desk .swrow .seg button{min-height:20px;padding:0 6px;font-size:.7rem}
 .desk .group[data-group="Filter"] .gbody{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .desk .sub + .sub{margin-top:0}
 .desk .subh{display:none}
@@ -70,3 +71,24 @@ body.desk{overflow:hidden;height:100vh}
 .desk .lanes{flex:1 1 auto;min-width:0}
 .desk .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
 .desk .seqctl button{min-height:26px;padding:1px 8px;font-size:.8rem}
+/* ---------- Basic view on desktop: tiles with larger knobs, sized by their key controls ---------- */
+.desk #app{position:relative}
+.desk .kb{position:relative;z-index:25}
+.desk:not(.full) .group:not(.open) .kn{width:62px}
+.desk:not(.full) .group:not(.open) .knob{width:48px;height:48px}
+.desk:not(.full) .group:not(.open) .kname,.desk:not(.full) .group:not(.open) .kval{font-size:.78rem}
+.desk:not(.full) .group:not(.open) .kab{max-width:62px;font-size:.62rem}
+.desk:not(.full) .group[data-kind="fx"]:not(.open) .kn{width:60px}   /* room to spare when the window's scale rounds widths */
+.desk:not(.full) .group:not(.open) .viz{height:52px}
+.desk:not(.full) .group:not(.open) .wtcard canvas{height:34px}
+.desk:not(.full) .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 4 / 12)}
+.desk:not(.full) .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3.6 / 12)}
+.desk:not(.full) .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) * 1.4 / 12)}
+.desk:not(.full) .group[data-group="Filter"]:not(.open) .gbody{grid-template-columns:1fr}
+/* effects: shares by key controls (two or three knobs; a two-knob tile needs a little more than 2/3 of a three-knob one) */
+.desk:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
+.desk:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
+/* the overlay sits over the sections, inside the scaled design */
+.desk .ovlback{bottom:0}
+.desk .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
+.desk .group.open .gdone{min-height:24px;font-size:.78rem}

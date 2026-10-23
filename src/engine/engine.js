@@ -38,7 +38,9 @@ class MorphEngine {
     this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
     this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
     // Sampler per slot: a buffer per side ({ d, sr } or null), Loop, and per-block settings
-    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null })); this.smpLoop = [false, false, false, false];
+    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null }));   // Loop is a per-side switch parameter ('sloop')
+    // oscillator On/Off (a bypass for auditioning, never morphed): target and a ~15 ms glide
+    this.oscOn = [true, true, true, true]; this.oscBy = new Float64Array(4).fill(1);
     this.smpMix = new Float64Array(4); this.smpTrk = new Float64Array(4); this.smpRA = new Float64Array(4); this.smpRB = new Float64Array(4);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
@@ -49,7 +51,7 @@ class MorphEngine {
     const nf = this.nFx;
     this.fxType = Array.from({ length: nf }, (_, s) => engOf('fx', s));
     this.fxInst = this.fxType.map((t, s) => this.makeFx(t, s));
-    this.fxOn = this.fxType.map(() => true); this.dlSpill = false; this.fxIdle = this.fxType.map(() => true); this.fxBy = new Float64Array(nf); this.fxFirst = true;
+    this.fxOn = this.fxType.map(() => true); this.fxIdle = this.fxType.map(() => true); this.fxBy = new Float64Array(nf); this.fxFirst = true;
     this.fxWarm = new Int32Array(nf); this.warmN = Math.round(0.025 * sr);   // a waking effect fills its buffers for 25 ms before fading in
     // which parameters must sit at their neutral value (in real units) for an effect to be silent
     this.fxRest = this.fxType.map((t, s) => Object.entries(MorphEngine.FX_CLASSES[t].REST).map(([k, v]) => [this.xP[s][k], v]));
@@ -151,7 +153,6 @@ class MorphEngine {
       case 'morph': this.morph = m.v; break;
       case 'table': this.banks[m.slot].setTable(m.side, m.re, m.im); break;
       case 'sample': this.smp[m.slot][m.side] = m.d ? { d: m.d, sr: m.sr } : null; break;
-      case 'smpLoop': this.smpLoop[m.i] = !!m.v; break;
       case 'blend': this.banks.forEach(b => { b.spectral = !!m.v; b.ver++; }); break;
       case 'seq':
         this.seq = m.seq;
@@ -167,8 +168,8 @@ class MorphEngine {
         break;
       case 'bpm': this.bpm = m.v; break;
       case 'walk': this.walk = !!m.v; break;
-      case 'dlmode': this.dlSpill = !!m.v; break;
       case 'bypass': this.fxOn[m.i] = !!m.on; break;
+      case 'oscOn': this.oscOn[m.i] = !!m.on; break;
       case 'on': this.noteOn(m.note, m.vel); break;
       case 'off': this.noteOff(m.note); break;
       case 'panic': this.stack = []; this.voices.forEach(v => { if (v.active) { v.aSt = 3; v.fSt = 3; } }); break;
@@ -305,11 +306,14 @@ class MorphEngine {
     const P0 = this.oP[0], t0 = this.oscType[0];   // the Sub follows slot 1's pitch
     const tune1 = t0 === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : 0;
     let nSl = 0;
+    const byK = 1 - Math.exp(-len / (0.015 * sr));
     for (let s = 0; s < 4; s++) {
       const t = this.oscType[s], P = this.oP[s], o = s * 4;
+      const tgt = this.oscOn[s] ? 1 : 0;
+      this.oscBy[s] += (tgt - this.oscBy[s]) * byK; if (Math.abs(tgt - this.oscBy[s]) < 1e-4) this.oscBy[s] = tgt;
       const live = t !== 'off' && !(t === 'wt' && !this.banks[s].ready);
       if (live) {
-        const lv = v[P.olevel] / 0.8, pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
+        const lv = v[P.olevel] / 0.8 * this.oscBy[s], pa = (v[P.opan] + 1) * Math.PI / 4;   // Level 80% is unity
         const pl = Math.cos(pa) * Math.SQRT2 * lv, pr = Math.sin(pa) * Math.SQRT2 * lv, byp = v[P.byp];
         CN[o] = pl * (1 - byp); CN[o + 1] = pr * (1 - byp); CN[o + 2] = pl * byp; CN[o + 3] = pr * byp;
       } else for (let j = 0; j < 4; j++) CN[o + j] = 0;
@@ -412,14 +416,14 @@ class MorphEngine {
                 q += uDt[b + j]; if (q >= 1) q -= 1; ph[pj] = q;
               }
             } else if (kind[a] === 4) {
-              const S = this.smp[sl], q = sl * 2, loop = this.smpLoop[sl], sp = vc.sp, op = vc.op;
+              const S = this.smp[sl], q = sl * 2, P = this.oP[sl], loopA = this.A[P.sloop] >= 0.5, loopB = this.B[P.sloop] >= 0.5, sp = vc.sp, op = vc.op;
               let ya = 0, yb = 0, oa = 0, ob = 0;
               if (S.A) { const d = S.A.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
-                ya = OscSmp.read(d, sp[q], loop, ls); sp[q] = OscSmp.advance(sp[q], this.smpRA[sl], n, loop, ls);
-                if (vc.sxf[sl] > 0 && vc.sold[sl]) { oa = OscSmp.read(d, op[q], loop, ls); op[q] = OscSmp.advance(op[q], this.smpRA[sl], n, loop, ls); } }
+                ya = OscSmp.read(d, sp[q], loopA, ls); sp[q] = OscSmp.advance(sp[q], this.smpRA[sl], n, loopA, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { oa = OscSmp.read(d, op[q], loopA, ls); op[q] = OscSmp.advance(op[q], this.smpRA[sl], n, loopA, ls); } }
               if (S.B) { const d = S.B.d, n = d.length, ls = OscSmp.loopStart(n, this.val[this.oP[sl].sstart] * (n - 1));
-                yb = OscSmp.read(d, sp[q + 1], loop, ls); sp[q + 1] = OscSmp.advance(sp[q + 1], this.smpRB[sl], n, loop, ls);
-                if (vc.sxf[sl] > 0 && vc.sold[sl]) { ob = OscSmp.read(d, op[q + 1], loop, ls); op[q + 1] = OscSmp.advance(op[q + 1], this.smpRB[sl], n, loop, ls); } }
+                yb = OscSmp.read(d, sp[q + 1], loopB, ls); sp[q + 1] = OscSmp.advance(sp[q + 1], this.smpRB[sl], n, loopB, ls);
+                if (vc.sxf[sl] > 0 && vc.sold[sl]) { ob = OscSmp.read(d, op[q + 1], loopB, ls); op[q + 1] = OscSmp.advance(op[q + 1], this.smpRB[sl], n, loopB, ls); } }
               const mix = this.smpMix[sl];
               let x = ya + (yb - ya) * mix;
               if (vc.sxf[sl] > 0) { const g = vc.sxf[sl] / Math.round(0.005 * sr); x = x * (1 - g) + (oa + (ob - oa) * mix) * g; vc.sxf[sl]--; }
@@ -473,7 +477,7 @@ class MorphEngine {
       else if (rest && this.fxBy[s] <= 0) { this.fxIdle[s] = true; this.fxInst[s] = this.makeFx(this.fxType[s], s); continue; }
       const warm = this.fxWarm[s] > 0; if (warm) this.fxWarm[s] -= len;
       const inst = this.fxInst[s], tgt = this.fxOn[s] && !warm ? 1 : 0, c = this.byC, sw = this.swStep;
-      if (inst instanceof FxDelay) inst.spill = this.dlSpill;
+      if (inst instanceof FxDelay) inst.spill = v[this.xP[s].dlspill] >= 0.5;   // Cut / Spill: each side's own, switching halfway
       for (let i = 0; i < len; i++) { dryL[i] = L[p + i]; dryR[i] = R[p + i]; }
       inst.process(L, R, p, len, v, this.xP[s]);
       let by = this.fxBy[s];

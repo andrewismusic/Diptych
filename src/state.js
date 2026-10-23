@@ -1,7 +1,7 @@
 /* ---------- state + persistence ----------
    The fixed architecture (2026-10-17) starts fresh: it saves under a new key and ignores earlier patches, by decision.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v5', STORE_VER = 1;
+const STORE = 'diptych-v5', STORE_VER = 2;
 const DEFAULT_LOCKS = () => ({ level: true, pan: true, pattern: true, 'o1.wave': true, 'o2.wave': true, 'o4.sample': true, ottout: true });
 const DEFAULT_LINKS = () => ({ 'o1.pitch': true, 'o1.fine': true, 'o2.pitch': true, 'o2.fine': true, 'o4.spitch': true, 'o4.sfine': true, ottout: true });
 const DEFAULT_SMP = () => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } });   // the Sampler's sample references
@@ -18,10 +18,9 @@ const state = {
   linkMem: {},
   mono: false,
   links: DEFAULT_LINKS(),
-  fxOn: DEFAULT_FXON(),   // bypass switches for auditioning: never morphed or randomized
-  dlSpill: false,
+  oscOn: [true, true, true, true],   // bypass switches for auditioning: never morphed or randomized
+  fxOn: DEFAULT_FXON(),
   smp: DEFAULT_SMP(),
-  smpLoop: false,
   seq: null,
   bpm: 120,
   walk: true,
@@ -55,7 +54,9 @@ try {
     for (const k of ['locks', 'links', 'secLocks', 'linkMem']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
     state.mono = !!saved.mono;
     if (Array.isArray(saved.fxOn) && saved.fxOn.length === NFX) state.fxOn = saved.fxOn.map(Boolean);
-    state.dlSpill = !!saved.dlSpill; state.smpLoop = !!saved.smpLoop;
+    if (Array.isArray(saved.oscOn) && saved.oscOn.length === NOSC) state.oscOn = saved.oscOn.map(Boolean);
+    // ver 2: Loop and Cut / Spill became per-side switches (they were one setting for both sides)
+    if (!(saved.ver >= 2)) for (const [k, id] of [['smpLoop', 'o4.sloop'], ['dlSpill', 'dlspill']]) state.A[IX[id]] = state.B[IX[id]] = saved[k] ? 1 : 0;
     if (saved.smp) ['A', 'B'].forEach(k => { const r = saved.smp[k]; if (okRef(r)) state.smp[k] = { name: r.name, ...(r.id ? { id: r.id } : {}) }; });
     if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));

@@ -1,13 +1,13 @@
 /* =====================================================================
    SAMPLER CONTROLS
    On the Sampler's wave cards: a sample menu per side (built-in samples,
-   the loaded file if any, and "Load file…") and One-shot / Loop.
+   the loaded file if any, and "Load file…"). Each side's Loop is a switch parameter (see knobs.js).
    ===================================================================== */
 const smpFile = document.createElement('input');
 smpFile.type = 'file'; smpFile.accept = 'audio/*'; smpFile.hidden = true;
 document.body.appendChild(smpFile);
 let smpPending = null;   // the side waiting for a file
-// the menus and One-shot / Loop live in the Sampler's wave cards (see waveCards in knobs.js)
+// the menus live in the Sampler's wave cards (see waveCards in knobs.js)
 function updateSamplerUI() {
   document.querySelectorAll('[data-smpsel]').forEach(sel => {
     const ref = state.smp[sel.dataset.side];
@@ -15,7 +15,6 @@ function updateSamplerUI() {
       + (ref && ref.id ? `<option value="u:${ref.id}">${ref.name.replace(/[<&]/g, '')}</option>` : '') + '<option value="load">Load file…</option>';
     sel.value = ref ? (ref.id ? 'u:' + ref.id : 'f:' + ref.name) : 'load';
   });
-  document.querySelectorAll('[data-smploop]').forEach(b => b.setAttribute('aria-pressed', state.smpLoop === (b.dataset.v === '1')));
 }
 function setSample(k, ref) {
   pushUndo();
@@ -41,10 +40,5 @@ smpFile.addEventListener('change', async () => {
     setSample(p, { name, id });
     if (note.textContent === 'Loading…') note.textContent = '';
   } catch (err) { note.textContent = 'That file could not be read as audio.'; }
-});
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-smploop]'); if (!b) return;
-  state.smpLoop = b.dataset.v === '1';
-  updateSamplerUI(); if (ready) send({ type:'smpLoop', i: SMP_SLOT, v: state.smpLoop }); save();
 });
 updateSamplerUI();

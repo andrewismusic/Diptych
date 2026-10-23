@@ -62,7 +62,7 @@ function installHarness() {
       DEFS.forEach((d, i) => { if (!(d.id in over)) p.B[i] = p.A[i]; });
       return p;
     },
-    /* opts: patch {A,B,C}, morph, fxOn (one per effect, default all on), dlSpill, smpLoop,
+    /* opts: patch {A,B,C}, morph, fxOn and oscOn (one per effect / oscillator, default all on),
        tables: {A,B} for both Wavetables or an array of {A,B} per Wavetable (preset names or table objects),
        samples: {A,B} for the Sampler (built-in names or { d, sr }),
        notes [[midi, startBlock, endBlock]], blocks (128-sample blocks), sr, bpm, events: { [block]: message | message[] }, seed, setup(engine) */
@@ -80,10 +80,9 @@ function installHarness() {
         }
         const smp = x => (typeof x === 'string' ? factoryData(x) : x);
         for (const k of ['A', 'B']) { const d = o.samples && smp(o.samples[k]); if (d) e.handle({ type:'sample', slot: SMP_SLOT, side:k, d: d.d, sr: d.sr }); }
-        e.handle({ type:'smpLoop', i: SMP_SLOT, v: !!o.smpLoop });
         e.handle({ type:'blend', v:true }); e.handle({ type:'bpm', v: o.bpm || 120 });
-        e.handle({ type:'dlmode', v: !!o.dlSpill });
         (o.fxOn || T.allFx).forEach((on, i) => e.handle({ type:'bypass', i, on: !!on }));
+        (o.oscOn || [1, 1, 1, 1]).forEach((on, i) => e.handle({ type:'oscOn', i, on: !!on }));
         if (o.setup) o.setup(e);   // e.g. spy on noteOn
         const blocks = o.blocks || 750, N = 128, L = new Float32Array(blocks * N), R = new Float32Array(blocks * N);
         const bl = new Float32Array(N), br = new Float32Array(N), notes = o.notes || [[48, 0, blocks]];
@@ -98,8 +97,8 @@ function installHarness() {
     },
     // the page's current sound, as render() options
     current() {
-      return { patch: { A: state.A.slice(), B: state.B.slice(), C: state.C.slice() }, morph: state.morph, fxOn: state.fxOn.map(x => +x), dlSpill: state.dlSpill,
-        tables: tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) })), samples: { A: smpData.A, B: smpData.B }, smpLoop: state.smpLoop };
+      return { patch: { A: state.A.slice(), B: state.B.slice(), C: state.C.slice() }, morph: state.morph, fxOn: state.fxOn.map(x => +x), oscOn: state.oscOn.map(x => +x),
+        tables: tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) })), samples: { A: smpData.A, B: smpData.B } };
     },
     allFx: FX_KIND.map(() => 1), noFx: FX_KIND.map(() => 0),   // every effect on / every effect bypassed
     only: k => FX_KIND.map(t => +(t === k)),                   // just this effect on
