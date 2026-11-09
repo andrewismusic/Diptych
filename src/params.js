@@ -14,10 +14,10 @@
    own name; formats (FMT) and randomize rules (RND) are looked up by key.
    kind: 'osc' | 'fx' with slot (0-based); eng: the slot's engine or effect.
    ===================================================================== */
-const OSC_KIND = ['wt', 'wt', 'sub', 'smp'], OSC_NAMES = ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler'];
+const OSC_KIND = ['wt', 'wt', 'sub', 'smp', 'fm'], OSC_NAMES = ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler', 'FM'];
 const FX_KIND = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'], FX_NAMES = ['Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT'];
 const NOSC = OSC_KIND.length, NFX = FX_KIND.length;
-const WT_SLOTS = [0, 1], SUB_SLOT = 2, SMP_SLOT = 3, DELAY_SLOT = FX_KIND.indexOf('delay'), OTT_SLOT = FX_KIND.indexOf('ott');
+const WT_SLOTS = [0, 1], SUB_SLOT = 2, SMP_SLOT = 3, FM_SLOT = 4, DELAY_SLOT = FX_KIND.indexOf('delay'), OTT_SLOT = FX_KIND.indexOf('ott');
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
 const OSC_COMMON = [
   P_('olevel', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('opan', 'Pan', -1, 1, 'lin', 0, 0), P_('byp', 'Bypass', 0, 1, 'lin', 0, 0),
@@ -35,8 +35,29 @@ const OSC_ENG = {
     P_('sloop', 'Playback', 0, 1, 'int', 0, 0, { opts: ['One-shot', 'Loop'] }),   // each side's sample plays with its own setting
   ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
+  /* FM (2026-11-06): four operators. Each side holds a whole FM patch of its own (algorithm, ratios, levels, decays,
+     feedback: single-side settings, like Position A and B), and Patch crossfades the two, like Wave and Sample, so
+     stepped ratios and algorithms never jump during a morph. */
+  fm: [
+    P_('fmx', 'Patch', 0, 1, 'lin', 0, 1), P_('fpitch', 'Pitch', -24, 24, 'int', 0, 0),
+    ...['A', 'B'].flatMap(k => [
+      P_('alg' + k, 'Algorithm ' + k, 0, 7, 'int', 0, 0, { single:k }), P_('fb' + k, 'Feedback ' + k, 0, 1, 'lin', 0, 0, { single:k }),
+      ...[1, 2, 3, 4].flatMap(j => [
+        P_(`r${j}${k}`, `Ratio ${j} ${k}`, 0, 16, 'int', [1, 1, 1, 1][j - 1], [1, 1, 1, 1][j - 1], { single:k }),
+        P_(`l${j}${k}`, `Level ${j} ${k}`, 0, 1, 'lin', [1, 0.5, 0.35, 0.25][j - 1], [1, 0.5, 0.35, 0.25][j - 1], { single:k }),
+        P_(`d${j}${k}`, `Decay ${j} ${k}`, 0.005, 30, 'log', [30, 1.2, 0.6, 0.3][j - 1], [30, 1.2, 0.6, 0.3][j - 1], { single:k }),
+      ]),
+    ]),
+  ],
 };
+/* Macros (2026-11-06): the controls the player sees. Each is per side (A and B handles) and 50% means "as generated";
+   the engine applies them on top of everything else (MorphEngine.applyMacros). Envelope runs from a short pluck (0%)
+   to a long pad (100%); Brightness opens or darkens the filter, simplifies the waveforms and reduces the filter
+   envelope; FX intensity drives the effects' amounts (feedback, decay, depth, drive); FX wet their mixes (0% is dry). */
+const MACROS = [P_('menv', 'Envelope', 0, 1, 'lin', 0.5, 0.5), P_('mbright', 'Brightness', 0, 1, 'lin', 0.5, 0.5),
+  P_('mfx', 'FX intensity', 0, 1, 'lin', 0.5, 0.5), P_('mwet', 'FX wet', 0, 1, 'lin', 0.5, 0.5)];
 const VOICE = [
+  P_('harm', 'Harmonics', 0, 1, 'lin', 1, 1),   // 100% is the waveform as it is; lower rolls its upper harmonics off (Brightness turns it down)
   P_('glide', 'Glide', 0, 2, 'pow2', 0, 0), P_('vdepth', 'Vibrato', 0, 1, 'pow2', 0, 0), P_('vfade', 'Fade in', 0, 5, 'pow2', 0.6, 0.6),
   P_('vrate', 'Vib rate', 0.5, 12, 'log', 5.5, 5.5), P_('vrfade', 'Rate fade', -10, 10, 'lin', 0, 0), P_('vrtime', 'Rate settle', 0, 5, 'pow2', 1, 1),
 ];
@@ -65,8 +86,9 @@ const FX_ENG = {
     P_('ottgh', 'High gain', -12, 12, 'lin', 0, 0), P_('ottout', 'Output', -12, 12, 'lin', 0, 0)],
 };
 // The default patch is one Wavetable: the other oscillators start at Level 0
-const OSC_LEVEL = [0.8, 0, 0, 0];
+const OSC_LEVEL = [0.8, 0, 0, 0, 0];
 const DEFS = [];
+MACROS.forEach(p => DEFS.push({ ...p, id: p.key, group:'Sound' }));
 OSC_KIND.forEach((eng, s) => {
   const group = OSC_NAMES[s], add = p => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
   OSC_ENG[eng].forEach(add);
@@ -77,12 +99,24 @@ FILTER.forEach(p => DEFS.push({ ...p, id: p.key, group:'Filter' }));
 ENVS.forEach(([group, ps]) => ps.forEach(p => DEFS.push({ ...p, id: p.key, group })));
 FX_KIND.forEach((eng, s) => FX_ENG[eng].forEach(p => DEFS.push({ ...p, id: p.key, group: FX_NAMES[s], kind:'fx', slot:s, eng })));
 DEFS.push({ ...P_('pattern', 'Pattern', 0, 1, 'lin', 0, 1), id:'pattern', group:'Sequencer' });
+/* Broad sequencer controls (2026-11-06), one setting per side (seq: a side's own setting, shown with A and B handles
+   but no morph curve; the Pattern knob does the morphing): Density thins or fills the notes, Speed plays the pattern
+   at half, normal or double speed, Octave moves it down or up. The sequencer model reads them (sequencer/model.js). */
+[P_('sqdens', 'Density', 0, 1, 'lin', 1, 1), P_('sqspeed', 'Speed', 0, 2, 'int', 1, 1), P_('sqoct', 'Octave', -1, 1, 'int', 0, 0)]
+  .forEach(p => DEFS.push({ ...p, id: p.key, group:'Sequence', seq: true }));
 const IX = {}; DEFS.forEach((d, i) => { IX[d.id] = i; });
 // index of an oscillator parameter: oi(0, 'wave') -> IX['o1.wave']; effect parameters are IX.dlmix and so on
 const oi = (s, key) => IX[`o${s + 1}.${key}`];
 const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' s');
 const pct = v => Math.round(v * 100) + '%';
+const FM_RATIOS = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];   // OscFM.RATIOS
 const FMT = {
+  menv: pct, mbright: pct, mfx: pct, mwet: pct, harm: pct,
+  sqdens: pct, sqspeed: v => ['½×', '1×', '2×'][v], sqoct: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' oct',
+  fmx: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
+  fpitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st',
+  ...Object.fromEntries(['A', 'B'].flatMap(k => [['alg' + k, v => String(v + 1)], ['fb' + k, pct],
+    ...[1, 2, 3, 4].flatMap(j => [[`r${j}${k}`, v => '×' + FM_RATIOS[v]], [`l${j}${k}`, pct], [`d${j}${k}`, v => (v >= 25 ? 'Hold' : time(v))]])])),
   olevel: pct, opan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
   byp: v => (v < 0.005 ? 'Off' : pct(v)),
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),

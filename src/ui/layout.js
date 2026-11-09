@@ -6,7 +6,7 @@
    scaled to fit the window, so nothing ever scrolls.
    ===================================================================== */
 // the Full view is designed at 1440 x 900; the Basic view, with fewer controls, at 1280 x 800, so it comes out larger
-const deskSize = () => (document.body.classList.contains('full') ? [1440, 900] : [1280, 800]);
+const deskSize = () => (!document.body.classList.contains('dev') ? [1280, 800] : document.body.classList.contains('full') ? [1440, 900] : [1280, 800]);
 const isDesk = () => innerWidth >= 1000 && innerWidth > innerHeight * 1.15;
 function applyLayout() {
   const desk = isDesk(), app = $('app');

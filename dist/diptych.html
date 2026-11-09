@@ -267,6 +267,8 @@ body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
   .wtcard canvas{height:72px} #edCanvas{height:260px}
 }
 /* ---------- desktop / plugin layout (body.desk, see ui/layout.js) ----------
+   Since 2026-11-06 this is the developer view's layout (body.dev); the player's view is in player.css. The developer
+   view holds more than fits (five oscillators, the Sound and Sequence cards), so its section area scrolls. 
    A fixed 1440 x 900 design scaled to the window: the four oscillators across the top; Voice, Filter, Amp envelope
    and Output in the middle; the seven effects in one row below, each as wide as two rows of its knobs need; the
    bottom panel last. Knobs are compact and A/B values sit on one line. Rows are flex lines of fixed shares. */
@@ -281,7 +283,7 @@ body.desk{overflow:hidden;height:100vh}
 .desk main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
 .desk .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
 .desk .group{box-sizing:border-box}
-.desk .group[data-kind="osc"]{width:calc((100% - 3 * var(--g)) / 4)}
+.desk .group[data-kind="osc"]{width:calc((100% - 4 * var(--g)) / 5)}
 .desk .group[data-group="Voice"],.desk .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
 .desk .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 5 / 12)}
 .desk .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) / 12)}
@@ -342,24 +344,56 @@ body.desk{overflow:hidden;height:100vh}
 /* ---------- Basic view on desktop: tiles with larger knobs, sized by their key controls ---------- */
 .desk #app{position:relative}
 .desk .kb{position:relative;z-index:25}
-.desk:not(.full) .group:not(.open) .kn{width:62px}
-.desk:not(.full) .group:not(.open) .knob{width:48px;height:48px}
-.desk:not(.full) .group:not(.open) .kname,.desk:not(.full) .group:not(.open) .kval{font-size:.78rem}
-.desk:not(.full) .group:not(.open) .kab{max-width:62px;font-size:.62rem}
-.desk:not(.full) .group[data-kind="fx"]:not(.open) .kn{width:60px}   /* room to spare when the window's scale rounds widths */
-.desk:not(.full) .group:not(.open) .viz{height:52px}
-.desk:not(.full) .group:not(.open) .wtcard canvas{height:34px}
-.desk:not(.full) .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 4 / 12)}
-.desk:not(.full) .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3.6 / 12)}
-.desk:not(.full) .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) * 1.4 / 12)}
-.desk:not(.full) .group[data-group="Filter"]:not(.open) .gbody{grid-template-columns:1fr}
+.desk.dev:not(.full) .group:not(.open) .kn{width:62px}
+.desk.dev:not(.full) .group:not(.open) .knob{width:48px;height:48px}
+.desk.dev:not(.full) .group:not(.open) .kname,.desk.dev:not(.full) .group:not(.open) .kval{font-size:.78rem}
+.desk.dev:not(.full) .group:not(.open) .kab{max-width:62px;font-size:.62rem}
+.desk.dev:not(.full) .group[data-kind="fx"]:not(.open) .kn{width:60px}   /* room to spare when the window's scale rounds widths */
+.desk.dev:not(.full) .group:not(.open) .viz{height:52px}
+.desk.dev:not(.full) .group:not(.open) .wtcard canvas{height:34px}
+.desk.dev:not(.full) .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 4 / 12)}
+.desk.dev:not(.full) .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3.6 / 12)}
+.desk.dev:not(.full) .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) * 1.4 / 12)}
+.desk.dev:not(.full) .group[data-group="Filter"]:not(.open) .gbody{grid-template-columns:1fr}
 /* effects: shares by key controls (two or three knobs; a two-knob tile needs a little more than 2/3 of a three-knob one) */
-.desk:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
-.desk:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
+.desk.dev:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
+.desk.dev:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
 /* the overlay sits over the sections, inside the scaled design */
 .desk .ovlback{bottom:0}
 .desk .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
 .desk .group.open .gdone{min-height:24px;font-size:.78rem}
+/* developer view: the sections scroll inside the window (the bottom panel stays put); the player's cards sit in the middle row */
+.desk.dev main{overflow:auto}
+.desk.dev .group[data-group="Sound"],.desk.dev .group[data-group="Sequence"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
+/* rows: the five oscillators; Sound, Voice, Filter, Amp envelope, Output; the seven effects; Sequence last */
+.desk.dev .group:not([data-kind="osc"]){order:1} .desk.dev .group[data-kind="fx"]{order:2} .desk.dev .group[data-group="Sequence"]{order:3}
+/* ---------- the player's view (body without .dev, see ui/overlay.js) ----------
+   Only the Sound card (the four macros) and the Sequence card. Larger knobs, no padlocks or links. */
+body:not(.dev) main .group:not([data-group="Sound"]):not([data-group="Sequence"]){display:none}
+body:not(.dev) .view{display:none}
+body:not(.dev) .kwrap .icons{display:none}
+body:not(.dev) .group .more{display:none}
+.group[data-group="Sound"] .gname,.group[data-group="Sequence"] .gname{cursor:default}
+.qscale{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}
+.qscale .lbl{font-weight:600;font-size:.92rem;margin-right:2px}
+.qscale select{min-height:32px}
+/* desktop: the two cards side by side, centered, with large knobs */
+.desk:not(.dev) main{justify-content:center;align-content:center;gap:24px}
+.desk:not(.dev) .group[data-group="Sound"],.desk:not(.dev) .group[data-group="Sequence"]{width:auto;flex:0 0 auto;padding:14px 22px 12px}
+.desk:not(.dev) .group h2{font-size:1.05rem;margin-bottom:8px}
+.desk:not(.dev) main .kn{width:150px}
+.desk:not(.dev) main .knob{width:124px;height:124px;margin:6px 0}
+.desk:not(.dev) main .kname{font-size:1.1rem}
+.desk:not(.dev) main .kval{font-size:1.05rem}
+.desk:not(.dev) main .kab{font-size:.9rem;max-width:150px}
+.desk:not(.dev) main .knobs{gap:8px 10px}
+.desk:not(.dev) .qscale{margin-top:14px}
+.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:150px}
+.desk:not(.dev) .lanes{grid-template-rows:repeat(3,36px)} .desk:not(.dev) .lanes canvas{height:36px}
+/* phones: four macros across, even at 375 px */
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs,body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
+body:not(.dev):not(.desk) main .kn{width:auto}
+body:not(.dev) #rndLinked{display:none}   /* linked knobs belong to the developer view */
 </style>
 </head>
 <body>
@@ -552,11 +586,13 @@ body.desk{overflow:hidden;height:100vh}
    lerp(A, B, bend(morph, curve)).
 
    The architecture is fixed: each slot's engine or effect comes from the
-   parameter list (its params' `eng`). Signal flow per voice: 4 oscillators
-   (Wavetable, Wavetable, Sub, Sampler) -> each splits between the filter and
+   parameter list (its params' `eng`). Signal flow per voice: 5 oscillators
+   (Wavetable, Wavetable, Sub, Sampler, FM) -> each splits between the filter and
    around it (Bypass) -> amp envelope -> master Level and Pan. Then the 7
    effects in order, and a final tanh soft clip. An oscillator at Level 0 is
    skipped; an effect at rest (Mix 0) at the current morph goes idle (see renderFx).
+   The four macros (Envelope, Brightness, FX intensity, FX wet) are applied on top
+   of the resolved values every sub-block (applyMacros).
 
    MorphEngine and the classes in the other engine files are stringified
    into the AudioWorklet (see audio.js), so they must stay self-contained:
@@ -574,26 +610,36 @@ class MorphEngine {
     const keyMap = (kind, slot) => { const m = {}; defs.forEach((d, i) => { if (d.kind === kind && d.slot === slot) m[d.key] = i; }); return m; };
     const engOf = (kind, slot) => (defs.find(d => d.kind === kind && d.slot === slot) || {}).eng;
     this.nFx = 1 + Math.max(-1, ...defs.filter(d => d.kind === 'fx').map(d => d.slot));
-    this.oP = [0, 1, 2, 3].map(s => keyMap('osc', s));
+    const NO = this.nOsc = 1 + Math.max(-1, ...defs.filter(d => d.kind === 'osc').map(d => d.slot)), slots = [...Array(NO).keys()];
+    this.oP = slots.map(s => keyMap('osc', s));
     this.xP = Array.from({ length: this.nFx }, (_, s) => keyMap('fx', s));
-    this.oscType = [0, 1, 2, 3].map(s => engOf('osc', s) || 'off');
-    this.cPrev = new Float64Array(16); this.cNext = new Float64Array(16); this.cD = new Float64Array(16);   // per slot: into the filter L/R, around it L/R
-    this.banks = [0, 1, 2, 3].map(() => new WtBank());
-    this.uL = new Float32Array(28); this.uR = new Float32Array(28); this.uOff = new Float32Array(28);
-    this.uDt = new Float32Array(28); this.uLev = new Int32Array(28); this.uJ = new Int32Array(28); this.uN = new Int32Array(4);
-    this.tune = new Float64Array(4); this.sdt = new Float64Array(4);
-    this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
-    this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
+    this.oscType = slots.map(s => engOf('osc', s) || 'off');
+    this.cPrev = new Float64Array(4 * NO); this.cNext = new Float64Array(4 * NO); this.cD = new Float64Array(4 * NO);   // per slot: into the filter L/R, around it L/R
+    this.banks = slots.map(() => new WtBank());
+    this.uL = new Float32Array(7 * NO); this.uR = new Float32Array(7 * NO); this.uOff = new Float32Array(7 * NO);
+    this.uDt = new Float32Array(7 * NO); this.uLev = new Int32Array(7 * NO); this.uJ = new Int32Array(7 * NO); this.uN = new Int32Array(NO);
+    this.tune = new Float64Array(NO); this.sdt = new Float64Array(NO);
+    this.sShape = new Float64Array(NO); this.sG = new Float64Array(NO); this.sTg = new Float64Array(NO);
+    this.slList = new Int32Array(NO); this.slKind = new Int32Array(NO);
     // Sampler per slot: a buffer per side ({ d, sr } or null), Loop, and per-block settings
-    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null }));   // Loop is a per-side switch parameter ('sloop')
+    this.smp = slots.map(() => ({ A: null, B: null }));   // Loop is a per-side switch parameter ('sloop')
+    // FM per slot: each side's patch, set up once per sub-block (fmSetup), and per-voice values (fmVoice)
+    this.fm = slots.map(() => ({ w: new Float64Array(2), g: new Float64Array(2), fbA: new Float64Array(2), m: [new Float64Array(6), new Float64Array(6)], o: [new Float64Array(4), new Float64Array(4)],
+      R: new Float64Array(8), I: new Float64Array(8), lv: new Float64Array(8), D: new Float64Array(8), Cv: new Float64Array(8),
+      dt: new Float64Array(8), ix: new Float64Array(8), e0: new Float64Array(8), e1: new Float64Array(8), maxI: 0, maxR: 1 }));
     // oscillator On/Off (a bypass for auditioning, never morphed): target and a ~15 ms glide
-    this.oscOn = [true, true, true, true]; this.oscBy = new Float64Array(4).fill(1);
-    this.smpMix = new Float64Array(4); this.smpTrk = new Float64Array(4); this.smpRA = new Float64Array(4); this.smpRB = new Float64Array(4);
+    this.oscOn = slots.map(() => true); this.oscBy = new Float64Array(NO).fill(1);
+    this.smpMix = new Float64Array(NO); this.smpTrk = new Float64Array(NO); this.smpRA = new Float64Array(NO); this.smpRB = new Float64Array(NO);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
-      ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0,
-      sp:new Float64Array(8), op:new Float64Array(8), sxf:new Int32Array(4), sold:new Uint8Array(4) });   // sampler: positions, old positions and crossfade on restart
+      ph:new Float64Array(7 * NO), sph:new Float64Array(NO), flt:new Float64Array(4), vAge:0, vPh:0,
+      sp:new Float64Array(2 * NO), op:new Float64Array(2 * NO), sxf:new Int32Array(NO), sold:new Uint8Array(NO),   // sampler: positions, old positions and crossfade on restart
+      fph:new Float64Array(8 * NO), fy:new Float64Array(4 * NO) });   // FM: operator phases and operator 4's feedback memory, per side
+    this.macros = this.buildMacros();
+    // FM parameter indexes per slot and side: [algorithm, feedback, ratio 1-4, level 1-4, decay 1-4]
+    this.fmAlgs = OscFM.ALGS; this.fmRatios = OscFM.RATIOS;   // cached: the getters build new arrays
+    this.fmK = this.oP.map(P => ['A', 'B'].map(k => [P['alg' + k], P['fb' + k], ...[1, 2, 3, 4].map(j => P[`r${j}${k}`]), ...[1, 2, 3, 4].map(j => P[`l${j}${k}`]), ...[1, 2, 3, 4].map(j => P[`d${j}${k}`])]));
     // Effects: instance, type, On/Off, idle, and the crossfade to dry used for On/Off and going idle
     const nf = this.nFx;
     this.fxType = Array.from({ length: nf }, (_, s) => engOf('fx', s));
@@ -680,6 +726,73 @@ class MorphEngine {
     for (let i = 0; i < N; i++) out[i] = sR[i];
   }
   static get FX_CLASSES() { return { drive: FxDrive, formant: FxFormant, mod: FxModulation, delay: FxDelay, reverb: FxReverb, lofi: FxLofi, ott: FxOtt }; }
+  static norm(d, v) {
+    return d.curve === 'log' ? Math.log(v / d.min) / Math.log(d.max / d.min) : d.curve === 'pow2' ? Math.sqrt((v - d.min) / (d.max - d.min)) : (v - d.min) / (d.max - d.min);
+  }
+
+  /* ---------- macros ----------
+     Each macro is a per-side knob where 50% leaves the sound as generated. Its distance from 50% (d, -1 to 1)
+     pulls a set of parameters, in normalized units, toward a low or high target:
+       lerp  x moves toward lo (d < 0) or hi (d > 0) by |d|
+       add   x moves by d * k
+       mix   an amount that may be off (0): d < 0 scales it down (by up to f, 1 = to zero), d > 0 moves it toward a ceiling,
+             but an amount at 0 stays 0, so the macros never switch on an effect a side doesn't use (and resting effects stay idle)
+     Targets are written in real units. The rules run after the morph, on the smoothed values, so they never zip. */
+  static get MACRO_RULES() {
+    return {
+      menv: [['aatk', 'lerp', 0.001, 1.5], ['adec', 'lerp', 0.15, 3], ['asus', 'lerp', 0, 1], ['arel', 'lerp', 0.08, 4],
+        ['fatk', 'lerp', 0.001, 0.8], ['fdec', 'lerp', 0.12, 3], ['frel', 'lerp', 0.08, 3]],
+      mbright: [['cutoff', 'add', 0.3, 60], ['envamt', 'dark', 0, 1], ['envamt', 'bright', 0.8, 0.5], ['mode', 'dark', 0, 0.7], ['reso', 'mix', 0.4, null],
+        ['harm', 'dark', 0, 1], ['sdrive', 'mix', 1, null], ['sshape', 'darkAbove', 0.5, 1]],
+      mfx: [['drive', 'lerp', 0.1, 0.95], ['freso', 'lerp', 0.15, 0.95], ['mdepth', 'lerp', 0.15, 1], ['mfb', 'lerp', 0, 0.8], ['dlfb', 'lerp', 0.1, 0.8],
+        ['rvdecay', 'lerp', 0.5, 10], ['rvsize', 'lerp', 0.15, 0.95],
+        ['lwow', 'mix', 0.8, 0.9], ['lflut', 'mix', 0.8, 0.9], ['lchar', 'mix', 0.8, 1], ['lcodec', 'mix', 0.8, 0.75], ['ldrop', 'mix', 0.8, 0.6], ['ottdepth', 'mix', 0.8, 0.8]],
+      mwet: [['dmix', 'mix', 1, 1], ['fmix', 'mix', 1, 0.9], ['mmix', 'mix', 1, 1], ['dlmix', 'mix', 1, 0.6], ['rvmix', 'mix', 1, 0.7], ['lnmix', 'mix', 1, 0.45],
+        ['lwow', 'mix', 1, null], ['lflut', 'mix', 1, null], ['lchar', 'mix', 1, null], ['lcodec', 'mix', 1, null], ['ldrop', 'mix', 1, null], ['ottdepth', 'mix', 1, null],
+        ['ottgl', 'dark', 0, 1], ['ottgm', 'dark', 0, 1], ['ottgh', 'dark', 0, 1]],   // band gains go flat with the depth, so OTT really is off at 0%
+    };
+  }
+  buildMacros() {
+    const R = MorphEngine.MACRO_RULES, I = this.I, D = this.defs, out = [];
+    for (const m in R) {
+      if (I[m] === undefined) continue;
+      for (const [key, mode, a, b] of R[m]) {
+        const i = I[key]; if (i === undefined) continue;
+        const d = D[i], nz = v => (v === null ? null : Math.max(0, Math.min(1, MorphEngine.norm(d, v))));
+        // add: a is a shift in normalized units, b the lowest value (real units); others: targets in real units ('mix' ceilings
+        // are already normalized amounts, 'dark' and 'bright' targets are real values with a strength)
+        if (mode === 'add') out.push({ i, m: I[m], mode, k: a, lo: nz(b) });
+        else if (mode === 'mix') out.push({ i, m: I[m], mode, f: a, cap: b });
+        else if (mode === 'lerp') out.push({ i, m: I[m], mode, lo: nz(a), hi: nz(b) });
+        else out.push({ i, m: I[m], mode, t: nz(a), k: b });
+      }
+    }
+    // the rules for one parameter run in order (FX intensity before FX wet), so group them by parameter
+    this.macroT = new Float64Array(D.length);
+    return out;
+  }
+  applyMacros() {
+    const cur = this.cur, val = this.val, D = this.defs, t = this.macroT, rules = this.macros;
+    if (!rules.length) return;
+    for (const r of rules) t[r.i] = cur[r.i];
+    for (const r of rules) {
+      const d = cur[r.m] * 2 - 1;
+      if (d === 0) continue;
+      let x = t[r.i];
+      switch (r.mode) {
+        case 'lerp': x += ((d < 0 ? r.lo : r.hi) - x) * Math.abs(d); break;
+        case 'add': x = Math.max(r.lo, Math.min(1, x + d * r.k)); break;
+        case 'mix': if (d < 0) x *= 1 + d * r.f; else if (r.cap !== null && x > 0 && x < r.cap) x += (r.cap - x) * d; break;
+        case 'dark': if (d < 0) x += (r.t - x) * -d * r.k; break;
+        case 'darkAbove': if (d < 0 && x > r.t) x += (r.t - x) * -d * r.k; break;
+        case 'bright': if (d > 0 && x > 0.5) x += (Math.max(x, r.t) - x) * d * r.k; break;
+      }
+      t[r.i] = x;
+    }
+    for (const r of rules) val[r.i] = MorphEngine.denorm(D[r.i], t[r.i]);
+  }
+  // FM decays follow the Envelope macro too: from a quarter as long (pluck) to four times as long (pad); Hold stays Hold
+  fmEnvScale() { const i = this.I.menv; return i === undefined ? 1 : Math.pow(4, this.cur[i] * 2 - 1); }
 
   /* ---------- slots ---------- */
   /* (Re)start a voice's sample playback in slot s at the Start point. When a sounding note restarts, the old
@@ -725,8 +838,8 @@ class MorphEngine {
   }
   startVoice(v, note) {
     v.aLv = 0; v.fLv = 0; v.flt.fill(0);
-    for (let j = 0; j < 28; j++) v.ph[j] = Math.random();
-    v.sph.fill(0);
+    for (let j = 0; j < v.ph.length; j++) v.ph[j] = Math.random();
+    v.sph.fill(0); v.fph.fill(0); v.fy.fill(0);
     v.pitch = this.val[this.I.glide] > 0.0005 && this.lastPitch >= 0 ? this.lastPitch : note;
   }
   noteOn(note, vel) {
@@ -736,7 +849,7 @@ class MorphEngine {
       const v = this.voices[0];
       const was = v.active;
       if (!v.active) this.startVoice(v, note);
-      for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
+      for (let s = 0; s < this.nOsc; s++) if (this.oscType[s] === 'smp') this.smpStart(v, s, was);
       v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.vAge = 0; v.vPh = 0; this.lastPitch = note;
       return;
     }
@@ -745,7 +858,7 @@ class MorphEngine {
     if (!v) v = this.voices.reduce((a, b) => (a.age < b.age ? a : b));
     const was = v.active;
     if (!v.active) this.startVoice(v, note);
-    for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
+    for (let s = 0; s < this.nOsc; s++) if (this.oscType[s] === 'smp') this.smpStart(v, s, was);
     v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.age = this.clock++;
     v.vAge = 0; v.vPh = 0;   // vibrato fades in again from each new note
     this.lastPitch = note;
@@ -826,6 +939,7 @@ class MorphEngine {
       this.val[i] = MorphEngine.denorm(d, this.cur[i]);
     }
     this.first = false;
+    this.applyMacros();
   }
   render(L, R, n) {
     const sr = this.sr;
@@ -835,10 +949,11 @@ class MorphEngine {
       this.resolve();
       this.seqRun(len);
       const v = this.val;
-      for (let s = 0; s < 4; s++) if (this.oscType[s] === 'wt') {   // a silent Wavetable doesn't rebuild (it catches up, crossfading, when it is heard again)
+      const harm = this.I.harm === undefined ? 1 : v[this.I.harm];
+      for (let s = 0; s < this.nOsc; s++) if (this.oscType[s] === 'wt') {   // a silent Wavetable doesn't rebuild (it catches up, crossfading, when it is heard again)
         const P = this.oP[s], o = s * 4;
         if (v[P.olevel] === 0 && this.banks[s].ready && !this.cPrev[o] && !this.cPrev[o + 1] && !this.cPrev[o + 2] && !this.cPrev[o + 3]) continue;
-        this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave]);
+        this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave], harm);
       }
       this.renderVoices(L, R, p, len);
       this.renderFx(L, R, p, len);
@@ -854,7 +969,7 @@ class MorphEngine {
     const tune1 = t0 === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : 0;
     let nSl = 0;
     const byK = 1 - Math.exp(-len / (0.015 * sr));
-    for (let s = 0; s < 4; s++) {
+    for (let s = 0; s < this.nOsc; s++) {
       const t = this.oscType[s], P = this.oP[s], o = s * 4;
       const tgt = this.oscOn[s] ? 1 : 0;
       this.oscBy[s] += (tgt - this.oscBy[s]) * byK; if (Math.abs(tgt - this.oscBy[s]) < 1e-4) this.oscBy[s] = tgt;
@@ -891,6 +1006,10 @@ class MorphEngine {
         kind[nSl] = 4;
         this.tune[s] = v[P.spitch] + v[P.sfine] / 100;
         this.smpMix[s] = v[P.sample]; this.smpTrk[s] = v[P.strack];
+      } else if (t === 'fm') {
+        kind[nSl] = 5;
+        this.tune[s] = v[P.fpitch];
+        this.fmSetup(s);
       } else {
         kind[nSl] = 2;
         this.tune[s] = tune1 + v[P.soct] * 12;
@@ -936,7 +1055,8 @@ class MorphEngine {
           } else if (kind[a] === 4) {   // sampler: samples are at middle C; Key track scales how far notes move them
             const semi = (base - 60) * this.smpTrk[s] + this.tune[s], A = this.smp[s].A, B = this.smp[s].B;
             this.smpRA[s] = A ? Math.pow(2, semi / 12) * A.sr / sr : 0; this.smpRB[s] = B ? Math.pow(2, semi / 12) * B.sr / sr : 0;
-          } else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
+          } else if (kind[a] === 5) this.fmVoice(s, vc, base, len);
+          else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
         }
         const fc = Math.min(sr * 0.45, Math.max(20, cutoff * Math.pow(2, envAmt * 5 * vc.fLv + kt * (vc.pitch - 60) / 12)));
         const g = Math.tan(Math.PI * fc / sr), fa1 = 1 / (1 + g * (g + fk)), fa2 = g * fa1, fa3 = g * fa2;
@@ -975,6 +1095,22 @@ class MorphEngine {
               let x = ya + (yb - ya) * mix;
               if (vc.sxf[sl] > 0) { const g = vc.sxf[sl] / Math.round(0.005 * sr); x = x * (1 - g) + (oa + (ob - oa) * mix) * g; vc.sxf[sl]--; }
               xl = xr = x;
+            } else if (kind[a] === 5) {   // FM: each side's patch (only the ones Patch lets through), crossfaded
+              const F = this.fm[sl], fph = vc.fph, fy = vc.fy, wt = s / len, m0 = F.m, o0 = F.o, e0 = F.e0, e1 = F.e1, ix = F.ix, lv = F.lv, dts = F.dt;
+              let x = 0;
+              for (let k = 0; k < 2; k++) {
+                const w = F.w[k]; if (w <= 0) continue;
+                const q = sl * 8 + k * 4, j = k * 4, yq = sl * 4 + k * 2, m = m0[k], o = o0[k];
+                for (let n = 0; n < 4; n++) { let ph = fph[q + n] + dts[j + n]; if (ph >= 1) ph -= Math.floor(ph); fph[q + n] = ph; }
+                const E0 = e0[j] + (e1[j] - e0[j]) * wt, E1 = e0[j + 1] + (e1[j + 1] - e0[j + 1]) * wt, E2 = e0[j + 2] + (e1[j + 2] - e0[j + 2]) * wt, E3 = e0[j + 3] + (e1[j + 3] - e0[j + 3]) * wt;
+                const o4 = Math.sin(6.283185307179586 * fph[q + 3] + F.fbA[k] * (fy[yq] + fy[yq + 1]) * 0.5) * E3; fy[yq + 1] = fy[yq]; fy[yq] = o4;
+                const i4 = ix[j + 3] * o4;
+                const o3 = Math.sin(6.283185307179586 * fph[q + 2] + m[0] * i4) * E2, i3 = ix[j + 2] * o3;
+                const o2 = Math.sin(6.283185307179586 * fph[q + 1] + m[1] * i4 + m[3] * i3) * E1, i2 = ix[j + 1] * o2;
+                const o1 = Math.sin(6.283185307179586 * fph[q] + m[2] * i4 + m[4] * i3 + m[5] * i2) * E0;
+                x += w * F.g[k] * (o[0] * lv[j] * o1 + o[1] * lv[j + 1] * o2 + o[2] * lv[j + 2] * o3 + o[3] * lv[j + 3] * o4);
+              }
+              xl = xr = x;
             } else {
               const dt = this.sdt[sl];
               let q = sph[sl];
@@ -1000,13 +1136,53 @@ class MorphEngine {
         if (aSt === 3 && aLv < 3e-4) vc.active = false;
       }
     }
-    for (let s = 0; s < 4; s++) { const bk = this.banks[s]; if (bk.ready) bk.xf = Math.min(1, bk.xf + bk.xfInc * len); }
+    for (let s = 0; s < this.nOsc; s++) { const bk = this.banks[s]; if (bk.ready) bk.xf = Math.min(1, bk.xf + bk.xfInc * len); }
     C0.set(CN);
+  }
+  /* FM, once per sub-block: each side's routing, ratios, indexes (Level, scaled by Brightness through Harmonics),
+     decays (scaled by the Envelope macro) and feedback. Patch crossfades the two sides' outputs. */
+  fmSetup(s) {
+    const v = this.val, P = this.oP[s], F = this.fm[s], I = this.I;
+    const x = v[P.fmx]; F.w[0] = 1 - x; F.w[1] = x;
+    const harm = I.harm === undefined ? 1 : v[I.harm], br = I.mbright === undefined ? 0 : Math.max(0, this.cur[I.mbright] * 2 - 1);
+    const iScale = (0.08 + 0.92 * harm * harm) * (1 + 0.6 * br), dS = this.fmEnvScale();
+    let maxI = 0, maxR = 1;
+    for (let n = 0; n < 2; n++) {
+      const K = this.fmK[s][n];
+      F.g[n] = this.fmAlgo(v[K[0]], F.m[n], F.o[n]); F.fbA[n] = v[K[1]] * 3;
+      for (let j = 0; j < 4; j++) {
+        const q = n * 4 + j, l = v[K[6 + j]], dd = v[K[10 + j]];
+        F.R[q] = this.fmRatios[Math.round(v[K[2 + j]])]; F.lv[q] = l; F.I[q] = OscFM.index(l) * iScale;
+        F.D[q] = dd >= OscFM.HOLD ? dd : Math.min(OscFM.HOLD - 1, dd * dS); F.Cv[q] = OscFM.curve(F.D[q]);
+        if (j && F.w[n] > 0) { maxI = Math.max(maxI, F.I[q]); maxR = Math.max(maxR, F.R[q]); }
+      }
+    }
+    F.maxI = maxI; F.maxR = maxR;
+  }
+  fmAlgo(x, m, o) {   // OscFM.algo without building the table every time
+    const A = this.fmAlgs, i = Math.max(0, Math.min(6, Math.floor(x))), f = Math.max(0, Math.min(1, x - i));
+    for (let k = 0; k < 6; k++) m[k] = A[i][0][k] + (A[i + 1][0][k] - A[i][0][k]) * f;
+    let p = 0;
+    for (let k = 0; k < 4; k++) { o[k] = A[i][1][k] + (A[i + 1][1][k] - A[i][1][k]) * f; p += o[k] * o[k]; }
+    return 1 / Math.sqrt(p);
+  }
+  /* FM, per voice and sub-block: operator increments, envelope values at both ends of the sub-block, and indexes.
+     Guardrails: indexes shrink on high notes (as on the sketch page), and are capped so the widest sidebands
+     (Carson's rule) stay under 45% of the sample rate, so high notes never alias into noise. Velocity brightens. */
+  fmVoice(s, vc, base, len) {
+    const F = this.fm[s], sr = this.sr, f0 = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12);
+    const sc = Math.min(1, Math.pow(600 / f0, 0.7)) * (0.4 + 0.6 * vc.vel);
+    const cap = Math.max(0, 0.45 * sr / (f0 * F.maxR) - 1), lim = F.maxI * sc > cap ? cap / (F.maxI * sc) : 1;
+    const t1 = vc.vAge / sr, t0 = Math.max(0, (vc.vAge - len) / sr);
+    for (let q = 0; q < 8; q++) {
+      F.dt[q] = f0 * F.R[q] / sr; F.ix[q] = F.I[q] * sc * lim;
+      F.e0[q] = OscFM.env(t0, F.D[q], F.Cv[q]); F.e1[q] = OscFM.env(t1, F.D[q], F.Cv[q]);
+    }
   }
   // Is effect s silent right now? Its REST parameters sit at their neutral value at the current morph position.
   fxAtRest(s) {
     const D = this.defs;
-    for (const [i, v0] of this.fxRest[s]) if (MorphEngine.denorm(D[i], this.cur[i]) !== v0) return false;
+    for (const [i, v0] of this.fxRest[s]) if (this.val[i] !== v0) return false;   // after the macros (FX wet at 0% rests every effect)
     return true;
   }
   /* Effects in order. Each runs even while switched off (so tails stay current) and is crossfaded with its dry input.
@@ -1058,7 +1234,20 @@ class WtBank {
     this.ready = false; this.xf = 1; this.xfInc = 0; this.since = 1e9; this.lastKey = '';
   }
   setTable(side, re, im) { this.tables[side] = { k: re.length, re, im }; this.ver++; }
-  build(posA, posB, wave) {
+  /* Harmonics below 100% rolls the upper harmonics off (harmonic h scaled by h^-k, k up to 3 at 0%: close to a sine),
+     with the lost loudness made up (at most 6 dB), so Brightness simplifies the wave without making it quieter. */
+  static simplify(re, im, harm) {
+    if (harm >= 0.999) return;
+    const k = 3 * (1 - harm);
+    let before = 0, after = 0;
+    for (let h = 1; h <= 512; h++) {
+      const p = re[h] * re[h] + im[h] * im[h], w = Math.pow(h, -k);
+      before += p; re[h] *= w; im[h] *= w; after += p * w * w;
+    }
+    const g = after > 1e-12 ? Math.min(2, Math.sqrt(before / after)) : 1;
+    for (let h = 1; h <= 512; h++) { re[h] *= g; im[h] *= g; }
+  }
+  build(posA, posB, wave, harm) {
     const tA = this.tables.A, tB = this.tables.B;
     if (!tA || !tB) return false;
     // Each table is read at its own position (these never morph). The Wave value, which does
@@ -1066,6 +1255,7 @@ class WtBank {
     MorphEngine.frameAt(tA, posA, this.spectral, this.fa[0], this.fa[1]);
     MorphEngine.frameAt(tB, posB, this.spectral, this.fb[0], this.fb[1]);
     MorphEngine.interp(this.fa[0], this.fa[1], this.fb[0], this.fb[1], wave, this.spectral, this.fr[0], this.fr[1]);
+    WtBank.simplify(this.fr[0], this.fr[1], harm === undefined ? 1 : harm);
     const t = this.prev; this.prev = this.cur; this.cur = t;
     for (let k = 0; k < 10; k++) {
       const out = this.cur[k], N = out.length - 1;
@@ -1074,12 +1264,12 @@ class WtBank {
     }
     return true;
   }
-  maybeBuild(len, posA, posB, wave) {
+  maybeBuild(len, posA, posB, wave, harm = 1) {
     this.since += len;
     if (!this.tables.A || !this.tables.B) return;
-    const key = posA.toFixed(4) + '|' + posB.toFixed(4) + '|' + wave.toFixed(4) + '|' + this.ver;
+    const key = posA.toFixed(4) + '|' + posB.toFixed(4) + '|' + wave.toFixed(4) + '|' + harm.toFixed(3) + '|' + this.ver;
     if (!this.ready) {
-      if (this.build(posA, posB, wave)) {
+      if (this.build(posA, posB, wave, harm)) {
         for (let k = 0; k < 10; k++) this.prev[k].set(this.cur[k]);
         this.ready = true; this.xf = 1; this.lastKey = key; this.since = 0;
       }
@@ -1087,7 +1277,7 @@ class WtBank {
     }
     // rebuild at most every 512 samples, crossfading from the previous tables
     if (key !== this.lastKey && this.since >= 512 && this.xf >= 1) {
-      this.build(posA, posB, wave); this.lastKey = key; this.since = 0; this.xf = 0; this.xfInc = 1 / 512;
+      this.build(posA, posB, wave, harm); this.lastKey = key; this.since = 0; this.xf = 0; this.xfInc = 1 / 512;
     }
   }
 }
@@ -1137,6 +1327,67 @@ class OscSmp {
     return w > 0 ? y + (OscSmp.herm(d, pos - L) - y) * (w / X) : y;
   }
   static advance(pos, r, n, loop, ls) { pos += r; if (loop && pos >= n) pos -= n - ls; return pos; }
+}
+/* =====================================================================
+   OscFM: algorithms, ratios, decay shapes and a one-cycle renderer.
+   Shared by the standalone FM sketch page (dist/fm.html) and Diptych's FM
+   oscillator (MorphEngine renders it; it is stringified into the worklet,
+   so it may refer to nothing else on the page).
+   ===================================================================== */
+
+class OscFM {
+  static get RATIOS() { return [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]; }
+  static get HOLD() { return 25; }   // Decay at or above this holds (no decay)
+  // routings: [4->3, 4->2, 4->1, 3->2, 3->1, 2->1] and which operators are heard [1, 2, 3, 4]
+  static get ALGS() {
+    return [
+      [[1, 0, 0, 1, 0, 1], [1, 0, 0, 0]],   // 1: 4->3->2->1
+      [[0, 1, 0, 1, 0, 1], [1, 0, 0, 0]],   // 2: (4 + 3)->2->1
+      [[1, 0, 0, 0, 1, 1], [1, 0, 0, 0]],   // 3: (4->3 + 2)->1
+      [[1, 1, 1, 0, 0, 0], [1, 1, 1, 0]],   // 4: 4 -> 3, 2, 1, all three heard
+      [[1, 0, 0, 0, 0, 1], [1, 0, 1, 0]],   // 5: two pairs, 4->3 and 2->1
+      [[1, 0, 0, 1, 0, 0], [1, 1, 0, 0]],   // 6: 4->3->2 stack plus a plain 1
+      [[0, 0, 1, 0, 0, 0], [1, 1, 1, 0]],   // 7: 4->1 plus plain 2 and 3
+      [[0, 0, 0, 0, 0, 0], [1, 1, 1, 1]],   // 8: all four heard (additive)
+    ];
+  }
+  // blended routing for a continuous Algorithm value: m[6] modulation amounts, o[4] output weights, returns output gain
+  static algo(x, m, o) {
+    const A = OscFM.ALGS, i = Math.max(0, Math.min(6, Math.floor(x))), f = Math.max(0, Math.min(1, x - i));
+    for (let k = 0; k < 6; k++) m[k] = A[i][0][k] + (A[i + 1][0][k] - A[i][0][k]) * f;
+    let p = 0;
+    for (let k = 0; k < 4; k++) { o[k] = A[i][1][k] + (A[i + 1][1][k] - A[i][1][k]) * f; p += o[k] * o[k]; }
+    return 1 / Math.sqrt(p);
+  }
+  /* Decay shape follows its time: short decays are exponential (plucks), around 4 s they are linear,
+     and long ones are logarithmic (they hold up, then fall). c is the curvature used by env(). */
+  static curve(D) {
+    const x = Math.log10(D);
+    return x <= -1 ? 8 : x <= 0 ? 8 - 6 * (x + 1) : x <= 0.602 ? 2 - 2 * x / 0.602 : Math.max(-3, -3 * (x - 0.602) / 0.699);
+  }
+  static env(t, D, c) {
+    if (D >= OscFM.HOLD) return 1;
+    const u = t / D;
+    if (u >= 1) return 0;
+    if (Math.abs(c) < 1e-3) return 1 - u;
+    const e = Math.exp(-c); return (Math.exp(-c * u) - e) / (1 - e);
+  }
+  static index(level) { return 10 * level * level; }
+  // one fundamental period at full envelope (for displays and the loudness guard); p: { algo, fb, r[4] ratio values, l[4] }
+  static cycle(p, N, out) {
+    const m = new Float64Array(6), o = new Float64Array(4), g = OscFM.algo(p.algo, m, o), TAU = 2 * Math.PI;
+    const I = p.l.map(OscFM.index), fbA = p.fb * 3;
+    let y1 = 0, y2 = 0;
+    for (let pass = 0; pass < 2; pass++) for (let n = 0; n < N; n++) {   // the first pass settles the feedback
+      const t = n / N;
+      const o4 = Math.sin(TAU * p.r[3] * t + fbA * (y1 + y2) * 0.5); y2 = y1; y1 = o4;
+      const o3 = Math.sin(TAU * p.r[2] * t + m[0] * I[3] * o4);
+      const o2 = Math.sin(TAU * p.r[1] * t + m[1] * I[3] * o4 + m[3] * I[2] * o3);
+      const o1 = Math.sin(TAU * p.r[0] * t + m[2] * I[3] * o4 + m[4] * I[2] * o3 + m[5] * I[1] * o2);
+      if (pass) out[n] = (o[0] * p.l[0] * o1 + o[1] * p.l[1] * o2 + o[2] * p.l[2] * o3 + o[3] * p.l[3] * o4) * g;
+    }
+    return out;
+  }
 }
 /* =====================================================================
    EFFECT CLASSES
@@ -1613,10 +1864,10 @@ class FxOtt {
    own name; formats (FMT) and randomize rules (RND) are looked up by key.
    kind: 'osc' | 'fx' with slot (0-based); eng: the slot's engine or effect.
    ===================================================================== */
-const OSC_KIND = ['wt', 'wt', 'sub', 'smp'], OSC_NAMES = ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler'];
+const OSC_KIND = ['wt', 'wt', 'sub', 'smp', 'fm'], OSC_NAMES = ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler', 'FM'];
 const FX_KIND = ['drive', 'formant', 'mod', 'delay', 'reverb', 'lofi', 'ott'], FX_NAMES = ['Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT'];
 const NOSC = OSC_KIND.length, NFX = FX_KIND.length;
-const WT_SLOTS = [0, 1], SUB_SLOT = 2, SMP_SLOT = 3, DELAY_SLOT = FX_KIND.indexOf('delay'), OTT_SLOT = FX_KIND.indexOf('ott');
+const WT_SLOTS = [0, 1], SUB_SLOT = 2, SMP_SLOT = 3, FM_SLOT = 4, DELAY_SLOT = FX_KIND.indexOf('delay'), OTT_SLOT = FX_KIND.indexOf('ott');
 const P_ = (key, label, min, max, curve, a, b, x) => ({ key, label, min, max, curve, a, b, ...x });
 const OSC_COMMON = [
   P_('olevel', 'Level', 0, 1, 'lin', 0.8, 0.8), P_('opan', 'Pan', -1, 1, 'lin', 0, 0), P_('byp', 'Bypass', 0, 1, 'lin', 0, 0),
@@ -1634,8 +1885,29 @@ const OSC_ENG = {
     P_('sloop', 'Playback', 0, 1, 'int', 0, 0, { opts: ['One-shot', 'Loop'] }),   // each side's sample plays with its own setting
   ],
   sub: [P_('soct', 'Octave', -2, -1, 'int', -1, -1), P_('sshape', 'Shape', 0, 1, 'lin', 0, 0), P_('sdrive', 'Drive', 0, 1, 'lin', 0, 0)],
+  /* FM (2026-11-06): four operators. Each side holds a whole FM patch of its own (algorithm, ratios, levels, decays,
+     feedback: single-side settings, like Position A and B), and Patch crossfades the two, like Wave and Sample, so
+     stepped ratios and algorithms never jump during a morph. */
+  fm: [
+    P_('fmx', 'Patch', 0, 1, 'lin', 0, 1), P_('fpitch', 'Pitch', -24, 24, 'int', 0, 0),
+    ...['A', 'B'].flatMap(k => [
+      P_('alg' + k, 'Algorithm ' + k, 0, 7, 'int', 0, 0, { single:k }), P_('fb' + k, 'Feedback ' + k, 0, 1, 'lin', 0, 0, { single:k }),
+      ...[1, 2, 3, 4].flatMap(j => [
+        P_(`r${j}${k}`, `Ratio ${j} ${k}`, 0, 16, 'int', [1, 1, 1, 1][j - 1], [1, 1, 1, 1][j - 1], { single:k }),
+        P_(`l${j}${k}`, `Level ${j} ${k}`, 0, 1, 'lin', [1, 0.5, 0.35, 0.25][j - 1], [1, 0.5, 0.35, 0.25][j - 1], { single:k }),
+        P_(`d${j}${k}`, `Decay ${j} ${k}`, 0.005, 30, 'log', [30, 1.2, 0.6, 0.3][j - 1], [30, 1.2, 0.6, 0.3][j - 1], { single:k }),
+      ]),
+    ]),
+  ],
 };
+/* Macros (2026-11-06): the controls the player sees. Each is per side (A and B handles) and 50% means "as generated";
+   the engine applies them on top of everything else (MorphEngine.applyMacros). Envelope runs from a short pluck (0%)
+   to a long pad (100%); Brightness opens or darkens the filter, simplifies the waveforms and reduces the filter
+   envelope; FX intensity drives the effects' amounts (feedback, decay, depth, drive); FX wet their mixes (0% is dry). */
+const MACROS = [P_('menv', 'Envelope', 0, 1, 'lin', 0.5, 0.5), P_('mbright', 'Brightness', 0, 1, 'lin', 0.5, 0.5),
+  P_('mfx', 'FX intensity', 0, 1, 'lin', 0.5, 0.5), P_('mwet', 'FX wet', 0, 1, 'lin', 0.5, 0.5)];
 const VOICE = [
+  P_('harm', 'Harmonics', 0, 1, 'lin', 1, 1),   // 100% is the waveform as it is; lower rolls its upper harmonics off (Brightness turns it down)
   P_('glide', 'Glide', 0, 2, 'pow2', 0, 0), P_('vdepth', 'Vibrato', 0, 1, 'pow2', 0, 0), P_('vfade', 'Fade in', 0, 5, 'pow2', 0.6, 0.6),
   P_('vrate', 'Vib rate', 0.5, 12, 'log', 5.5, 5.5), P_('vrfade', 'Rate fade', -10, 10, 'lin', 0, 0), P_('vrtime', 'Rate settle', 0, 5, 'pow2', 1, 1),
 ];
@@ -1664,8 +1936,9 @@ const FX_ENG = {
     P_('ottgh', 'High gain', -12, 12, 'lin', 0, 0), P_('ottout', 'Output', -12, 12, 'lin', 0, 0)],
 };
 // The default patch is one Wavetable: the other oscillators start at Level 0
-const OSC_LEVEL = [0.8, 0, 0, 0];
+const OSC_LEVEL = [0.8, 0, 0, 0, 0];
 const DEFS = [];
+MACROS.forEach(p => DEFS.push({ ...p, id: p.key, group:'Sound' }));
 OSC_KIND.forEach((eng, s) => {
   const group = OSC_NAMES[s], add = p => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
   OSC_ENG[eng].forEach(add);
@@ -1676,12 +1949,24 @@ FILTER.forEach(p => DEFS.push({ ...p, id: p.key, group:'Filter' }));
 ENVS.forEach(([group, ps]) => ps.forEach(p => DEFS.push({ ...p, id: p.key, group })));
 FX_KIND.forEach((eng, s) => FX_ENG[eng].forEach(p => DEFS.push({ ...p, id: p.key, group: FX_NAMES[s], kind:'fx', slot:s, eng })));
 DEFS.push({ ...P_('pattern', 'Pattern', 0, 1, 'lin', 0, 1), id:'pattern', group:'Sequencer' });
+/* Broad sequencer controls (2026-11-06), one setting per side (seq: a side's own setting, shown with A and B handles
+   but no morph curve; the Pattern knob does the morphing): Density thins or fills the notes, Speed plays the pattern
+   at half, normal or double speed, Octave moves it down or up. The sequencer model reads them (sequencer/model.js). */
+[P_('sqdens', 'Density', 0, 1, 'lin', 1, 1), P_('sqspeed', 'Speed', 0, 2, 'int', 1, 1), P_('sqoct', 'Octave', -1, 1, 'int', 0, 0)]
+  .forEach(p => DEFS.push({ ...p, id: p.key, group:'Sequence', seq: true }));
 const IX = {}; DEFS.forEach((d, i) => { IX[d.id] = i; });
 // index of an oscillator parameter: oi(0, 'wave') -> IX['o1.wave']; effect parameters are IX.dlmix and so on
 const oi = (s, key) => IX[`o${s + 1}.${key}`];
 const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' s');
 const pct = v => Math.round(v * 100) + '%';
+const FM_RATIOS = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];   // OscFM.RATIOS
 const FMT = {
+  menv: pct, mbright: pct, mfx: pct, mwet: pct, harm: pct,
+  sqdens: pct, sqspeed: v => ['½×', '1×', '2×'][v], sqoct: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' oct',
+  fmx: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
+  fpitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st',
+  ...Object.fromEntries(['A', 'B'].flatMap(k => [['alg' + k, v => String(v + 1)], ['fb' + k, pct],
+    ...[1, 2, 3, 4].flatMap(j => [[`r${j}${k}`, v => '×' + FM_RATIOS[v]], [`l${j}${k}`, pct], [`d${j}${k}`, v => (v >= 25 ? 'Hold' : time(v))]])])),
   olevel: pct, opan: v => (Math.abs(v) < 0.02 ? 'Center' : (v < 0 ? 'L ' : 'R ') + Math.round(Math.abs(v) * 100)),
   byp: v => (v < 0.005 ? 'Off' : pct(v)),
   pitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st', soct: v => String(v).replace('-', '−'),
@@ -1858,9 +2143,10 @@ function sampleOverview(data, cols = 128) {
 /* ---------- state + persistence ----------
    The fixed architecture (2026-10-17) starts fresh: it saves under a new key and ignores earlier patches, by decision.
    Parameters are matched by id, so patches survive new knobs; list changes need a migration keyed on `ver`. */
-const STORE = 'diptych-v5', STORE_VER = 2;
-const DEFAULT_LOCKS = () => ({ level: true, pan: true, pattern: true, 'o1.wave': true, 'o2.wave': true, 'o4.sample': true, ottout: true });
-const DEFAULT_LINKS = () => ({ 'o1.pitch': true, 'o1.fine': true, 'o2.pitch': true, 'o2.fine': true, 'o4.spitch': true, 'o4.sfine': true, ottout: true });
+const STORE = 'diptych-v5', STORE_VER = 3;
+const DEFAULT_LOCKS = () => ({ level: true, pan: true, pattern: true, 'o1.wave': true, 'o2.wave': true, 'o4.sample': true, 'o5.fmx': true, ottout: true });
+const DEFAULT_LINKS = () => ({ 'o1.pitch': true, 'o1.fine': true, 'o2.pitch': true, 'o2.fine': true, 'o4.spitch': true, 'o4.sfine': true, 'o5.fpitch': true, ottout: true });
+const DEFAULT_OSCON = () => OSC_KIND.map(() => true);
 const DEFAULT_SMP = () => ({ A: { name: 'Plucked string' }, B: { name: 'Vocal ah' } });   // the Sampler's sample references
 const DEFAULT_TABLES = () => WT_SLOTS.map(s => (s === 0 ? { A: makeTable('Basic shapes'), B: makeTable('Vowel formants') } : { A: makeTable('Harmonic stack'), B: makeTable('Pulse width') }));
 const DEFAULT_FXON = () => FX_KIND.map(() => true);
@@ -1875,7 +2161,7 @@ const state = {
   linkMem: {},
   mono: false,
   links: DEFAULT_LINKS(),
-  oscOn: [true, true, true, true],   // bypass switches for auditioning: never morphed or randomized
+  oscOn: DEFAULT_OSCON(),   // bypass switches for auditioning: never morphed or randomized
   fxOn: DEFAULT_FXON(),
   smp: DEFAULT_SMP(),
   seq: null,
@@ -1911,11 +2197,15 @@ try {
     for (const k of ['locks', 'links', 'secLocks', 'linkMem']) if (saved[k] && typeof saved[k] === 'object') state[k] = saved[k];
     state.mono = !!saved.mono;
     if (Array.isArray(saved.fxOn) && saved.fxOn.length === NFX) state.fxOn = saved.fxOn.map(Boolean);
-    if (Array.isArray(saved.oscOn) && saved.oscOn.length === NOSC) state.oscOn = saved.oscOn.map(Boolean);
+    if (Array.isArray(saved.oscOn)) state.oscOn = OSC_KIND.map((_, s) => saved.oscOn[s] !== false);   // ver 3 added FM (a fifth oscillator)
     // ver 2: Loop and Cut / Spill became per-side switches (they were one setting for both sides)
     if (!(saved.ver >= 2)) for (const [k, id] of [['smpLoop', 'o4.sloop'], ['dlSpill', 'dlspill']]) state.A[IX[id]] = state.B[IX[id]] = saved[k] ? 1 : 0;
     if (saved.smp) ['A', 'B'].forEach(k => { const r = saved.smp[k]; if (okRef(r)) state.smp[k] = { name: r.name, ...(r.id ? { id: r.id } : {}) }; });
-    if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) state.seq = saved.seq;
+    if (saved.seq && saved.seq.A && saved.seq.B && Array.isArray(saved.seq.A.steps)) {
+      state.seq = saved.seq;
+      // ver 3: each side's Density moved from its pattern into a parameter (sqdens), next to Speed and Octave
+      ['A', 'B'].forEach(k => { const q = state.seq[k]; if (typeof q.density === 'number') { if (!(saved.ver >= 3)) state[k][IX.sqdens] = clamp(q.density); delete q.density; } });
+    }
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;
     if (Array.isArray(saved.tables)) saved.tables.slice(0, WT_SLOTS.length).forEach((t, s) => {
@@ -1964,7 +2254,7 @@ resolveSamples();
 
 /* ---------- audio startup ---------- */
 // Everything the audio thread runs: the engine plus its oscillator and effect classes (stringified into the worklet).
-const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, OscSmp, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
+const ENGINE_CLASSES = [MorphEngine, WtBank, OscSub, OscSmp, OscFM, FxDrive, FxFormant, FxModulation, FxDelay, FxReverb, FxLofi, FxOtt];
 let ctx = null, send = () => {}, ready = false, starting = null, queue = [];
 const post = m => { if (ready) send(m); else { queue.push(m); ensureAudio(); } };
 const sendState = () => send({ type:'state', A: state.A, B: state.B, C: state.C, morph: state.morph });
@@ -2080,8 +2370,8 @@ const VIZ = { 'Filter': [{ viz: 'vzF', name: 'Filter response' }, { sub: 'env', 
    and anything marked adv, appear in the section's overlay (ui/overlay.js) or in the Full view. Sections not listed
    show everything. */
 const BASIC = {
-  wt: ['posA', 'posB', 'unison', 'olevel'], sub: ['soct', 'sshape', 'sdrive', 'olevel'], smp: ['sstart', 'spitch', 'strack', 'olevel'],
-  Voice: ['glide', 'vdepth', 'vrate'], Filter: ['cutoff', 'reso', 'mode', 'envamt'],
+  wt: ['posA', 'posB', 'unison', 'olevel'], sub: ['soct', 'sshape', 'sdrive', 'olevel'], smp: ['sstart', 'spitch', 'strack', 'olevel'], fm: ['fmx', 'fpitch', 'olevel'],
+  Voice: ['harm', 'glide', 'vdepth', 'vrate'], Filter: ['cutoff', 'reso', 'mode', 'envamt'],
   drive: ['drive', 'dmix'], formant: ['fvowel', 'fmix'], mod: ['mtype', 'mrate', 'mmix'], delay: ['dltime', 'dlfb', 'dlmix'],
   reverb: ['rvsize', 'rvdecay', 'rvmix'], lofi: ['lchar', 'lwow', 'lnmix'], ott: ['ottdepth', 'otttime'],
 };
@@ -2173,7 +2463,7 @@ function updateKnob(i) {
     document.querySelectorAll(`[data-sw="${i}"]`).forEach(b => { const v = Math.round(state[b.dataset.side][i]); b.setAttribute('aria-pressed', b.dataset.v === undefined ? v === 1 : +b.dataset.v === v); });
     return;
   }
-  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = resolveNorm(i);
+  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = d.seq ? a : resolveNorm(i);   // a side's own setting (seq) doesn't morph
   setArc($('arcA' + i), a, r);
   setArc($('arcB' + i), r, b);
   const [ax, ay] = pt(a), [bx, by] = pt(b), [nx, ny] = pt(r);
@@ -2184,11 +2474,11 @@ function updateKnob(i) {
   // Linked (or single-side) parameters don't morph: one handle, one value, no curve
   const linked = isLinked(i), kn = $('k' + i);
   kn.classList.toggle('kl-A', d.single === 'A'); kn.classList.toggle('kl-B', d.single === 'B'); kn.classList.toggle('kl-L', linked && !d.single);
-  $('now' + i).setAttribute('r', linked ? 0 : 3.4);
+  $('now' + i).setAttribute('r', linked || d.seq ? 0 : 3.4);
   $('hB' + i).style.display = linked ? 'none' : '';
   $('hB' + i).setAttribute('tabindex', linked ? -1 : 0);
-  $('c' + i).setAttribute('tabindex', linked ? -1 : 0);
-  $('gd' + i).setAttribute('r', linked ? 0 : 2);
+  $('c' + i).setAttribute('tabindex', linked || d.seq ? -1 : 0);
+  $('gd' + i).setAttribute('r', linked || d.seq ? 0 : 2);
   if (linked) { setArc($('arcA' + i), 0, a); setArc($('arcB' + i), a, a); }
 
   // center glyph: the morph curve drawn in an 18×18 box
@@ -2213,7 +2503,7 @@ function updateKnob(i) {
     for (let k = 0; k <= 20; k++) { const t = k / 20; path += (k ? 'L' : 'M') + (x0 + t * S).toFixed(2) + ' ' + (y0 - MorphEngine.bend(t, c) * S).toFixed(2); }
     gy = MorphEngine.bend(m, c);
   }
-  $('gl' + i).setAttribute('d', linked ? '' : path);
+  $('gl' + i).setAttribute('d', linked || d.seq ? '' : path);
   $('gd' + i).setAttribute('cx', (x0 + m * S).toFixed(2)); $('gd' + i).setAttribute('cy', (y0 - gy * S).toFixed(2));
 
   // text
@@ -2225,7 +2515,7 @@ function updateKnob(i) {
     $('va' + i).classList.toggle('muted', !d.single);
   } else {
     v.className = 'kval' + (ed === 'A' ? ' a' : ed === 'B' ? ' b' : '');
-    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : valText(i, r);
+    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : d.seq ? '' : valText(i, r);
     $('va' + i).textContent = valText(i, a); $('va' + i).classList.remove('muted');
     $('vb' + i).textContent = valText(i, b);
   }
@@ -2251,6 +2541,7 @@ function setParam(side, i, x) {
   state[side][i] = x;
   updateKnob(i);
   if (ready) send({ type:'param', side, i, v:x });
+  if (DEFS[i].seq) seqChanged();
   drawWaves();
   save();
 }
@@ -2276,7 +2567,7 @@ function bindKnob(i) {
     const rc = el.getBoundingClientRect();
     const x = (e.clientX - rc.left) / rc.width * 80 - CX, y = (e.clientY - rc.top) / rc.height * 80 - CX;
     if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
-    else if (Math.hypot(x, y) < 22) mode = 'C';
+    else if (Math.hypot(x, y) < 22 && !d.seq) mode = 'C';
     else {
       let rel = (Math.atan2(y, x) * 180 / Math.PI - 135 + 720) % 360;
       const xp = rel <= 270 ? rel / 270 : (rel > 315 ? 0 : 1);
@@ -2508,6 +2799,11 @@ function drawWaves() {
         drawOverview($('cvA' + s), oa, null, 0, css('--a'), slotVal(s, 'sstart', 'A'));
         drawOverview($('cvB' + s), ob, null, 0, css('--b'), slotVal(s, 'sstart', 'B'));
         drawOverview($('cvH' + s), oa, ob, mix, mixColor(state.morph), slotVal(s, 'sstart', 'now'));
+      } else if (t === 'fm') {   // each side's patch at full envelope, and the two crossfaded by Patch
+        const ca = OscFM.cycle(fmOf('A'), 256, new Float32Array(256)), cb = OscFM.cycle(fmOf('B'), 256, new Float32Array(256)), x = MorphEngine.denorm(DEFS[oi(s, 'fmx')], resolveNorm(oi(s, 'fmx')));
+        drawWave($('cvA' + s), ca, css('--a'), { fit:true }); drawWave($('cvB' + s), cb, css('--b'), { fit:true });
+        drawWave($('cvH' + s), ca.map((v, n) => v + (cb[n] - v) * x), mixColor(state.morph), { fit:true, lw:2.4 });
+        ['A', 'B'].forEach(k => { $('nm' + k + s).textContent = fmTypeName[k] || 'Algorithm ' + (slotVal(s, 'alg' + k, k) + 1); });
       } else {
         drawWave($('cvA' + s), subCycle(s, 'A'), css('--a'), { fit:true });
         drawWave($('cvB' + s), subCycle(s, 'B'), css('--b'), { fit:true });
@@ -2557,16 +2853,16 @@ $('undo').addEventListener('click', () => {
 });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
-  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
+  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes(); syncScaleUI();
   if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
   if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
   if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
   save();
 }
-// Copy covers the sound only: sequences and the Pattern knob stay as they are
+// Copy covers the sound only: sequences, their Density, Speed and Octave, and the Pattern knob stay as they are
 const copySound = (from, to) => bulk(() => {
-  const ip = IX.pattern, keep = state[to][ip];
-  state[to] = state[from].slice(); state[to][ip] = keep;
+  const keepIx = DEFS.map((d, i) => i).filter(i => DEFS[i].group === 'Sequencer' || DEFS[i].seq), keep = keepIx.map(i => state[to][i]);
+  state[to] = state[from].slice(); keepIx.forEach((i, k) => { state[to][i] = keep[k]; });
   tables.forEach(t => { t[to] = cloneTable(t[from]); });
   state.smp[to] = { ...state.smp[from] };
 });
@@ -2581,7 +2877,7 @@ $('swap').addEventListener('click', () => bulk(() => {
 $('resetAll').addEventListener('click', () => bulk(() => {
   state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
   state.spectral = true; state.links = DEFAULT_LINKS(); state.linkMem = {};
-  state.oscOn = [true, true, true, true]; state.fxOn = DEFAULT_FXON(); state.smp = DEFAULT_SMP();
+  state.oscOn = DEFAULT_OSCON(); state.fxOn = DEFAULT_FXON(); state.smp = DEFAULT_SMP();
   DEFAULT_TABLES().forEach((t, k) => { tables[k] = t; });
   state.seq = defaultSeqs();
 }));
@@ -2591,12 +2887,17 @@ $('resetAll').addEventListener('click', () => bulk(() => {
 const rnd = Math.random;
 const logr = (lo, hi) => lo * Math.pow(hi / lo, rnd());
 const RND = {
+  // macros: Envelope picks where each side sits between pluck and pad; the others start at 50% ("as generated")
+  menv: () => rnd(), mbright: () => 0.5, mfx: () => 0.5, mwet: () => 0.5,
+  harm: () => (rnd() < 0.7 ? 1 : 0.6 + rnd() * 0.4),
+  // FM: Patch is locked at full range by default, like Wave; each side's patch comes from fmPatch (archetypes)
+  fmx: side => (side === 'A' ? 0 : 1), fpitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; },
   // wavetables and pattern
   posA: () => rnd(), posB: () => rnd(),
   wave: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
   pattern: side => (side === 'A' ? (rnd() < 0.6 ? 0 : rnd() * 0.4) : (rnd() < 0.6 ? 1 : 0.6 + rnd() * 0.4)),
-  // oscillators: Level decides whether each one is heard on this side (see OSC_ON; oscGuard keeps at least one)
-  olevel: (side, d) => (rnd() < OSC_ON[d.slot] ? 0.5 + rnd() * 0.4 : 0), opan: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.6),
+  // oscillators: Level decides whether each one is heard on this side (set by pickOscs; oscGuard keeps at least one)
+  olevel: () => 0, opan: () => (rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.6),
   byp: () => (rnd() < 0.8 ? 0 : rnd() * 0.5),
   pitch: () => { const r = rnd(); return r < 0.15 ? -12 : r > 0.85 ? 12 : 0; },
   fine: () => (rnd() < 0.7 ? 0 : (rnd() * 2 - 1) * 15),
@@ -2622,10 +2923,11 @@ const RND = {
   fdec: () => logr(0.05, 3),
   fsus: () => rnd(),
   frel: () => logr(0.02, 3),
-  aatk: () => logr(0.001, rnd() < 0.7 ? 0.05 : 1.2),
-  adec: () => logr(0.05, 3),
-  asus: () => 0.2 + rnd() * 0.8,
-  arel: () => logr(0.03, 3),
+  // the amp envelope is a medium shape with some variety: the Envelope macro takes it to a pluck or a pad (2026-11-06)
+  aatk: () => logr(0.002, 0.02),
+  adec: () => logr(0.4, 1.2),
+  asus: () => 0.4 + rnd() * 0.35,
+  arel: () => logr(0.2, 0.6),
   level: () => 0.5 + rnd() * 0.5,
   pan: () => (rnd() * 2 - 1) * 0.6,
   // effects: settings over the full range (the synth is meant to surprise); every effect is always in the chain, so each
@@ -2647,13 +2949,71 @@ const RND = {
   ottout: () => 0,
 };
 const TABLE_CHOICES = Object.keys(PRESETS).filter(n => n !== 'Sine');
-const OSC_ON = [0.85, 0.4, 0.3, 0.4];   // chance each oscillator is heard on a side: Wavetable 1, Wavetable 2, Sub, Sampler
+/* What each side hears (2026-11-06; owner: the first oscillator needn't be a Wavetable). The player never sees the
+   oscillators: each side picks a lead engine, Wavetable 45% (either of the two), FM 30%, Sampler 25%; then a Sub
+   comes in under it 30% of the time, and a second layer (one of the other engines) 30% of the time. */
+const LEADS = [['wt', 0.45], ['fm', 0.3], ['smp', 0.25]], SUB_ODDS = 0.3, LAYER_ODDS = 0.3;
+const OSC_ON = [0.25, 0.25, 0.3, 0.3, 0.35];   // only for oscGuard's last resort: rough share each oscillator is heard
+function pickOscs(side) {
+  const lv = s => oi(s, 'olevel'), on = new Set();
+  let r = rnd(), lead = LEADS[0][0];
+  for (const [t, p] of LEADS) { if (r < p) { lead = t; break; } r -= p; }
+  const slotOf = t => (t === 'wt' ? WT_SLOTS[Math.floor(rnd() * WT_SLOTS.length)] : t === 'fm' ? FM_SLOT : SMP_SLOT);
+  on.add(slotOf(lead));
+  if (rnd() < SUB_ODDS) on.add(SUB_SLOT);
+  if (rnd() < LAYER_ODDS) { const others = [0, 1, SMP_SLOT, FM_SLOT].filter(s => !on.has(s)); on.add(others[Math.floor(rnd() * others.length)]); }
+  OSC_KIND.forEach((_, s) => { if (isFree(lv(s))) state[side][lv(s)] = on.has(s) ? norm(DEFS[lv(s)], 0.5 + rnd() * 0.4) : 0; });
+}
+/* FM guardrails (2026-11-06): FM sounds good in a narrow part of its range, so a side's FM patch is never fully random.
+   It comes from one of eight archetypes (electric piano, bell, bass, brass, pluck, organ, glass, growl), each with its
+   algorithm, simple ratios, modulator levels (index) and decays in ranges that work, then jittered. The engine adds the
+   rest: indexes shrink on high notes and are capped below aliasing, and the Envelope and Brightness macros scale decays
+   and indexes. Here: the summed index of the operators that modulate stays under 9 (a busy algorithm can't turn to noise). */
+const pk = a => a[Math.floor(rnd() * a.length)], rr = (lo, hi) => lo + rnd() * (hi - lo), HOLD = 30;
+const FM_TYPES = [
+  ['Electric piano', 0.18, () => { const tine = rnd() < 0.4;
+    return { alg: 4, fb: 0, ops: [[1, rr(0.8, 1), rr(2, 5)], tine ? [14, rr(0.15, 0.3), rr(0.04, 0.2)] : [1, rr(0.3, 0.5), rr(0.5, 2)], [1, rr(0.6, 0.8), rr(2, 6)], [pk([1, 2]), rr(0.25, 0.45), rr(0.6, 2)]] }; }],
+  ['Bell', 0.14, () => ({ alg: pk([4, 5]), fb: 0, ops: [[1, rr(0.8, 1), rr(3, 8)], [pk([3, 4, 5, 7]), rr(0.35, 0.55), rr(2, 6)], [pk([1, 2, 3]), rr(0.5, 0.8), rr(3, 8)], [pk([2, 3, 5]), rr(0.3, 0.5), rr(1.5, 5)]] })],
+  ['Bass', 0.14, () => ({ alg: pk([0, 2]), fb: rr(0.15, 0.4), ops: [[1, 1, HOLD], [1, rr(0.45, 0.65), rr(0.15, 0.6)], [pk([1, 2]), rr(0.25, 0.4), rr(0.1, 0.4)], [1, rr(0.15, 0.3), rr(0.1, 0.3)]] })],
+  ['Brass', 0.12, () => ({ alg: 1, fb: rr(0.1, 0.3), ops: [[1, 1, HOLD], [1, rr(0.3, 0.5), HOLD], [1, rr(0.2, 0.35), HOLD], [pk([1, 2]), rr(0.15, 0.3), HOLD]] })],
+  ['Pluck', 0.16, () => ({ alg: 0, fb: rr(0.05, 0.2), ops: [[1, 1, rr(0.4, 1.5)], [pk([1, 2]), rr(0.4, 0.7), rr(0.08, 0.5)], [pk([1, 3]), rr(0.3, 0.5), rr(0.05, 0.3)], [1, rr(0.2, 0.4), rr(0.05, 0.2)]] })],
+  ['Organ', 0.1, () => ({ alg: 7, fb: rr(0, 0.15), ops: [[1, 0.9, HOLD], [2, rr(0.5, 0.7), HOLD], [pk([3, 4]), rr(0.3, 0.5), HOLD], [pk([0.5, 6, 8]), rr(0.15, 0.35), HOLD]] })],
+  ['Glass', 0.08, () => ({ alg: pk([3, 6]), fb: 0, ops: [[1, rr(0.8, 1), rr(1, 3)], [pk([2, 3]), rr(0.4, 0.6), rr(1, 3)], [pk([4, 5]), rr(0.25, 0.45), rr(0.8, 2.5)], [pk([7, 9, 11]), rr(0.15, 0.3), rr(0.05, 0.3)]] })],
+  ['Growl', 0.08, () => ({ alg: 2, fb: rr(0.35, 0.55), ops: [[1, 1, HOLD], [pk([1, 2]), rr(0.35, 0.55), HOLD], [1, rr(0.3, 0.5), rr(0.5, 3)], [1, rr(0.3, 0.5), HOLD]] })],
+];
+const ratioIx = r => Math.max(0, FM_RATIOS.indexOf(r));
+function fmPatch(side) {
+  const fi = key => oi(FM_SLOT, key + side);
+  let r = rnd(), make = FM_TYPES[0][2];
+  for (const [, p, f] of FM_TYPES) { if (r < p) { make = f; break; } r -= p; }
+  const P = make(), routes = OscFM.ALGS[P.alg][0];
+  // which operators modulate another: routes are [4->3, 4->2, 4->1, 3->2, 3->1, 2->1]
+  const mods = [false, routes[5] > 0, routes[3] > 0 || routes[4] > 0, routes[0] > 0 || routes[1] > 0 || routes[2] > 0];
+  // jitter, then keep the modulators' summed index in bounds
+  const ops = P.ops.map(([rt, l, d]) => [rt, clamp(l * rr(0.9, 1.1)), d >= HOLD ? HOLD : Math.min(20, d * rr(0.8, 1.25))]);
+  const modI = ops.reduce((t, o, j) => t + (mods[j] ? OscFM.index(o[1]) : 0), 0);
+  if (modI > 9) { const k = Math.sqrt(9 / modI); ops.forEach((o, j) => { if (mods[j]) o[1] *= k; }); }
+  const set = (key, v) => { const i = fi(key); state.A[i] = state.B[i] = quant(DEFS[i], clamp(norm(DEFS[i], v))); };
+  set('alg', P.alg); set('fb', Math.min(0.6, P.fb));
+  ops.forEach(([rt, l, d], j) => { set(`r${j + 1}`, ratioIx(rt)); set(`l${j + 1}`, l); set(`d${j + 1}`, d); });
+  fmTypeName[side] = FM_TYPES.find(t => t[2] === make)[0];
+}
+const fmTypeName = { A: '', B: '' };   // the archetype each side's FM patch came from (shown in the developer view only)
+// a side's FM patch as OscFM.cycle wants it
+const fmOf = side => {
+  const v = key => MorphEngine.denorm(DEFS[oi(FM_SLOT, key + side)], state[side][oi(FM_SLOT, key + side)]);
+  return { algo: v('alg'), fb: v('fb'), r: [1, 2, 3, 4].map(j => FM_RATIOS[v('r' + j)]), l: [1, 2, 3, 4].map(j => v('l' + j)) };
+};
+const FMCYC = new Float32Array(2048);
+// the spectrum of one cycle of a side's FM patch (at full envelope), in harmonic order like a wavetable frame
+function fmSpectrum(side) { OscFM.cycle(fmOf(side), 2048, FMCYC); return MorphEngine.analyze(FMCYC); }
 const rv = (d, side) => quant(d, clamp(norm(d, RND[d.key](side, d))));
 // Keep morphs dramatic: a side's new value lands at least 15% of the knob's throw away from the other side.
 // Parameters whose chance of landing at 0 (or low) matters more than the A/B gap skip the 15% rule;
 // both sides at 0 is fine for them. The rule would otherwise re-roll away their stated odds.
 const SPREAD = 0.15, NO_SPREAD = new Set(['lnmix', 'ottgl', 'ottgm', 'ottgh', 'fmix', 'mmix', 'dlmix', 'rvmix', 'lwow', 'lflut', 'lcodec', 'ldrop',
-  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar', 'sloop', 'dlspill']);
+  'glide', 'unison', 'vdepth', 'vrfade', 'mode', 'byp', 'opan', 'soct', 'sstart', 'strack', 'olevel', 'dmix', 'ottdepth', 'lchar', 'sloop', 'dlspill',
+  'mbright', 'mfx', 'mwet', 'harm', 'aatk', 'adec', 'asus', 'arel', 'fpitch']);   // 2026-11-06: the Envelope macro now sets A and B apart
 function rvApart(d, side, other) {
   if (NO_SPREAD.has(d.key)) return rv(d, side);
   for (let k = 0; k < 12; k++) { const x = rv(d, side); if (Math.abs(x - other) >= SPREAD) return x; }
@@ -2720,6 +3080,11 @@ function oscPower(s, side) {
     let p = 0; for (let h = 1; h <= 512; h++) p += (W.fr[0][h] ** 2 + W.fr[1][h] ** 2) / 2;
     return p;
   }
+  if (t === 'fm') {   // the patch this side plays (Patch is at full range by default: A plays A's)
+    OscFM.cycle(fmOf(val('fmx') < 0.5 ? 'A' : 'B'), 2048, FMCYC);
+    let p = 0; for (const x of FMCYC) p += x * x;
+    return p / 2048;
+  }
   if (t === 'sub') {
     const g = 1 + 7 * val('sdrive'), tg = Math.tanh(g); let p = 0;
     for (let n = 0; n < 256; n++) p += OscSub.sample(n / 256, 1 / 256, val('sshape'), g, tg) ** 2;
@@ -2746,11 +3111,14 @@ function levelMatch(side) {
 // Wavetable slot that goes through the filter is nearly pure, the filter leaves band-pass for low-pass and its cutoff moves toward the open end.
 function sineGuard(side) {
   const ci = IX.cutoff, mi = IX.mode, cd = DEFS[ci], md = DEFS[mi];
-  for (const s of WT_SLOTS) {
+  for (const s of [...WT_SLOTS, FM_SLOT]) {
     if (state[side][oi(s, 'olevel')] === 0 || state[side][oi(s, 'byp')] > 0.5 || isLocked(cd) || state.links[cd.id]) continue;
-    MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
-    MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
-    MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
+    if (OSC_KIND[s] === 'fm') { const f = fmSpectrum(state[side][oi(s, 'fmx')] < 0.5 ? 'A' : 'B'); W.fr[0].set(f.re); W.fr[1].set(f.im); }
+    else {
+      MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
+      MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
+      MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
+    }
     let tot = 0; for (let h = 1; h <= 512; h++) tot += W.fr[0][h] ** 2 + W.fr[1][h] ** 2;
     if ((W.fr[0][1] ** 2 + W.fr[1][1] ** 2) / (tot + 1e-12) <= 0.85) continue;
     // band-passing a pure sine only changes its level, and a band far from its one harmonic silences it: go low-pass instead
@@ -2781,6 +3149,8 @@ function slotHarmonics(s, side, f0) {
     MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
     MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], state[side][oi(s, 'wave')], true, W.fr[0], W.fr[1]);
     re = W.fr[0]; im = W.fr[1];
+  } else if (t === 'fm') {
+    const f = fmSpectrum(val('fmx') < 0.5 ? 'A' : 'B'); re = f.re; im = f.im;
   } else if (t === 'smp') {   // the spectrum of the sample this side mostly plays, from its Start point, at this note's speed
     const ref = state.smp[val('sample') < 0.5 ? 'A' : 'B'], data = ref && ref.id ? (smpData.A && smpData.A.id === ref.id ? smpData.A : smpData.B && smpData.B.id === ref.id ? smpData.B : null) : smpFor(ref);
     if (!data) return [[f0, 1]];
@@ -2798,7 +3168,7 @@ function passedDb(side) {
   const cut = val(IX.cutoff), reso = val(IX.reso), mode = val(IX.mode), env = val(IX.envamt), kt = val(IX.keytrack), fsus = val(IX.fsus);
   const p1 = val(oi(0, 'pitch'));   // the Sub follows Wavetable 1
   const slots = OSC_KIND.map((t, s) => s).filter(s => state[side][oi(s, 'olevel')] > 0).map(s => {
-    const t = OSC_KIND[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : p1 + 12 * val(oi(s, 'soct')));
+    const t = OSC_KIND[s], note = 60 + (t === 'wt' ? val(oi(s, 'pitch')) : t === 'smp' ? val(oi(s, 'spitch')) : t === 'fm' ? val(oi(s, 'fpitch')) : p1 + 12 * val(oi(s, 'soct')));
     return { note, harm: slotHarmonics(s, side, 440 * Math.pow(2, (note - 69) / 12)), lv: val(oi(s, 'olevel')) ** 2, byp: val(oi(s, 'byp')) };
   });
   let dry = 0, best = 0;
@@ -2825,15 +3195,27 @@ function loudnessGuard(side) {
 // Section dice use each knob's full range, except that some Lo-fi amounts usually stay gentle
 const RAW_LEAN = { lnmix: 0.3, lcodec: 0.3, ldrop: 0.3, lwow: 0.4, lflut: 0.4 };
 const rvRaw = d => quant(d, d.key in RAW_LEAN && rnd() < 0.8 ? rnd() * RAW_LEAN[d.key] : rnd());
+/* Every side uses at least one effect, so the FX intensity and FX wet macros always do something:
+   if none came up, Reverb (or Delay, if Reverb is locked) comes on gently. */
+function fxGuard(side, g) {
+  if (g) return;
+  const on = FX_KIND.some(t => Object.entries(MorphEngine.FX_CLASSES[t].REST).some(([key, v0]) => MorphEngine.denorm(DEFS[IX[key]], state[side][IX[key]]) !== v0));
+  if (on) return;
+  const i = [IX.rvmix, IX.dlmix].find(isFree);
+  if (i !== undefined) state[side][i] = 0.15 + rnd() * 0.15;
+}
 function randomizeSide(side, g, raw) {
   const other = side === 'A' ? 'B' : 'A';
   DEFS.forEach((d, i) => {
     if (!inGroup(d, g) || isLocked(d)) return;
+    if (d.seq) return;   // a side's sequencer settings change with the sequence dice, not the sound
+    if (d.eng === 'fm' && d.single) return;   // a side's FM patch comes whole from fmPatch
     if (d.single) { if (d.single === side) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, side); return; }
     if (state.links[d.id]) return;   // shared values only change with Randomize all or Randomize linked
     state[side][i] = raw ? rvRaw(d) : rvApart(d, side, state[other][i]);
   });
-  if (!raw) { oscGuard(side); lofiGate(side, g); mixOttGains(side, g); effectMixRules(side, g); }
+  if (!raw) { if (!g) pickOscs(side); oscGuard(side); lofiGate(side, g); mixOttGains(side, g); effectMixRules(side, g); fxGuard(side, g); }
+  if ((!g || g === 'FM') && !state.secLocks.FM) fmPatch(side);
   const mine = s => (!g || g === OSC_NAMES[s]) && !state.secLocks[OSC_NAMES[s]];
   for (const s of WT_SLOTS) if (mine(s)) { tables[s][side] = makeTable(TABLE_CHOICES[Math.floor(rnd() * TABLE_CHOICES.length)]); analyzeTable(s, side); }   // each Wavetable's table for this side, unless its section is locked
   if (mine(SMP_SLOT)) {
@@ -2852,7 +3234,7 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
 function randomizeAll(g, raw) {
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
   randomizeLinked(g, raw);
-  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
+  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts || d.seq ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
 }
 $('rndLinked').addEventListener('click', () => bulk(() => randomizeLinked()));
@@ -3096,8 +3478,10 @@ $('edFile').addEventListener('change', async () => {
 // every section heading gets three dice (randomize this section on side A, side B, or both) and a padlock
 // (lock the whole section); oscillators and effects also get an On/Off switch, a bypass for auditioning (never morphed or randomized)
 const DICE = '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5.3" cy="5.3" r="1.2" fill="currentColor"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="10.7" cy="10.7" r="1.2" fill="currentColor"/></svg>';
+const NO_TOOLS = new Set(['Sound', 'Sequence']);   // the player's cards: no dice or padlocks (the randomize bar covers them)
 document.querySelectorAll('.group[data-group]').forEach(sec => {
   const g = sec.dataset.group, h = sec.querySelector('h2');
+  if (NO_TOOLS.has(g)) return;
   h.classList.add('fxh');
   h.insertAdjacentHTML('beforeend', `<span class="tools"><button type="button" class="lock sectool da" data-dice="${g}" data-side="A" aria-label="Randomize ${g} on side A">${DICE}</button><button type="button" class="lock sectool db" data-dice="${g}" data-side="B" aria-label="Randomize ${g} on side B">${DICE}</button><button type="button" class="lock sectool" data-dice="${g}" aria-label="Randomize ${g} on both sides">${DICE}</button><button type="button" class="lock sectool" data-seclock="${g}" aria-pressed="false"></button></span>`);
   if (sec.dataset.kind) h.insertAdjacentHTML('beforeend', `<button type="button" class="fxsw" data-${sec.dataset.kind}="${sec.dataset.slot}" aria-label="${g} on"></button>`);
@@ -3201,6 +3585,17 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ovlOpen) closeOverlay(); });
 
+/* The player's view (2026-11-06, owner: "too much to offer the full parameter view; the synth is based on chance and
+   randomness"): only the Sound card (the four macros) and the Sequence card, plus the bottom panel. Every other section
+   is hidden. The developer view (open the page with ?dev, remembered until ?dev=0) shows everything, with the Basic and
+   Full views, for tuning the engines and the randomizer. */
+let devView = false;
+try {
+  const q = new URLSearchParams(location.search).get('dev');
+  if (q !== null) localStorage.setItem('diptych-dev', q === '0' ? '0' : '1');
+  devView = localStorage.getItem('diptych-dev') === '1';
+} catch (e) { devView = /[?&]dev(=1)?(&|$)/.test(location.search); }
+document.body.classList.toggle('dev', devView);
 let fullView = false;
 try { fullView = localStorage.getItem('diptych-view') === 'full'; } catch (e) {}
 function setView(full) {
@@ -3212,7 +3607,7 @@ function setView(full) {
 }
 $('viewBasic').addEventListener('click', () => setView(false));
 $('viewFull').addEventListener('click', () => setView(true));
-document.body.classList.toggle('full', fullView);
+document.body.classList.toggle('full', fullView && devView);
 $('viewBasic').setAttribute('aria-pressed', !fullView); $('viewFull').setAttribute('aria-pressed', fullView);
 /* =====================================================================
    LAYOUT
@@ -3222,7 +3617,7 @@ $('viewBasic').setAttribute('aria-pressed', !fullView); $('viewFull').setAttribu
    scaled to fit the window, so nothing ever scrolls.
    ===================================================================== */
 // the Full view is designed at 1440 x 900; the Basic view, with fewer controls, at 1280 x 800, so it comes out larger
-const deskSize = () => (document.body.classList.contains('full') ? [1440, 900] : [1280, 800]);
+const deskSize = () => (!document.body.classList.contains('dev') ? [1280, 800] : document.body.classList.contains('full') ? [1440, 900] : [1280, 800]);
 const isDesk = () => innerWidth >= 1000 && innerWidth > innerHeight * 1.15;
 function applyLayout() {
   const desk = isDesk(), app = $('app');
@@ -3396,7 +3791,7 @@ function generate(s, chord, mode, octs) {
   s.steps = s.steps.map((old, i) => ({ on: true, note: tame(order[i % order.length]), len: 1, vel: P.pos[i] % 48 === 0 ? 1 : 0.75, dur: old.dur }));
 }
 function makeSeq(rate, len, root, scale, chord, mode, octs) {
-  const s = { rate, root, scale, n16: len, v2: 1, v3: 1, v4: 1, density: 1, dseed: Math.random(), rot: 0, steps: [] };
+  const s = { rate, root, scale, n16: len, v2: 1, v3: 1, v4: 1, dseed: Math.random(), rot: 0, steps: [] };
   fitSlots(s);
   generate(s, chord, mode, octs);
   return s;
@@ -3422,7 +3817,6 @@ function fixSeq(s) {
   }
   if (!s.n16) { s.n16 = 16; fitSlots(s); }
   if (typeof s.dseed !== 'number') s.dseed = Math.random();
-  if (typeof s.density !== 'number') s.density = 1;
   if (typeof s.rot !== 'number') s.rot = 0;
   s.rot = ((s.rot % s.steps.length) + s.steps.length) % s.steps.length;
 }
@@ -3436,12 +3830,19 @@ if (state.seq.B.root !== state.seq.A.root || state.seq.B.scale !== state.seq.A.s
    rank from the golden-ratio sequence (k × 0.618, wrapped, plus a per-pattern offset). That order is
    evenly spread but never periodic, so thinning doesn't strip out every other note (which in an
    arpeggio is often all of one pitch). The starting point moves with the notes when you shift. */
+/* Each side's broad controls (Density, Speed, Octave) are parameters (params.js: sqdens, sqspeed, sqoct), so they
+   save, undo and swap with the side. A pattern that isn't one of the two sides (a copy) falls back to its own density. */
+const sideOf = s => (state.seq && s === state.seq.A ? 'A' : state.seq && s === state.seq.B ? 'B' : null);
+const seqSetting = (k, key) => MorphEngine.denorm(DEFS[IX[key]], state[k][IX[key]]);
+const seqDensity = s => { const k = sideOf(s); return k ? seqSetting(k, 'sqdens') : (typeof s.density === 'number' ? s.density : 1); };
+function setSeqDensity(s, v) { const k = sideOf(s); if (k) state[k][IX.sqdens] = clamp(v); else s.density = clamp(v); }
+const SPEED = [2, 1, 0.5];   // Speed ½×, 1×, 2×: how much longer each tick of the pattern lasts
 function keptSteps(s) {
   fixSeq(s);
   const n = s.steps.length, order = [];
   for (let k = 0; k < n; k++) { const i = (s.rot + k) % n; if (s.steps[i].on) order.push(i); }
   const ranked = order.map((i, k) => ({ i, key: (k * 0.6180339887 + s.dseed) % 1 })).sort((a, b) => a.key - b.key);
-  const keep = new Set(ranked.slice(0, Math.round(s.density * order.length)).map(x => x.i));
+  const keep = new Set(ranked.slice(0, Math.round(seqDensity(s) * order.length)).map(x => x.i));
   return s.steps.map((_, i) => keep.has(i));
 }
 // each kept note is cut off where the next kept note starts, so notes never overlap
@@ -3485,21 +3886,21 @@ function assignThresholds(list) {
 let seqCache = null;
 function buildSeq() {
   if (seqCache) return seqCache;
-  const A = state.seq.A, B = state.seq.B;
-  const dA = stepPos(A).total, dB = stepPos(B).total;
+  const A = state.seq.A, B = state.seq.B, fA = SPEED[seqSetting('A', 'sqspeed')], fB = SPEED[seqSetting('B', 'sqspeed')];
+  const dA = stepPos(A).total * fA, dB = stepPos(B).total * fB;
   let loop = dA / gcd(dA, dB) * dB;
   if (loop > 48 * 4 * 64) loop = Math.max(dA, dB);
   const map = new Map();
-  const add = (side, S) => {
+  const add = (side, S, f, oct) => {   // f: Speed (ticks per pattern tick), oct: Octave in semitones
     const kept = keptSteps(S), lens = playLens(S, kept), P = stepPos(S);
-    for (let base = 0; base < loop; base += P.total) S.steps.forEach((st, i) => {
-      const t = base + P.pos[i];
+    for (let base = 0; base < loop; base += P.total * f) S.steps.forEach((st, i) => {
+      const t = base + P.pos[i] * f;
       if (!kept[i] || t >= loop) return;
       let e = map.get(t); if (!e) { e = { tick: t }; map.set(t, e); }
-      e[side] = { p: st.note, v: st.vel, l: lens[i] };
+      e[side] = { p: st.note + oct, v: st.vel, l: lens[i] * f };
     });
   };
-  add('a', A); add('b', B);
+  add('a', A, fA, 12 * seqSetting('A', 'sqoct')); add('b', B, fB, 12 * seqSetting('B', 'sqoct'));
   const events = [...map.values()].sort((x, y) => x.tick - y.tick);
   assignThresholds(events.filter(e => !(e.a && e.b)));
   assignThresholds(events.filter(e => e.a && e.b && e.a.p !== e.b.p));
@@ -3508,7 +3909,7 @@ function buildSeq() {
   return seqCache;
 }
 function sendSeq() { if (ready) { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); } }
-function seqChanged() { seqCache = null; sendSeq(); drawLanes(); if (sq.classList.contains('open')) drawRoll(); save(); }
+function seqChanged() { seqCache = null; sendSeq(); drawLanes(); if (sq.classList.contains('open')) drawRoll(); if (typeof syncScaleUI === 'function') syncScaleUI(); save(); }
 
 /* ---------- bottom pane: keys / sequencer ---------- */
 let panel = 'keys', seqPlaying = false, seqPos = null, seqLoop = 1;
@@ -3624,12 +4025,17 @@ $('sqA').addEventListener('click', () => openSeq('A'));
 $('sqB').addEventListener('click', () => openSeq('B'));
 function syncSeqControls() {
   const s = cur(); fixSeq(s);
-  $('sqDens').value = Math.round(s.density * 100); $('sqDensVal').textContent = Math.round(s.density * 100) + '%';
+  const dn = Math.round(seqDensity(s) * 100); $('sqDens').value = dn; $('sqDensVal').textContent = dn + '%';
   $('sqA').setAttribute('aria-pressed', sqSide === 'A'); $('sqB').setAttribute('aria-pressed', sqSide === 'B');
   $('sqRate').value = s.rate; $('sqRoot').value = s.root; $('sqScale').value = s.scale;
   $('sqLen').textContent = s.n16;
   $('sqOther').textContent = `Copy to ${sqSide === 'A' ? 'B' : 'A'}`;
 }
+// the shared Scale also sits in the Sequence card on the main page (a broad control: root and scale type)
+sections.Sequence.querySelector('.gbody').insertAdjacentHTML('beforeend', `<div class="qscale"><span class="lbl">Scale</span><select id="qRoot" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="qScale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select></div>`);
+function syncScaleUI() { $('qRoot').value = state.seq.A.root; $('qScale').value = state.seq.A.scale; }
+$('qRoot').addEventListener('change', () => { pushUndo(); setScale(+$('qRoot').value, state.seq.A.scale); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
+$('qScale').addEventListener('change', () => { pushUndo(); setScale(state.seq.A.root, $('qScale').value); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
 function snapToScale(s) {
   const pcs = scalePcs(s);
   s.steps.forEach(st => { for (let d = 0; d < 12; d++) { if (pcs.has(((st.note - d) % 12 + 12) % 12)) { st.note -= d; break; } if (pcs.has((st.note + d) % 12)) { st.note += d; break; } } });
@@ -3644,7 +4050,7 @@ $('sqScale').addEventListener('change', () => editSeq(() => setScale(cur().root,
 $('sqLenDn').addEventListener('click', () => editSeq(s => { if (s.n16 > 1) { s.n16--; fitSlots(s); } }));
 $('sqLenUp').addEventListener('click', () => editSeq(s => { if (s.n16 < MAXSTEPS) { s.n16++; fitSlots(s); } }));
 ['pointerdown', 'keydown'].forEach(t => $('sqDens').addEventListener(t, () => pushUndo()));
-$('sqDens').addEventListener('input', () => { cur().density = $('sqDens').value / 100; $('sqDensVal').textContent = $('sqDens').value + '%'; seqChanged(); });
+$('sqDens').addEventListener('input', () => { setParam(sqSide, IX.sqdens, $('sqDens').value / 100); $('sqDensVal').textContent = $('sqDens').value + '%'; });
 // shift the whole pattern one step, wrapping around the loop
 $('sqLeft').addEventListener('click', () => editSeq(s => { s.steps.push(s.steps.shift()); s.rot = (s.rot - 1 + s.steps.length) % s.steps.length; }));
 $('sqRight').addEventListener('click', () => editSeq(s => { s.steps.unshift(s.steps.pop()); s.rot = (s.rot + 1) % s.steps.length; }));
@@ -3735,7 +4141,7 @@ function randNotes(s) {
   });
 }
 function randVel(s) { s.steps.forEach(st => { st.vel = 0.05 + Math.random() * 0.95; }); }
-function randRhythm(s) { s.steps.forEach(st => { const x = Math.random(); if (x < 0.15) st.on = false; else if (x < 0.25) st.len = 2; else if (x < 0.33) st.len = 0.5; }); }
+function randRhythm(s) { s.steps.forEach(st => { const x = Math.random(); if (x < 0.1) st.on = false; else if (x < 0.25) st.len = 2; else if (x < 0.33) st.len = 0.5; }); }
 // launch: a new shared scale, then each side gets a whole new 16-step pattern
 function randSeqs() {
   ['A', 'B'].forEach(k => { const q = state.seq[k]; fixSeq(q); q.n16 = 16; fitSlots(q); });
@@ -3745,23 +4151,38 @@ function randSeqs() {
 $('rzNotes').addEventListener('click', () => editSeq(randNotes));
 // top bar: new patterns for one side (keeps the shared scale) or both (new scale too)
 // main-page sequence dice and launch: new rate, new generator settings (Arp or Riff), rhythm, velocity,
-// and a density that leans high (never below 30%)
-const highDensity = () => 1 - 0.7 * Math.random() ** 2;
-/* Random patterns always hold at least 5 notes, and nine times in ten keep a note on the downbeat.
+// and a density that leans high (never below 50%, 2026-11-06; it was 30%)
+const highDensity = () => 1 - 0.5 * Math.random() ** 2;
+/* Random patterns (2026-11-06, owner: "tend toward a note on the downbeat of the bar, and more notes, always at least 5"):
+   - at least 5 notes, and usually more: 40% of the note slots (7 of 16 sixteenths), whichever is larger;
+   - a note on the downbeat of every bar 95% of the time (it was the first beat only, 90%), and Density keeps it.
    A slow rate that can't fit 5 notes into one bar gets two bars. */
-const MIN_NOTES = 5;
+const MIN_NOTES = 5, NOTE_SHARE = 0.4;
+const wantNotes = s => Math.min(s.steps.length, Math.max(MIN_NOTES, Math.ceil(s.steps.length * NOTE_SHARE)));
 function roomForNotes(s) { if (s.steps.length < MIN_NOTES && s.n16 < MAXSTEPS) { s.n16 = MAXSTEPS; fitSlots(s, true); } }
+// the note slots that start a bar (every 16 sixteenths)
+const barSlots = s => { const P = stepPos(s); return s.steps.map((_, i) => i).filter(i => P.pos[i] % 192 === 0); };
 function shapeRandom(s) {
-  const kept = () => keptSteps(s).filter(Boolean).length, want0 = Math.random() < 0.9;
-  if (want0) s.steps[0].on = true;
-  for (let k = 0; k < 60 && kept() < Math.min(MIN_NOTES, s.steps.length); k++) {
-    if (s.density < 1) s.density = Math.min(1, s.density + 0.1);   // thin less first, then switch rests back on
+  const kept = () => keptSteps(s).filter(Boolean).length, bars = barSlots(s).filter(() => Math.random() < 0.95);
+  bars.forEach(i => { s.steps[i].on = true; });
+  for (let k = 0; k < 80 && kept() < wantNotes(s); k++) {
+    const d = seqDensity(s);
+    if (d < 1) setSeqDensity(s, Math.min(1, d + 0.1));   // thin less first, then switch rests back on
     else { const off = s.steps.filter(st => !st.on); if (!off.length) break; off[Math.floor(Math.random() * off.length)].on = true; }
   }
-  // which notes density keeps depends on dseed (not how many), so pick one that keeps the downbeat
-  if (want0) for (let k = 0; k < 40 && !keptSteps(s)[0]; k++) s.dseed = Math.random();
+  // which notes density keeps depends on dseed (not how many), so pick one that keeps the downbeats; failing that, thin less
+  const keepsBars = () => { const kp = keptSteps(s); return bars.every(i => kp[i]); };
+  for (let k = 0; k < 60 && !keepsBars(); k++) { s.dseed = Math.random(); if (k % 15 === 14) setSeqDensity(s, Math.min(1, seqDensity(s) + 0.1)); }
 }
-function fullSeqRandom(q) { fixSeq(q); randRate(q); roomForNotes(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); q.density = highDensity(); shapeRandom(q); }
+/* Speed and Octave (per side): usually 1× and no shift. Half speed only for quick patterns, double only for slow ones,
+   so a random pattern never crawls or blurs. */
+function randSpeedOct(q) {
+  const k = sideOf(q); if (!k) return;
+  const r = RATES[q.rate][1] || 18, x = Math.random();   // Mixed counts as fairly quick
+  state[k][IX.sqspeed] = norm(DEFS[IX.sqspeed], x < 0.12 && r <= 18 ? 0 : x > 0.9 && r >= 36 ? 2 : 1);
+  const o = Math.random(); state[k][IX.sqoct] = norm(DEFS[IX.sqoct], o < 0.1 ? -1 : o > 0.9 ? 1 : 0);
+}
+function fullSeqRandom(q) { fixSeq(q); randRate(q); roomForNotes(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); setSeqDensity(q, highDensity()); randSpeedOct(q); shapeRandom(q); }
 function randSeqSide(k) { fullSeqRandom(state.seq[k]); }
 $('rsA').addEventListener('click', () => bulk(() => randSeqSide('A')));
 $('rsB').addEventListener('click', () => bulk(() => randSeqSide('B')));
@@ -3770,12 +4191,15 @@ $('rzVel').addEventListener('click', () => editSeq(randVel));
 function randRate(s) { s.rate = Math.floor(Math.random() * RATES.length); fitSlots(s, true); }
 $('rzRate').addEventListener('click', () => editSeq(randRate));
 $('rzArp').addEventListener('click', () => editSeq(s => { randArpSettings(); genFromControls(s); }));
-function randAllSide(s) { randRate(s); roomForNotes(s); randArpSettings(); genFromControls(s); randRhythm(s); randVel(s); s.density = 0.3 + 0.7 * Math.random(); shapeRandom(s); }
-$('rzAll').addEventListener('click', () => editSeq(randAllSide));
-$('sqOther').addEventListener('click', () => { pushUndo(); state.seq[sqSide === 'A' ? 'B' : 'A'] = cloneSeq(cur()); seqChanged(); });
+function randAllSide(s) { randRate(s); roomForNotes(s); randArpSettings(); genFromControls(s); randRhythm(s); randVel(s); setSeqDensity(s, 0.5 + 0.5 * Math.random()); shapeRandom(s); }
+$('rzAll').addEventListener('click', () => { pushUndo(); randAllSide(cur()); refreshSeqKnobs(); syncSeqControls(); seqChanged(); });
+$('sqOther').addEventListener('click', () => copySeq(sqSide, sqSide === 'A' ? 'B' : 'A'));
 
-// copy a whole sequence to the other side (from the bottom pane); the scale is shared anyway
-const copySeq = (from, to) => { pushUndo(); state.seq[to] = cloneSeq(state.seq[from]); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); };
+// copy a whole sequence to the other side (from the bottom pane), with its Density, Speed and Octave; the scale is shared anyway
+const SEQ_KEYS = ['sqdens', 'sqspeed', 'sqoct'];
+function copySeqTo(from, to) { state.seq[to] = cloneSeq(state.seq[from]); SEQ_KEYS.forEach(k => { state[to][IX[k]] = state[from][IX[k]]; }); }
+const refreshSeqKnobs = () => SEQ_KEYS.forEach(k => updateKnob(IX[k]));
+const copySeq = (from, to) => { pushUndo(); copySeqTo(from, to); refreshSeqKnobs(); if (ready) sendState(); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); };
 $('seqAB').addEventListener('click', () => copySeq('A', 'B'));
 $('seqBA').addEventListener('click', () => copySeq('B', 'A'));
 const GUT = 34, RH = 14;

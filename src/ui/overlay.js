@@ -39,6 +39,17 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ovlOpen) closeOverlay(); });
 
+/* The player's view (2026-11-06, owner: "too much to offer the full parameter view; the synth is based on chance and
+   randomness"): only the Sound card (the four macros) and the Sequence card, plus the bottom panel. Every other section
+   is hidden. The developer view (open the page with ?dev, remembered until ?dev=0) shows everything, with the Basic and
+   Full views, for tuning the engines and the randomizer. */
+let devView = false;
+try {
+  const q = new URLSearchParams(location.search).get('dev');
+  if (q !== null) localStorage.setItem('diptych-dev', q === '0' ? '0' : '1');
+  devView = localStorage.getItem('diptych-dev') === '1';
+} catch (e) { devView = /[?&]dev(=1)?(&|$)/.test(location.search); }
+document.body.classList.toggle('dev', devView);
 let fullView = false;
 try { fullView = localStorage.getItem('diptych-view') === 'full'; } catch (e) {}
 function setView(full) {
@@ -50,5 +61,5 @@ function setView(full) {
 }
 $('viewBasic').addEventListener('click', () => setView(false));
 $('viewFull').addEventListener('click', () => setView(true));
-document.body.classList.toggle('full', fullView);
+document.body.classList.toggle('full', fullView && devView);
 $('viewBasic').setAttribute('aria-pressed', !fullView); $('viewFull').setAttribute('aria-pressed', fullView);

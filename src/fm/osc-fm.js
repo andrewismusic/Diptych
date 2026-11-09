@@ -1,7 +1,8 @@
 /* =====================================================================
-   FM SKETCH: standalone FM synth page (dist/fm.html), split out of
-   Diptych so the FM idea can be explored as its own product.
    OscFM: algorithms, ratios, decay shapes and a one-cycle renderer.
+   Shared by the standalone FM sketch page (dist/fm.html) and Diptych's FM
+   oscillator (MorphEngine renders it; it is stringified into the worklet,
+   so it may refer to nothing else on the page).
    ===================================================================== */
 
 class OscFM {

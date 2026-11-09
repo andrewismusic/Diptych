@@ -18,16 +18,16 @@ $('undo').addEventListener('click', () => {
 });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
-  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes();
+  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes(); syncScaleUI();
   if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
   if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
   if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
   save();
 }
-// Copy covers the sound only: sequences and the Pattern knob stay as they are
+// Copy covers the sound only: sequences, their Density, Speed and Octave, and the Pattern knob stay as they are
 const copySound = (from, to) => bulk(() => {
-  const ip = IX.pattern, keep = state[to][ip];
-  state[to] = state[from].slice(); state[to][ip] = keep;
+  const keepIx = DEFS.map((d, i) => i).filter(i => DEFS[i].group === 'Sequencer' || DEFS[i].seq), keep = keepIx.map(i => state[to][i]);
+  state[to] = state[from].slice(); keepIx.forEach((i, k) => { state[to][i] = keep[k]; });
   tables.forEach(t => { t[to] = cloneTable(t[from]); });
   state.smp[to] = { ...state.smp[from] };
 });
@@ -42,7 +42,7 @@ $('swap').addEventListener('click', () => bulk(() => {
 $('resetAll').addEventListener('click', () => bulk(() => {
   state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
   state.spectral = true; state.links = DEFAULT_LINKS(); state.linkMem = {};
-  state.oscOn = [true, true, true, true]; state.fxOn = DEFAULT_FXON(); state.smp = DEFAULT_SMP();
+  state.oscOn = DEFAULT_OSCON(); state.fxOn = DEFAULT_FXON(); state.smp = DEFAULT_SMP();
   DEFAULT_TABLES().forEach((t, k) => { tables[k] = t; });
   state.seq = defaultSeqs();
 }));

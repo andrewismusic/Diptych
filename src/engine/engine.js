@@ -5,11 +5,13 @@
    lerp(A, B, bend(morph, curve)).
 
    The architecture is fixed: each slot's engine or effect comes from the
-   parameter list (its params' `eng`). Signal flow per voice: 4 oscillators
-   (Wavetable, Wavetable, Sub, Sampler) -> each splits between the filter and
+   parameter list (its params' `eng`). Signal flow per voice: 5 oscillators
+   (Wavetable, Wavetable, Sub, Sampler, FM) -> each splits between the filter and
    around it (Bypass) -> amp envelope -> master Level and Pan. Then the 7
    effects in order, and a final tanh soft clip. An oscillator at Level 0 is
    skipped; an effect at rest (Mix 0) at the current morph goes idle (see renderFx).
+   The four macros (Envelope, Brightness, FX intensity, FX wet) are applied on top
+   of the resolved values every sub-block (applyMacros).
 
    MorphEngine and the classes in the other engine files are stringified
    into the AudioWorklet (see audio.js), so they must stay self-contained:
@@ -27,26 +29,36 @@ class MorphEngine {
     const keyMap = (kind, slot) => { const m = {}; defs.forEach((d, i) => { if (d.kind === kind && d.slot === slot) m[d.key] = i; }); return m; };
     const engOf = (kind, slot) => (defs.find(d => d.kind === kind && d.slot === slot) || {}).eng;
     this.nFx = 1 + Math.max(-1, ...defs.filter(d => d.kind === 'fx').map(d => d.slot));
-    this.oP = [0, 1, 2, 3].map(s => keyMap('osc', s));
+    const NO = this.nOsc = 1 + Math.max(-1, ...defs.filter(d => d.kind === 'osc').map(d => d.slot)), slots = [...Array(NO).keys()];
+    this.oP = slots.map(s => keyMap('osc', s));
     this.xP = Array.from({ length: this.nFx }, (_, s) => keyMap('fx', s));
-    this.oscType = [0, 1, 2, 3].map(s => engOf('osc', s) || 'off');
-    this.cPrev = new Float64Array(16); this.cNext = new Float64Array(16); this.cD = new Float64Array(16);   // per slot: into the filter L/R, around it L/R
-    this.banks = [0, 1, 2, 3].map(() => new WtBank());
-    this.uL = new Float32Array(28); this.uR = new Float32Array(28); this.uOff = new Float32Array(28);
-    this.uDt = new Float32Array(28); this.uLev = new Int32Array(28); this.uJ = new Int32Array(28); this.uN = new Int32Array(4);
-    this.tune = new Float64Array(4); this.sdt = new Float64Array(4);
-    this.sShape = new Float64Array(4); this.sG = new Float64Array(4); this.sTg = new Float64Array(4);
-    this.slList = new Int32Array(4); this.slKind = new Int32Array(4);
+    this.oscType = slots.map(s => engOf('osc', s) || 'off');
+    this.cPrev = new Float64Array(4 * NO); this.cNext = new Float64Array(4 * NO); this.cD = new Float64Array(4 * NO);   // per slot: into the filter L/R, around it L/R
+    this.banks = slots.map(() => new WtBank());
+    this.uL = new Float32Array(7 * NO); this.uR = new Float32Array(7 * NO); this.uOff = new Float32Array(7 * NO);
+    this.uDt = new Float32Array(7 * NO); this.uLev = new Int32Array(7 * NO); this.uJ = new Int32Array(7 * NO); this.uN = new Int32Array(NO);
+    this.tune = new Float64Array(NO); this.sdt = new Float64Array(NO);
+    this.sShape = new Float64Array(NO); this.sG = new Float64Array(NO); this.sTg = new Float64Array(NO);
+    this.slList = new Int32Array(NO); this.slKind = new Int32Array(NO);
     // Sampler per slot: a buffer per side ({ d, sr } or null), Loop, and per-block settings
-    this.smp = [0, 1, 2, 3].map(() => ({ A: null, B: null }));   // Loop is a per-side switch parameter ('sloop')
+    this.smp = slots.map(() => ({ A: null, B: null }));   // Loop is a per-side switch parameter ('sloop')
+    // FM per slot: each side's patch, set up once per sub-block (fmSetup), and per-voice values (fmVoice)
+    this.fm = slots.map(() => ({ w: new Float64Array(2), g: new Float64Array(2), fbA: new Float64Array(2), m: [new Float64Array(6), new Float64Array(6)], o: [new Float64Array(4), new Float64Array(4)],
+      R: new Float64Array(8), I: new Float64Array(8), lv: new Float64Array(8), D: new Float64Array(8), Cv: new Float64Array(8),
+      dt: new Float64Array(8), ix: new Float64Array(8), e0: new Float64Array(8), e1: new Float64Array(8), maxI: 0, maxR: 1 }));
     // oscillator On/Off (a bypass for auditioning, never morphed): target and a ~15 ms glide
-    this.oscOn = [true, true, true, true]; this.oscBy = new Float64Array(4).fill(1);
-    this.smpMix = new Float64Array(4); this.smpTrk = new Float64Array(4); this.smpRA = new Float64Array(4); this.smpRB = new Float64Array(4);
+    this.oscOn = slots.map(() => true); this.oscBy = new Float64Array(NO).fill(1);
+    this.smpMix = new Float64Array(NO); this.smpTrk = new Float64Array(NO); this.smpRA = new Float64Array(NO); this.smpRB = new Float64Array(NO);
     this.gL = -1; this.gR = -1;   // master gain (Level, Pan) at the end of the last sub-block; -1 = not set yet
     this.voices = [];
     for (let k = 0; k < 8; k++) this.voices.push({ active:false, note:0, vel:0, pitch:0, age:0, aSt:0, aLv:0, fSt:0, fLv:0,
-      ph:new Float64Array(28), sph:new Float64Array(4), flt:new Float64Array(4), vAge:0, vPh:0,
-      sp:new Float64Array(8), op:new Float64Array(8), sxf:new Int32Array(4), sold:new Uint8Array(4) });   // sampler: positions, old positions and crossfade on restart
+      ph:new Float64Array(7 * NO), sph:new Float64Array(NO), flt:new Float64Array(4), vAge:0, vPh:0,
+      sp:new Float64Array(2 * NO), op:new Float64Array(2 * NO), sxf:new Int32Array(NO), sold:new Uint8Array(NO),   // sampler: positions, old positions and crossfade on restart
+      fph:new Float64Array(8 * NO), fy:new Float64Array(4 * NO) });   // FM: operator phases and operator 4's feedback memory, per side
+    this.macros = this.buildMacros();
+    // FM parameter indexes per slot and side: [algorithm, feedback, ratio 1-4, level 1-4, decay 1-4]
+    this.fmAlgs = OscFM.ALGS; this.fmRatios = OscFM.RATIOS;   // cached: the getters build new arrays
+    this.fmK = this.oP.map(P => ['A', 'B'].map(k => [P['alg' + k], P['fb' + k], ...[1, 2, 3, 4].map(j => P[`r${j}${k}`]), ...[1, 2, 3, 4].map(j => P[`l${j}${k}`]), ...[1, 2, 3, 4].map(j => P[`d${j}${k}`])]));
     // Effects: instance, type, On/Off, idle, and the crossfade to dry used for On/Off and going idle
     const nf = this.nFx;
     this.fxType = Array.from({ length: nf }, (_, s) => engOf('fx', s));
@@ -133,6 +145,73 @@ class MorphEngine {
     for (let i = 0; i < N; i++) out[i] = sR[i];
   }
   static get FX_CLASSES() { return { drive: FxDrive, formant: FxFormant, mod: FxModulation, delay: FxDelay, reverb: FxReverb, lofi: FxLofi, ott: FxOtt }; }
+  static norm(d, v) {
+    return d.curve === 'log' ? Math.log(v / d.min) / Math.log(d.max / d.min) : d.curve === 'pow2' ? Math.sqrt((v - d.min) / (d.max - d.min)) : (v - d.min) / (d.max - d.min);
+  }
+
+  /* ---------- macros ----------
+     Each macro is a per-side knob where 50% leaves the sound as generated. Its distance from 50% (d, -1 to 1)
+     pulls a set of parameters, in normalized units, toward a low or high target:
+       lerp  x moves toward lo (d < 0) or hi (d > 0) by |d|
+       add   x moves by d * k
+       mix   an amount that may be off (0): d < 0 scales it down (by up to f, 1 = to zero), d > 0 moves it toward a ceiling,
+             but an amount at 0 stays 0, so the macros never switch on an effect a side doesn't use (and resting effects stay idle)
+     Targets are written in real units. The rules run after the morph, on the smoothed values, so they never zip. */
+  static get MACRO_RULES() {
+    return {
+      menv: [['aatk', 'lerp', 0.001, 1.5], ['adec', 'lerp', 0.15, 3], ['asus', 'lerp', 0, 1], ['arel', 'lerp', 0.08, 4],
+        ['fatk', 'lerp', 0.001, 0.8], ['fdec', 'lerp', 0.12, 3], ['frel', 'lerp', 0.08, 3]],
+      mbright: [['cutoff', 'add', 0.3, 60], ['envamt', 'dark', 0, 1], ['envamt', 'bright', 0.8, 0.5], ['mode', 'dark', 0, 0.7], ['reso', 'mix', 0.4, null],
+        ['harm', 'dark', 0, 1], ['sdrive', 'mix', 1, null], ['sshape', 'darkAbove', 0.5, 1]],
+      mfx: [['drive', 'lerp', 0.1, 0.95], ['freso', 'lerp', 0.15, 0.95], ['mdepth', 'lerp', 0.15, 1], ['mfb', 'lerp', 0, 0.8], ['dlfb', 'lerp', 0.1, 0.8],
+        ['rvdecay', 'lerp', 0.5, 10], ['rvsize', 'lerp', 0.15, 0.95],
+        ['lwow', 'mix', 0.8, 0.9], ['lflut', 'mix', 0.8, 0.9], ['lchar', 'mix', 0.8, 1], ['lcodec', 'mix', 0.8, 0.75], ['ldrop', 'mix', 0.8, 0.6], ['ottdepth', 'mix', 0.8, 0.8]],
+      mwet: [['dmix', 'mix', 1, 1], ['fmix', 'mix', 1, 0.9], ['mmix', 'mix', 1, 1], ['dlmix', 'mix', 1, 0.6], ['rvmix', 'mix', 1, 0.7], ['lnmix', 'mix', 1, 0.45],
+        ['lwow', 'mix', 1, null], ['lflut', 'mix', 1, null], ['lchar', 'mix', 1, null], ['lcodec', 'mix', 1, null], ['ldrop', 'mix', 1, null], ['ottdepth', 'mix', 1, null],
+        ['ottgl', 'dark', 0, 1], ['ottgm', 'dark', 0, 1], ['ottgh', 'dark', 0, 1]],   // band gains go flat with the depth, so OTT really is off at 0%
+    };
+  }
+  buildMacros() {
+    const R = MorphEngine.MACRO_RULES, I = this.I, D = this.defs, out = [];
+    for (const m in R) {
+      if (I[m] === undefined) continue;
+      for (const [key, mode, a, b] of R[m]) {
+        const i = I[key]; if (i === undefined) continue;
+        const d = D[i], nz = v => (v === null ? null : Math.max(0, Math.min(1, MorphEngine.norm(d, v))));
+        // add: a is a shift in normalized units, b the lowest value (real units); others: targets in real units ('mix' ceilings
+        // are already normalized amounts, 'dark' and 'bright' targets are real values with a strength)
+        if (mode === 'add') out.push({ i, m: I[m], mode, k: a, lo: nz(b) });
+        else if (mode === 'mix') out.push({ i, m: I[m], mode, f: a, cap: b });
+        else if (mode === 'lerp') out.push({ i, m: I[m], mode, lo: nz(a), hi: nz(b) });
+        else out.push({ i, m: I[m], mode, t: nz(a), k: b });
+      }
+    }
+    // the rules for one parameter run in order (FX intensity before FX wet), so group them by parameter
+    this.macroT = new Float64Array(D.length);
+    return out;
+  }
+  applyMacros() {
+    const cur = this.cur, val = this.val, D = this.defs, t = this.macroT, rules = this.macros;
+    if (!rules.length) return;
+    for (const r of rules) t[r.i] = cur[r.i];
+    for (const r of rules) {
+      const d = cur[r.m] * 2 - 1;
+      if (d === 0) continue;
+      let x = t[r.i];
+      switch (r.mode) {
+        case 'lerp': x += ((d < 0 ? r.lo : r.hi) - x) * Math.abs(d); break;
+        case 'add': x = Math.max(r.lo, Math.min(1, x + d * r.k)); break;
+        case 'mix': if (d < 0) x *= 1 + d * r.f; else if (r.cap !== null && x > 0 && x < r.cap) x += (r.cap - x) * d; break;
+        case 'dark': if (d < 0) x += (r.t - x) * -d * r.k; break;
+        case 'darkAbove': if (d < 0 && x > r.t) x += (r.t - x) * -d * r.k; break;
+        case 'bright': if (d > 0 && x > 0.5) x += (Math.max(x, r.t) - x) * d * r.k; break;
+      }
+      t[r.i] = x;
+    }
+    for (const r of rules) val[r.i] = MorphEngine.denorm(D[r.i], t[r.i]);
+  }
+  // FM decays follow the Envelope macro too: from a quarter as long (pluck) to four times as long (pad); Hold stays Hold
+  fmEnvScale() { const i = this.I.menv; return i === undefined ? 1 : Math.pow(4, this.cur[i] * 2 - 1); }
 
   /* ---------- slots ---------- */
   /* (Re)start a voice's sample playback in slot s at the Start point. When a sounding note restarts, the old
@@ -178,8 +257,8 @@ class MorphEngine {
   }
   startVoice(v, note) {
     v.aLv = 0; v.fLv = 0; v.flt.fill(0);
-    for (let j = 0; j < 28; j++) v.ph[j] = Math.random();
-    v.sph.fill(0);
+    for (let j = 0; j < v.ph.length; j++) v.ph[j] = Math.random();
+    v.sph.fill(0); v.fph.fill(0); v.fy.fill(0);
     v.pitch = this.val[this.I.glide] > 0.0005 && this.lastPitch >= 0 ? this.lastPitch : note;
   }
   noteOn(note, vel) {
@@ -189,7 +268,7 @@ class MorphEngine {
       const v = this.voices[0];
       const was = v.active;
       if (!v.active) this.startVoice(v, note);
-      for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
+      for (let s = 0; s < this.nOsc; s++) if (this.oscType[s] === 'smp') this.smpStart(v, s, was);
       v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.vAge = 0; v.vPh = 0; this.lastPitch = note;
       return;
     }
@@ -198,7 +277,7 @@ class MorphEngine {
     if (!v) v = this.voices.reduce((a, b) => (a.age < b.age ? a : b));
     const was = v.active;
     if (!v.active) this.startVoice(v, note);
-    for (let s = 0; s < 4; s++) this.smpStart(v, s, was);
+    for (let s = 0; s < this.nOsc; s++) if (this.oscType[s] === 'smp') this.smpStart(v, s, was);
     v.active = true; v.note = note; v.vel = vel; v.aSt = 1; v.fSt = 1; v.age = this.clock++;
     v.vAge = 0; v.vPh = 0;   // vibrato fades in again from each new note
     this.lastPitch = note;
@@ -279,6 +358,7 @@ class MorphEngine {
       this.val[i] = MorphEngine.denorm(d, this.cur[i]);
     }
     this.first = false;
+    this.applyMacros();
   }
   render(L, R, n) {
     const sr = this.sr;
@@ -288,10 +368,11 @@ class MorphEngine {
       this.resolve();
       this.seqRun(len);
       const v = this.val;
-      for (let s = 0; s < 4; s++) if (this.oscType[s] === 'wt') {   // a silent Wavetable doesn't rebuild (it catches up, crossfading, when it is heard again)
+      const harm = this.I.harm === undefined ? 1 : v[this.I.harm];
+      for (let s = 0; s < this.nOsc; s++) if (this.oscType[s] === 'wt') {   // a silent Wavetable doesn't rebuild (it catches up, crossfading, when it is heard again)
         const P = this.oP[s], o = s * 4;
         if (v[P.olevel] === 0 && this.banks[s].ready && !this.cPrev[o] && !this.cPrev[o + 1] && !this.cPrev[o + 2] && !this.cPrev[o + 3]) continue;
-        this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave]);
+        this.banks[s].maybeBuild(len, v[P.posA], v[P.posB], v[P.wave], harm);
       }
       this.renderVoices(L, R, p, len);
       this.renderFx(L, R, p, len);
@@ -307,7 +388,7 @@ class MorphEngine {
     const tune1 = t0 === 'wt' ? v[P0.pitch] + v[P0.fine] / 100 : 0;
     let nSl = 0;
     const byK = 1 - Math.exp(-len / (0.015 * sr));
-    for (let s = 0; s < 4; s++) {
+    for (let s = 0; s < this.nOsc; s++) {
       const t = this.oscType[s], P = this.oP[s], o = s * 4;
       const tgt = this.oscOn[s] ? 1 : 0;
       this.oscBy[s] += (tgt - this.oscBy[s]) * byK; if (Math.abs(tgt - this.oscBy[s]) < 1e-4) this.oscBy[s] = tgt;
@@ -344,6 +425,10 @@ class MorphEngine {
         kind[nSl] = 4;
         this.tune[s] = v[P.spitch] + v[P.sfine] / 100;
         this.smpMix[s] = v[P.sample]; this.smpTrk[s] = v[P.strack];
+      } else if (t === 'fm') {
+        kind[nSl] = 5;
+        this.tune[s] = v[P.fpitch];
+        this.fmSetup(s);
       } else {
         kind[nSl] = 2;
         this.tune[s] = tune1 + v[P.soct] * 12;
@@ -389,7 +474,8 @@ class MorphEngine {
           } else if (kind[a] === 4) {   // sampler: samples are at middle C; Key track scales how far notes move them
             const semi = (base - 60) * this.smpTrk[s] + this.tune[s], A = this.smp[s].A, B = this.smp[s].B;
             this.smpRA[s] = A ? Math.pow(2, semi / 12) * A.sr / sr : 0; this.smpRB[s] = B ? Math.pow(2, semi / 12) * B.sr / sr : 0;
-          } else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
+          } else if (kind[a] === 5) this.fmVoice(s, vc, base, len);
+          else this.sdt[s] = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12) / sr;
         }
         const fc = Math.min(sr * 0.45, Math.max(20, cutoff * Math.pow(2, envAmt * 5 * vc.fLv + kt * (vc.pitch - 60) / 12)));
         const g = Math.tan(Math.PI * fc / sr), fa1 = 1 / (1 + g * (g + fk)), fa2 = g * fa1, fa3 = g * fa2;
@@ -428,6 +514,22 @@ class MorphEngine {
               let x = ya + (yb - ya) * mix;
               if (vc.sxf[sl] > 0) { const g = vc.sxf[sl] / Math.round(0.005 * sr); x = x * (1 - g) + (oa + (ob - oa) * mix) * g; vc.sxf[sl]--; }
               xl = xr = x;
+            } else if (kind[a] === 5) {   // FM: each side's patch (only the ones Patch lets through), crossfaded
+              const F = this.fm[sl], fph = vc.fph, fy = vc.fy, wt = s / len, m0 = F.m, o0 = F.o, e0 = F.e0, e1 = F.e1, ix = F.ix, lv = F.lv, dts = F.dt;
+              let x = 0;
+              for (let k = 0; k < 2; k++) {
+                const w = F.w[k]; if (w <= 0) continue;
+                const q = sl * 8 + k * 4, j = k * 4, yq = sl * 4 + k * 2, m = m0[k], o = o0[k];
+                for (let n = 0; n < 4; n++) { let ph = fph[q + n] + dts[j + n]; if (ph >= 1) ph -= Math.floor(ph); fph[q + n] = ph; }
+                const E0 = e0[j] + (e1[j] - e0[j]) * wt, E1 = e0[j + 1] + (e1[j + 1] - e0[j + 1]) * wt, E2 = e0[j + 2] + (e1[j + 2] - e0[j + 2]) * wt, E3 = e0[j + 3] + (e1[j + 3] - e0[j + 3]) * wt;
+                const o4 = Math.sin(6.283185307179586 * fph[q + 3] + F.fbA[k] * (fy[yq] + fy[yq + 1]) * 0.5) * E3; fy[yq + 1] = fy[yq]; fy[yq] = o4;
+                const i4 = ix[j + 3] * o4;
+                const o3 = Math.sin(6.283185307179586 * fph[q + 2] + m[0] * i4) * E2, i3 = ix[j + 2] * o3;
+                const o2 = Math.sin(6.283185307179586 * fph[q + 1] + m[1] * i4 + m[3] * i3) * E1, i2 = ix[j + 1] * o2;
+                const o1 = Math.sin(6.283185307179586 * fph[q] + m[2] * i4 + m[4] * i3 + m[5] * i2) * E0;
+                x += w * F.g[k] * (o[0] * lv[j] * o1 + o[1] * lv[j + 1] * o2 + o[2] * lv[j + 2] * o3 + o[3] * lv[j + 3] * o4);
+              }
+              xl = xr = x;
             } else {
               const dt = this.sdt[sl];
               let q = sph[sl];
@@ -453,13 +555,53 @@ class MorphEngine {
         if (aSt === 3 && aLv < 3e-4) vc.active = false;
       }
     }
-    for (let s = 0; s < 4; s++) { const bk = this.banks[s]; if (bk.ready) bk.xf = Math.min(1, bk.xf + bk.xfInc * len); }
+    for (let s = 0; s < this.nOsc; s++) { const bk = this.banks[s]; if (bk.ready) bk.xf = Math.min(1, bk.xf + bk.xfInc * len); }
     C0.set(CN);
+  }
+  /* FM, once per sub-block: each side's routing, ratios, indexes (Level, scaled by Brightness through Harmonics),
+     decays (scaled by the Envelope macro) and feedback. Patch crossfades the two sides' outputs. */
+  fmSetup(s) {
+    const v = this.val, P = this.oP[s], F = this.fm[s], I = this.I;
+    const x = v[P.fmx]; F.w[0] = 1 - x; F.w[1] = x;
+    const harm = I.harm === undefined ? 1 : v[I.harm], br = I.mbright === undefined ? 0 : Math.max(0, this.cur[I.mbright] * 2 - 1);
+    const iScale = (0.08 + 0.92 * harm * harm) * (1 + 0.6 * br), dS = this.fmEnvScale();
+    let maxI = 0, maxR = 1;
+    for (let n = 0; n < 2; n++) {
+      const K = this.fmK[s][n];
+      F.g[n] = this.fmAlgo(v[K[0]], F.m[n], F.o[n]); F.fbA[n] = v[K[1]] * 3;
+      for (let j = 0; j < 4; j++) {
+        const q = n * 4 + j, l = v[K[6 + j]], dd = v[K[10 + j]];
+        F.R[q] = this.fmRatios[Math.round(v[K[2 + j]])]; F.lv[q] = l; F.I[q] = OscFM.index(l) * iScale;
+        F.D[q] = dd >= OscFM.HOLD ? dd : Math.min(OscFM.HOLD - 1, dd * dS); F.Cv[q] = OscFM.curve(F.D[q]);
+        if (j && F.w[n] > 0) { maxI = Math.max(maxI, F.I[q]); maxR = Math.max(maxR, F.R[q]); }
+      }
+    }
+    F.maxI = maxI; F.maxR = maxR;
+  }
+  fmAlgo(x, m, o) {   // OscFM.algo without building the table every time
+    const A = this.fmAlgs, i = Math.max(0, Math.min(6, Math.floor(x))), f = Math.max(0, Math.min(1, x - i));
+    for (let k = 0; k < 6; k++) m[k] = A[i][0][k] + (A[i + 1][0][k] - A[i][0][k]) * f;
+    let p = 0;
+    for (let k = 0; k < 4; k++) { o[k] = A[i][1][k] + (A[i + 1][1][k] - A[i][1][k]) * f; p += o[k] * o[k]; }
+    return 1 / Math.sqrt(p);
+  }
+  /* FM, per voice and sub-block: operator increments, envelope values at both ends of the sub-block, and indexes.
+     Guardrails: indexes shrink on high notes (as on the sketch page), and are capped so the widest sidebands
+     (Carson's rule) stay under 45% of the sample rate, so high notes never alias into noise. Velocity brightens. */
+  fmVoice(s, vc, base, len) {
+    const F = this.fm[s], sr = this.sr, f0 = 440 * Math.pow(2, (base + this.tune[s] - 69) / 12);
+    const sc = Math.min(1, Math.pow(600 / f0, 0.7)) * (0.4 + 0.6 * vc.vel);
+    const cap = Math.max(0, 0.45 * sr / (f0 * F.maxR) - 1), lim = F.maxI * sc > cap ? cap / (F.maxI * sc) : 1;
+    const t1 = vc.vAge / sr, t0 = Math.max(0, (vc.vAge - len) / sr);
+    for (let q = 0; q < 8; q++) {
+      F.dt[q] = f0 * F.R[q] / sr; F.ix[q] = F.I[q] * sc * lim;
+      F.e0[q] = OscFM.env(t0, F.D[q], F.Cv[q]); F.e1[q] = OscFM.env(t1, F.D[q], F.Cv[q]);
+    }
   }
   // Is effect s silent right now? Its REST parameters sit at their neutral value at the current morph position.
   fxAtRest(s) {
     const D = this.defs;
-    for (const [i, v0] of this.fxRest[s]) if (MorphEngine.denorm(D[i], this.cur[i]) !== v0) return false;
+    for (const [i, v0] of this.fxRest[s]) if (this.val[i] !== v0) return false;   // after the macros (FX wet at 0% rests every effect)
     return true;
   }
   /* Effects in order. Each runs even while switched off (so tails stay current) and is crossfaded with its dry input.

@@ -6,7 +6,8 @@ const HTML = fileURLToPath(new URL('../dist/diptych.html', import.meta.url));
 
 /* Open the synth with a seeded Math.random, so every run of a test is identical.
    Page-level `const`s (DEFS, state, tables...) are visible to page.evaluate code by name. */
-export async function openSynth(page, { seed = 1, storage = null, tapAudio = false } = {}) {
+// dev: open the developer view (every section; ?dev), as most tests do; dev: false opens the player's view (?dev=0)
+export async function openSynth(page, { seed = 1, storage = null, tapAudio = false, dev = true } = {}) {
   await page.route('**/*', route => {
     const u = route.request().url();
     if (u === BASE || u.startsWith(BASE + '?')) return route.fulfill({ contentType: 'text/html', body: readFileSync(HTML, 'utf8') });
@@ -35,7 +36,7 @@ export async function openSynth(page, { seed = 1, storage = null, tapAudio = fal
       };
     }
   }, { seed, storage, tapAudio });
-  await page.goto(BASE);
+  await page.goto(BASE + (dev ? '?dev' : '?dev=0'));
   await page.evaluate(installHarness);
 }
 
@@ -82,7 +83,7 @@ function installHarness() {
         for (const k of ['A', 'B']) { const d = o.samples && smp(o.samples[k]); if (d) e.handle({ type:'sample', slot: SMP_SLOT, side:k, d: d.d, sr: d.sr }); }
         e.handle({ type:'blend', v:true }); e.handle({ type:'bpm', v: o.bpm || 120 });
         (o.fxOn || T.allFx).forEach((on, i) => e.handle({ type:'bypass', i, on: !!on }));
-        (o.oscOn || [1, 1, 1, 1]).forEach((on, i) => e.handle({ type:'oscOn', i, on: !!on }));
+        (o.oscOn || OSC_KIND.map(() => 1)).forEach((on, i) => e.handle({ type:'oscOn', i, on: !!on }));
         if (o.setup) o.setup(e);   // e.g. spy on noteOn
         const blocks = o.blocks || 750, N = 128, L = new Float32Array(blocks * N), R = new Float32Array(blocks * N);
         const bl = new Float32Array(N), br = new Float32Array(N), notes = o.notes || [[48, 0, blocks]];

@@ -75,7 +75,7 @@ function generate(s, chord, mode, octs) {
   s.steps = s.steps.map((old, i) => ({ on: true, note: tame(order[i % order.length]), len: 1, vel: P.pos[i] % 48 === 0 ? 1 : 0.75, dur: old.dur }));
 }
 function makeSeq(rate, len, root, scale, chord, mode, octs) {
-  const s = { rate, root, scale, n16: len, v2: 1, v3: 1, v4: 1, density: 1, dseed: Math.random(), rot: 0, steps: [] };
+  const s = { rate, root, scale, n16: len, v2: 1, v3: 1, v4: 1, dseed: Math.random(), rot: 0, steps: [] };
   fitSlots(s);
   generate(s, chord, mode, octs);
   return s;
@@ -101,7 +101,6 @@ function fixSeq(s) {
   }
   if (!s.n16) { s.n16 = 16; fitSlots(s); }
   if (typeof s.dseed !== 'number') s.dseed = Math.random();
-  if (typeof s.density !== 'number') s.density = 1;
   if (typeof s.rot !== 'number') s.rot = 0;
   s.rot = ((s.rot % s.steps.length) + s.steps.length) % s.steps.length;
 }
@@ -115,12 +114,19 @@ if (state.seq.B.root !== state.seq.A.root || state.seq.B.scale !== state.seq.A.s
    rank from the golden-ratio sequence (k × 0.618, wrapped, plus a per-pattern offset). That order is
    evenly spread but never periodic, so thinning doesn't strip out every other note (which in an
    arpeggio is often all of one pitch). The starting point moves with the notes when you shift. */
+/* Each side's broad controls (Density, Speed, Octave) are parameters (params.js: sqdens, sqspeed, sqoct), so they
+   save, undo and swap with the side. A pattern that isn't one of the two sides (a copy) falls back to its own density. */
+const sideOf = s => (state.seq && s === state.seq.A ? 'A' : state.seq && s === state.seq.B ? 'B' : null);
+const seqSetting = (k, key) => MorphEngine.denorm(DEFS[IX[key]], state[k][IX[key]]);
+const seqDensity = s => { const k = sideOf(s); return k ? seqSetting(k, 'sqdens') : (typeof s.density === 'number' ? s.density : 1); };
+function setSeqDensity(s, v) { const k = sideOf(s); if (k) state[k][IX.sqdens] = clamp(v); else s.density = clamp(v); }
+const SPEED = [2, 1, 0.5];   // Speed ½×, 1×, 2×: how much longer each tick of the pattern lasts
 function keptSteps(s) {
   fixSeq(s);
   const n = s.steps.length, order = [];
   for (let k = 0; k < n; k++) { const i = (s.rot + k) % n; if (s.steps[i].on) order.push(i); }
   const ranked = order.map((i, k) => ({ i, key: (k * 0.6180339887 + s.dseed) % 1 })).sort((a, b) => a.key - b.key);
-  const keep = new Set(ranked.slice(0, Math.round(s.density * order.length)).map(x => x.i));
+  const keep = new Set(ranked.slice(0, Math.round(seqDensity(s) * order.length)).map(x => x.i));
   return s.steps.map((_, i) => keep.has(i));
 }
 // each kept note is cut off where the next kept note starts, so notes never overlap
@@ -164,21 +170,21 @@ function assignThresholds(list) {
 let seqCache = null;
 function buildSeq() {
   if (seqCache) return seqCache;
-  const A = state.seq.A, B = state.seq.B;
-  const dA = stepPos(A).total, dB = stepPos(B).total;
+  const A = state.seq.A, B = state.seq.B, fA = SPEED[seqSetting('A', 'sqspeed')], fB = SPEED[seqSetting('B', 'sqspeed')];
+  const dA = stepPos(A).total * fA, dB = stepPos(B).total * fB;
   let loop = dA / gcd(dA, dB) * dB;
   if (loop > 48 * 4 * 64) loop = Math.max(dA, dB);
   const map = new Map();
-  const add = (side, S) => {
+  const add = (side, S, f, oct) => {   // f: Speed (ticks per pattern tick), oct: Octave in semitones
     const kept = keptSteps(S), lens = playLens(S, kept), P = stepPos(S);
-    for (let base = 0; base < loop; base += P.total) S.steps.forEach((st, i) => {
-      const t = base + P.pos[i];
+    for (let base = 0; base < loop; base += P.total * f) S.steps.forEach((st, i) => {
+      const t = base + P.pos[i] * f;
       if (!kept[i] || t >= loop) return;
       let e = map.get(t); if (!e) { e = { tick: t }; map.set(t, e); }
-      e[side] = { p: st.note, v: st.vel, l: lens[i] };
+      e[side] = { p: st.note + oct, v: st.vel, l: lens[i] * f };
     });
   };
-  add('a', A); add('b', B);
+  add('a', A, fA, 12 * seqSetting('A', 'sqoct')); add('b', B, fB, 12 * seqSetting('B', 'sqoct'));
   const events = [...map.values()].sort((x, y) => x.tick - y.tick);
   assignThresholds(events.filter(e => !(e.a && e.b)));
   assignThresholds(events.filter(e => e.a && e.b && e.a.p !== e.b.p));
@@ -187,5 +193,5 @@ function buildSeq() {
   return seqCache;
 }
 function sendSeq() { if (ready) { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); } }
-function seqChanged() { seqCache = null; sendSeq(); drawLanes(); if (sq.classList.contains('open')) drawRoll(); save(); }
+function seqChanged() { seqCache = null; sendSeq(); drawLanes(); if (sq.classList.contains('open')) drawRoll(); if (typeof syncScaleUI === 'function') syncScaleUI(); save(); }
 

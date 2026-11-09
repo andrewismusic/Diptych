@@ -161,6 +161,11 @@ function drawWaves() {
         drawOverview($('cvA' + s), oa, null, 0, css('--a'), slotVal(s, 'sstart', 'A'));
         drawOverview($('cvB' + s), ob, null, 0, css('--b'), slotVal(s, 'sstart', 'B'));
         drawOverview($('cvH' + s), oa, ob, mix, mixColor(state.morph), slotVal(s, 'sstart', 'now'));
+      } else if (t === 'fm') {   // each side's patch at full envelope, and the two crossfaded by Patch
+        const ca = OscFM.cycle(fmOf('A'), 256, new Float32Array(256)), cb = OscFM.cycle(fmOf('B'), 256, new Float32Array(256)), x = MorphEngine.denorm(DEFS[oi(s, 'fmx')], resolveNorm(oi(s, 'fmx')));
+        drawWave($('cvA' + s), ca, css('--a'), { fit:true }); drawWave($('cvB' + s), cb, css('--b'), { fit:true });
+        drawWave($('cvH' + s), ca.map((v, n) => v + (cb[n] - v) * x), mixColor(state.morph), { fit:true, lw:2.4 });
+        ['A', 'B'].forEach(k => { $('nm' + k + s).textContent = fmTypeName[k] || 'Algorithm ' + (slotVal(s, 'alg' + k, k) + 1); });
       } else {
         drawWave($('cvA' + s), subCycle(s, 'A'), css('--a'), { fit:true });
         drawWave($('cvB' + s), subCycle(s, 'B'), css('--b'), { fit:true });

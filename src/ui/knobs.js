@@ -7,8 +7,8 @@ const VIZ = { 'Filter': [{ viz: 'vzF', name: 'Filter response' }, { sub: 'env', 
    and anything marked adv, appear in the section's overlay (ui/overlay.js) or in the Full view. Sections not listed
    show everything. */
 const BASIC = {
-  wt: ['posA', 'posB', 'unison', 'olevel'], sub: ['soct', 'sshape', 'sdrive', 'olevel'], smp: ['sstart', 'spitch', 'strack', 'olevel'],
-  Voice: ['glide', 'vdepth', 'vrate'], Filter: ['cutoff', 'reso', 'mode', 'envamt'],
+  wt: ['posA', 'posB', 'unison', 'olevel'], sub: ['soct', 'sshape', 'sdrive', 'olevel'], smp: ['sstart', 'spitch', 'strack', 'olevel'], fm: ['fmx', 'fpitch', 'olevel'],
+  Voice: ['harm', 'glide', 'vdepth', 'vrate'], Filter: ['cutoff', 'reso', 'mode', 'envamt'],
   drive: ['drive', 'dmix'], formant: ['fvowel', 'fmix'], mod: ['mtype', 'mrate', 'mmix'], delay: ['dltime', 'dlfb', 'dlmix'],
   reverb: ['rvsize', 'rvdecay', 'rvmix'], lofi: ['lchar', 'lwow', 'lnmix'], ott: ['ottdepth', 'otttime'],
 };
@@ -100,7 +100,7 @@ function updateKnob(i) {
     document.querySelectorAll(`[data-sw="${i}"]`).forEach(b => { const v = Math.round(state[b.dataset.side][i]); b.setAttribute('aria-pressed', b.dataset.v === undefined ? v === 1 : +b.dataset.v === v); });
     return;
   }
-  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = resolveNorm(i);
+  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = d.seq ? a : resolveNorm(i);   // a side's own setting (seq) doesn't morph
   setArc($('arcA' + i), a, r);
   setArc($('arcB' + i), r, b);
   const [ax, ay] = pt(a), [bx, by] = pt(b), [nx, ny] = pt(r);
@@ -111,11 +111,11 @@ function updateKnob(i) {
   // Linked (or single-side) parameters don't morph: one handle, one value, no curve
   const linked = isLinked(i), kn = $('k' + i);
   kn.classList.toggle('kl-A', d.single === 'A'); kn.classList.toggle('kl-B', d.single === 'B'); kn.classList.toggle('kl-L', linked && !d.single);
-  $('now' + i).setAttribute('r', linked ? 0 : 3.4);
+  $('now' + i).setAttribute('r', linked || d.seq ? 0 : 3.4);
   $('hB' + i).style.display = linked ? 'none' : '';
   $('hB' + i).setAttribute('tabindex', linked ? -1 : 0);
-  $('c' + i).setAttribute('tabindex', linked ? -1 : 0);
-  $('gd' + i).setAttribute('r', linked ? 0 : 2);
+  $('c' + i).setAttribute('tabindex', linked || d.seq ? -1 : 0);
+  $('gd' + i).setAttribute('r', linked || d.seq ? 0 : 2);
   if (linked) { setArc($('arcA' + i), 0, a); setArc($('arcB' + i), a, a); }
 
   // center glyph: the morph curve drawn in an 18×18 box
@@ -140,7 +140,7 @@ function updateKnob(i) {
     for (let k = 0; k <= 20; k++) { const t = k / 20; path += (k ? 'L' : 'M') + (x0 + t * S).toFixed(2) + ' ' + (y0 - MorphEngine.bend(t, c) * S).toFixed(2); }
     gy = MorphEngine.bend(m, c);
   }
-  $('gl' + i).setAttribute('d', linked ? '' : path);
+  $('gl' + i).setAttribute('d', linked || d.seq ? '' : path);
   $('gd' + i).setAttribute('cx', (x0 + m * S).toFixed(2)); $('gd' + i).setAttribute('cy', (y0 - gy * S).toFixed(2));
 
   // text
@@ -152,7 +152,7 @@ function updateKnob(i) {
     $('va' + i).classList.toggle('muted', !d.single);
   } else {
     v.className = 'kval' + (ed === 'A' ? ' a' : ed === 'B' ? ' b' : '');
-    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : valText(i, r);
+    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : d.seq ? '' : valText(i, r);
     $('va' + i).textContent = valText(i, a); $('va' + i).classList.remove('muted');
     $('vb' + i).textContent = valText(i, b);
   }
@@ -178,6 +178,7 @@ function setParam(side, i, x) {
   state[side][i] = x;
   updateKnob(i);
   if (ready) send({ type:'param', side, i, v:x });
+  if (DEFS[i].seq) seqChanged();
   drawWaves();
   save();
 }
@@ -203,7 +204,7 @@ function bindKnob(i) {
     const rc = el.getBoundingClientRect();
     const x = (e.clientX - rc.left) / rc.width * 80 - CX, y = (e.clientY - rc.top) / rc.height * 80 - CX;
     if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
-    else if (Math.hypot(x, y) < 22) mode = 'C';
+    else if (Math.hypot(x, y) < 22 && !d.seq) mode = 'C';
     else {
       let rel = (Math.atan2(y, x) * 180 / Math.PI - 135 + 720) % 360;
       const xp = rel <= 270 ? rel / 270 : (rel > 315 ? 0 : 1);

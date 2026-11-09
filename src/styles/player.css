@@ -1,0 +1,27 @@
+/* ---------- the player's view (body without .dev, see ui/overlay.js) ----------
+   Only the Sound card (the four macros) and the Sequence card. Larger knobs, no padlocks or links. */
+body:not(.dev) main .group:not([data-group="Sound"]):not([data-group="Sequence"]){display:none}
+body:not(.dev) .view{display:none}
+body:not(.dev) .kwrap .icons{display:none}
+body:not(.dev) .group .more{display:none}
+.group[data-group="Sound"] .gname,.group[data-group="Sequence"] .gname{cursor:default}
+.qscale{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}
+.qscale .lbl{font-weight:600;font-size:.92rem;margin-right:2px}
+.qscale select{min-height:32px}
+/* desktop: the two cards side by side, centered, with large knobs */
+.desk:not(.dev) main{justify-content:center;align-content:center;gap:24px}
+.desk:not(.dev) .group[data-group="Sound"],.desk:not(.dev) .group[data-group="Sequence"]{width:auto;flex:0 0 auto;padding:14px 22px 12px}
+.desk:not(.dev) .group h2{font-size:1.05rem;margin-bottom:8px}
+.desk:not(.dev) main .kn{width:150px}
+.desk:not(.dev) main .knob{width:124px;height:124px;margin:6px 0}
+.desk:not(.dev) main .kname{font-size:1.1rem}
+.desk:not(.dev) main .kval{font-size:1.05rem}
+.desk:not(.dev) main .kab{font-size:.9rem;max-width:150px}
+.desk:not(.dev) main .knobs{gap:8px 10px}
+.desk:not(.dev) .qscale{margin-top:14px}
+.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:150px}
+.desk:not(.dev) .lanes{grid-template-rows:repeat(3,36px)} .desk:not(.dev) .lanes canvas{height:36px}
+/* phones: four macros across, even at 375 px */
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs,body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
+body:not(.dev):not(.desk) main .kn{width:auto}
+body:not(.dev) #rndLinked{display:none}   /* linked knobs belong to the developer view */

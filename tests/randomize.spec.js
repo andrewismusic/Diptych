@@ -17,7 +17,7 @@ test.describe('Randomize all (shaped)', () => {
         // per side: key -> values of that key in every parameter (oscillators share keys, in slot order)
         const vals = { A: {}, B: {} };
         DEFS.forEach((d, i) => { for (const s of ['A', 'B']) (vals[s][d.key] = vals[s][d.key] || []).push(MorphEngine.denorm(d, state[s][i])); });
-        const spreadFails = DEFS.filter((d, i) => !d.single && !isLinked(i) && !isLocked(d) && !NO_SPREAD.has(d.key) && d.key !== 'cutoff'   // cutoff can be moved by the sine guard
+        const spreadFails = DEFS.filter((d, i) => !d.single && !d.seq && !isLinked(i) && !isLocked(d) && !NO_SPREAD.has(d.key) && d.key !== 'cutoff'   // cutoff can be moved by the sine guard
           && Math.abs(state.A[i] - state.B[i]) < SPREAD - 1e-9).map(d => d.id);
         const lockedChanged = locked0.filter(([i, a, b]) => state.A[i] !== a || state.B[i] !== b).map(([i]) => DEFS[i].id);
         const linkedPitch = WT_SLOTS.map(s => [MorphEngine.denorm(DEFS[oi(s, 'pitch')], state.A[oi(s, 'pitch')]), MorphEngine.denorm(DEFS[oi(s, 'fine')], state.A[oi(s, 'fine')])]);
@@ -39,17 +39,24 @@ test.describe('Randomize all (shaped)', () => {
   const near = (x, want, tol) => { expect(x).toBeGreaterThan(want - tol); expect(x).toBeLessThan(want + tol); };
 
   test('locked parameters never change', () => { expect([...new Set(S.flatMap(r => r.lockedChanged))]).toEqual([]); });
-  test('oscillators heard on a side: Wavetable 1 85%, Wavetable 2 40%, Sub 30%, Sampler 40%; always at least one', () => {
-    const sides = perSide();
+  test('each side picks a lead engine (Wavetable 45%, FM 30%, Sampler 25%), Sub 30%, a second layer 30%; always at least one', () => {
+    const sides = perSide(), heard = (v, s) => v.olevel[s] > 0;
     for (const v of sides) expect(v.olevel.some(x => x > 0)).toBe(true);
-    [0.86, 0.41, 0.31, 0.41].forEach((want, s) => near(share(sides, v => v.olevel[s] > 0), want, 0.06));
+    // lead plus a share of the layers: Wavetable 45% + 70% x 30% x about 0.4, FM 30% + 70% x 30% x about 0.3, Sampler 25% + about 0.08
+    near(share(sides, v => heard(v, 0) || heard(v, 1)), 0.54, 0.07);
+    near(share(sides, v => heard(v, 4)), 0.37, 0.07);
+    near(share(sides, v => heard(v, 3)), 0.33, 0.07);
+    near(share(sides, v => heard(v, 2)), 0.3, 0.06);
+    // the first oscillator is no longer the usual one (owner, 2026-11-06): Wavetable 1 is heard on well under half the sides
+    expect(share(sides, v => heard(v, 0))).toBeLessThan(0.4);
   });
   test('level match: whichever oscillators a side hears, together they sit at one sawtooth\'s level', () => {
     const m = S.flatMap(r => r.mixDb), free = m.filter(x => !x.clamped);
-    expect(free.length / m.length).toBeGreaterThan(0.85);
+    // a side hearing one quiet oscillator (a sample matched on its loudest moment, a thin wave) can need more than Level 100%
+    expect(free.length / m.length).toBeGreaterThan(0.7);
     for (const x of free) expect(Math.abs(x.db)).toBeLessThan(0.01);
     for (const x of m) expect(x.db).toBeLessThan(0.01);   // a Level at 100% can leave a quiet sample short, never over
-    expect(share(m, x => x.n > 1)).toBeGreaterThan(0.6);  // more than one oscillator on most sides
+    near(share(m, x => x.n > 1), 0.51, 0.07);             // more than one oscillator on about half the sides (1 - 0.7 x 0.7)
   });
   test('each side hears about 2.3 effects on average', () => {
     const n = S.flatMap(r => r.heard), mean = n.reduce((a, b) => a + b, 0) / n.length;

@@ -1,4 +1,6 @@
 /* ---------- desktop / plugin layout (body.desk, see ui/layout.js) ----------
+   Since 2026-11-06 this is the developer view's layout (body.dev); the player's view is in player.css. The developer
+   view holds more than fits (five oscillators, the Sound and Sequence cards), so its section area scrolls. 
    A fixed 1440 x 900 design scaled to the window: the four oscillators across the top; Voice, Filter, Amp envelope
    and Output in the middle; the seven effects in one row below, each as wide as two rows of its knobs need; the
    bottom panel last. Knobs are compact and A/B values sit on one line. Rows are flex lines of fixed shares. */
@@ -13,7 +15,7 @@ body.desk{overflow:hidden;height:100vh}
 .desk main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
 .desk .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
 .desk .group{box-sizing:border-box}
-.desk .group[data-kind="osc"]{width:calc((100% - 3 * var(--g)) / 4)}
+.desk .group[data-kind="osc"]{width:calc((100% - 4 * var(--g)) / 5)}
 .desk .group[data-group="Voice"],.desk .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
 .desk .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 5 / 12)}
 .desk .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) / 12)}
@@ -74,21 +76,26 @@ body.desk{overflow:hidden;height:100vh}
 /* ---------- Basic view on desktop: tiles with larger knobs, sized by their key controls ---------- */
 .desk #app{position:relative}
 .desk .kb{position:relative;z-index:25}
-.desk:not(.full) .group:not(.open) .kn{width:62px}
-.desk:not(.full) .group:not(.open) .knob{width:48px;height:48px}
-.desk:not(.full) .group:not(.open) .kname,.desk:not(.full) .group:not(.open) .kval{font-size:.78rem}
-.desk:not(.full) .group:not(.open) .kab{max-width:62px;font-size:.62rem}
-.desk:not(.full) .group[data-kind="fx"]:not(.open) .kn{width:60px}   /* room to spare when the window's scale rounds widths */
-.desk:not(.full) .group:not(.open) .viz{height:52px}
-.desk:not(.full) .group:not(.open) .wtcard canvas{height:34px}
-.desk:not(.full) .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 4 / 12)}
-.desk:not(.full) .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3.6 / 12)}
-.desk:not(.full) .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) * 1.4 / 12)}
-.desk:not(.full) .group[data-group="Filter"]:not(.open) .gbody{grid-template-columns:1fr}
+.desk.dev:not(.full) .group:not(.open) .kn{width:62px}
+.desk.dev:not(.full) .group:not(.open) .knob{width:48px;height:48px}
+.desk.dev:not(.full) .group:not(.open) .kname,.desk.dev:not(.full) .group:not(.open) .kval{font-size:.78rem}
+.desk.dev:not(.full) .group:not(.open) .kab{max-width:62px;font-size:.62rem}
+.desk.dev:not(.full) .group[data-kind="fx"]:not(.open) .kn{width:60px}   /* room to spare when the window's scale rounds widths */
+.desk.dev:not(.full) .group:not(.open) .viz{height:52px}
+.desk.dev:not(.full) .group:not(.open) .wtcard canvas{height:34px}
+.desk.dev:not(.full) .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 4 / 12)}
+.desk.dev:not(.full) .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3.6 / 12)}
+.desk.dev:not(.full) .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) * 1.4 / 12)}
+.desk.dev:not(.full) .group[data-group="Filter"]:not(.open) .gbody{grid-template-columns:1fr}
 /* effects: shares by key controls (two or three knobs; a two-knob tile needs a little more than 2/3 of a three-knob one) */
-.desk:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
-.desk:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
+.desk.dev:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
+.desk.dev:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
 /* the overlay sits over the sections, inside the scaled design */
 .desk .ovlback{bottom:0}
 .desk .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
 .desk .group.open .gdone{min-height:24px;font-size:.78rem}
+/* developer view: the sections scroll inside the window (the bottom panel stays put); the player's cards sit in the middle row */
+.desk.dev main{overflow:auto}
+.desk.dev .group[data-group="Sound"],.desk.dev .group[data-group="Sequence"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
+/* rows: the five oscillators; Sound, Voice, Filter, Amp envelope, Output; the seven effects; Sequence last */
+.desk.dev .group:not([data-kind="osc"]){order:1} .desk.dev .group[data-kind="fx"]{order:2} .desk.dev .group[data-group="Sequence"]{order:3}

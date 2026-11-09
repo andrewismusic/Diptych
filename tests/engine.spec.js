@@ -23,10 +23,10 @@ test('random patches never produce NaN and stay within full scale', async ({ pag
   for (const r of res) { expect(r.nan).toBe(false); expect(r.peak).toBeLessThanOrEqual(1); }
 });
 
-test('CPU: 8 notes, all four oscillators and all seven effects stay well under real time', async ({ page }) => {
+test('CPU: 8 notes, all five oscillators (FM playing both patches) and all seven effects stay well under real time', async ({ page }) => {
   await openSynth(page);
   const ratio = await page.evaluate(() => {
-    const patch = T.flat({ 'o4.sloop': 1, 'o1.unison': 1, 'o2.unison': 1, 'o2.olevel': 0.8, 'o3.olevel': 0.8, 'o4.olevel': 0.8, 'o3.sshape': 0.8, 'o2.byp': 0.5, 'o4.byp': 0.5,
+    const patch = T.flat({ 'o5.olevel': 0.8, 'o5.fmx': 0.5, 'o5.algA': 1, 'o5.algB': 4, 'o4.sloop': 1, 'o1.unison': 1, 'o2.unison': 1, 'o2.olevel': 0.8, 'o3.olevel': 0.8, 'o4.olevel': 0.8, 'o3.sshape': 0.8, 'o2.byp': 0.5, 'o4.byp': 0.5,
       drive: 0.5, dmix: 0.5, fmix: 0.5, mmix: 0.5, lchar: 0.5, lwow: 0.5, lcodec: 0.5, lnmix: 0.2, dlmix: 0.5, rvmix: 0.5, ottdepth: 1 });
     const o = { patch, samples: { A: 'Vocal ah', B: 'Bell' }, notes: [36, 48, 55, 60, 63, 67, 72, 84].map(n => [n, 0, 9999]) };
     T.render({ ...o, blocks: 200 });   // warm up the JIT

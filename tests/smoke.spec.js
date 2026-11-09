@@ -69,7 +69,7 @@ test('patch buttons: Copy, Swap, Reset, Undo and the dice work without errors', 
   const before = await snap();
   await page.click('#resetAll');
   // the default patch: Wavetable 1 heard, the other oscillators at Level 0
-  expect(await page.evaluate(() => OSC_KIND.map((_, s) => state.A[oi(s, 'olevel')] > 0))).toEqual([true, false, false, false]);
+  expect(await page.evaluate(() => OSC_KIND.map((_, s) => state.A[oi(s, 'olevel')] > 0))).toEqual([true, false, false, false, false]);
   await page.click('#undo');
   expect(await snap()).toEqual(before);
   await page.locator('#wtA1').click();
@@ -125,10 +125,10 @@ test.describe('phone', () => {
     }
   });
 
-  test('fixed sections: four oscillators and seven effects in order, with no engine pickers; headings fit', async ({ page }) => {
+  test('fixed sections: five oscillators and seven effects in order, with no engine pickers; headings fit', async ({ page }) => {
     await openSynth(page);
     expect(await page.evaluate(() => [...document.querySelectorAll('main .group')].map(g => g.dataset.group))).toEqual(
-      ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler', 'Voice', 'Filter', 'Amp envelope', 'Output', 'Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT']);
+      ['Sound', 'Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler', 'FM', 'Voice', 'Filter', 'Amp envelope', 'Output', 'Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT', 'Sequence']);
     expect(await page.locator('.typesel').count()).toBe(0);
     // headings with dice, padlock and On/Off still fit at phone width
     expect(await page.evaluate(() => [...document.querySelectorAll('.group h2')].every(h => h.scrollWidth <= h.clientWidth + 1 && h.getBoundingClientRect().right <= innerWidth))).toBe(true);
@@ -184,7 +184,8 @@ for (const [name, size] of [['desktop', { width: 1440, height: 900 }], ['phone',
   test(`${name}: a section's overlay shows all its controls without moving anything, and closes`, async ({ page }) => {
     await page.setViewportSize(size);
     await openSynth(page);
-    const rects = () => page.evaluate(() => [...document.querySelectorAll('main .group')].map(g => { const r = g.getBoundingClientRect(); return [Math.round(r.top + scrollY), Math.round(r.left), Math.round(r.width), Math.round(r.height)].join(); }));
+    // positions in the page (the developer view's sections can scroll inside main on desktop)
+    const rects = () => page.evaluate(() => [...document.querySelectorAll('main .group')].map(g => { const r = g.getBoundingClientRect(); return [Math.round(r.top + scrollY + document.querySelector('main').scrollTop), Math.round(r.left), Math.round(r.width), Math.round(r.height)].join(); }));
     const shown = g => page.evaluate(g => [...sections[g].querySelectorAll('.kn')].filter(k => k.offsetParent).length, g);
     expect(await page.evaluate(() => document.body.classList.contains('full'))).toBe(false);   // Basic is the default
     const before = await rects(), basic = await shown('Delay');
@@ -225,5 +226,5 @@ test('oscillator On/Off is a bypass: it dims the section and is never randomized
   await page.click('section[data-group="Wavetable 2"] [data-osc]');
   expect(await page.evaluate(() => [state.oscOn[1], sections['Wavetable 2'].classList.contains('fxoff')])).toEqual([false, true]);
   await page.click('#rndAll');
-  expect(await page.evaluate(() => state.oscOn)).toEqual([true, false, true, true]);
+  expect(await page.evaluate(() => state.oscOn)).toEqual([true, false, true, true, true]);
 });

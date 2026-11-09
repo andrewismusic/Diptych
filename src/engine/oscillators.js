@@ -20,7 +20,20 @@ class WtBank {
     this.ready = false; this.xf = 1; this.xfInc = 0; this.since = 1e9; this.lastKey = '';
   }
   setTable(side, re, im) { this.tables[side] = { k: re.length, re, im }; this.ver++; }
-  build(posA, posB, wave) {
+  /* Harmonics below 100% rolls the upper harmonics off (harmonic h scaled by h^-k, k up to 3 at 0%: close to a sine),
+     with the lost loudness made up (at most 6 dB), so Brightness simplifies the wave without making it quieter. */
+  static simplify(re, im, harm) {
+    if (harm >= 0.999) return;
+    const k = 3 * (1 - harm);
+    let before = 0, after = 0;
+    for (let h = 1; h <= 512; h++) {
+      const p = re[h] * re[h] + im[h] * im[h], w = Math.pow(h, -k);
+      before += p; re[h] *= w; im[h] *= w; after += p * w * w;
+    }
+    const g = after > 1e-12 ? Math.min(2, Math.sqrt(before / after)) : 1;
+    for (let h = 1; h <= 512; h++) { re[h] *= g; im[h] *= g; }
+  }
+  build(posA, posB, wave, harm) {
     const tA = this.tables.A, tB = this.tables.B;
     if (!tA || !tB) return false;
     // Each table is read at its own position (these never morph). The Wave value, which does
@@ -28,6 +41,7 @@ class WtBank {
     MorphEngine.frameAt(tA, posA, this.spectral, this.fa[0], this.fa[1]);
     MorphEngine.frameAt(tB, posB, this.spectral, this.fb[0], this.fb[1]);
     MorphEngine.interp(this.fa[0], this.fa[1], this.fb[0], this.fb[1], wave, this.spectral, this.fr[0], this.fr[1]);
+    WtBank.simplify(this.fr[0], this.fr[1], harm === undefined ? 1 : harm);
     const t = this.prev; this.prev = this.cur; this.cur = t;
     for (let k = 0; k < 10; k++) {
       const out = this.cur[k], N = out.length - 1;
@@ -36,12 +50,12 @@ class WtBank {
     }
     return true;
   }
-  maybeBuild(len, posA, posB, wave) {
+  maybeBuild(len, posA, posB, wave, harm = 1) {
     this.since += len;
     if (!this.tables.A || !this.tables.B) return;
-    const key = posA.toFixed(4) + '|' + posB.toFixed(4) + '|' + wave.toFixed(4) + '|' + this.ver;
+    const key = posA.toFixed(4) + '|' + posB.toFixed(4) + '|' + wave.toFixed(4) + '|' + harm.toFixed(3) + '|' + this.ver;
     if (!this.ready) {
-      if (this.build(posA, posB, wave)) {
+      if (this.build(posA, posB, wave, harm)) {
         for (let k = 0; k < 10; k++) this.prev[k].set(this.cur[k]);
         this.ready = true; this.xf = 1; this.lastKey = key; this.since = 0;
       }
@@ -49,7 +63,7 @@ class WtBank {
     }
     // rebuild at most every 512 samples, crossfading from the previous tables
     if (key !== this.lastKey && this.since >= 512 && this.xf >= 1) {
-      this.build(posA, posB, wave); this.lastKey = key; this.since = 0; this.xf = 0; this.xfInc = 1 / 512;
+      this.build(posA, posB, wave, harm); this.lastKey = key; this.since = 0; this.xf = 0; this.xfInc = 1 / 512;
     }
   }
 }
