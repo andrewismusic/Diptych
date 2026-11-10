@@ -320,7 +320,7 @@ function randomizeSide(side, g, raw) {
   const other = side === 'A' ? 'B' : 'A';
   DEFS.forEach((d, i) => {
     if (!inGroup(d, g) || isLocked(d)) return;
-    if (d.seq) return;   // a side's sequencer settings change with the sequence dice, not the sound
+    if (d.seq || d.pair) return;   // a side's sequencer settings change with the sequence dice, not the sound; Position follows posA/posB
     if (d.eng === 'fm' && d.single) return;   // a side's FM patch comes whole from fmPatch
     if (d.single) { if (d.single === side) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, side); return; }
     if (state.links[d.id]) return;   // shared values only change with Randomize all or Randomize linked
@@ -344,6 +344,6 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
 function randomizeAll(g, raw) {
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
   randomizeLinked(g, raw);
-  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts || d.seq ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
+  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts || d.seq || d.pair ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
 }

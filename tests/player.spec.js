@@ -68,3 +68,47 @@ test('the header holds play, tempo, undo and redo; tempo drags up and down', asy
   expect(await page.locator('#copyAB, #copyBA, #swap, #resetAll').count()).toBe(0);
   expect(await page.locator('#audioBtn').textContent()).toBe('Tap to start audio');
 });
+
+test('Set A captures what you hear: same values, morph moved to A; Set B on the pattern keeps the heard sequence', async ({ page }) => {
+  await openSynth(page, { dev: false });
+  await page.evaluate(() => { state.morph = 0.4; updateMorphUI(); });
+  const heard = await page.evaluate(() => DEFS.map((d, i) => (d.single || d.seq || d.pair || d.group === 'Sequencer' || isLinked(i) ? null : resolveNorm(i))));
+  await page.click('#sendA');
+  const after = await page.evaluate(() => ({ morph: state.morph, now: DEFS.map((d, i) => resolveNorm(i)) }));
+  expect(after.morph).toBe(0);
+  heard.forEach((v, i) => { if (v !== null) expect(Math.abs(after.now[i] - v)).toBeLessThan(1e-9); });
+  // the pattern heard at the Pattern knob's value becomes sequence B, played at the B end
+  const notesNow = await page.evaluate(() => { state.A[IX.pattern] = 0; state.B[IX.pattern] = 1; state.morph = 0.5; updateMorphUI(); seqCache = null;
+    const s = buildSeq(), mm = resolveNorm(IX.pattern); return s.events.map(e => MorphEngine.seqEval(e, mm, state.walk, s.scale)).filter(Boolean).map(r => r.note); });
+  await page.click('#patB');
+  const notesB = await page.evaluate(() => { seqCache = null; const s = buildSeq(); return s.events.map(e => MorphEngine.seqEval(e, 1, state.walk, s.scale)).filter(Boolean).map(r => r.note); });
+  expect(notesB.slice(0, 8)).toEqual(notesNow.slice(0, 8));
+  await page.click('#undo');
+});
+
+test('Position: one knob whose A and B handles are the two tables\' positions', async ({ page }) => {
+  await openSynth(page, { dev: false });
+  const r = await page.evaluate(() => { setParam('A', IX.wpos, 0.2); setParam('B', IX.wpos, 0.9);
+    return [state.A[oi(0, 'posA')], state.A[oi(0, 'posB')]]; });
+  expect(r).toEqual([0.2, 0.9]);
+  // after a roll, the knob follows the positions the randomizer chose
+  await page.evaluate(() => bulk(() => randomizeAll()));
+  expect(await page.evaluate(() => [state.A[IX.wpos] === state.A[oi(0, 'posA')], state.B[IX.wpos] === state.A[oi(0, 'posB')]])).toEqual([true, true]);
+});
+
+test('the MORPH cap brings back the morph view; Settings change the colours and hold Mono / Poly', async ({ page }) => {
+  await openSynth(page, { dev: false });
+  await page.evaluate(() => { state.morph = 0.3; updateMorphUI(); });
+  await page.click('[data-focus="B"]');
+  expect(await page.evaluate(() => [focus, state.morph])).toEqual(['B', 1]);
+  await page.click('#mcap');
+  expect(await page.evaluate(() => [focus, state.morph])).toEqual(['M', 0.3]);
+  await page.click('#setBtn');
+  await expect(page.locator('#settings')).toBeVisible();
+  await page.click('[data-scheme="1"]');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#11907D');
+  await page.click('#monoBtn');
+  expect(await page.evaluate(() => state.mono)).toBe(true);
+  await page.click('#setDone');
+  await expect(page.locator('#settings')).toBeHidden();
+});

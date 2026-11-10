@@ -11,7 +11,7 @@ body.desk{overflow:hidden;height:100vh}
 .desk.dev .titlebar{padding:6px 0}
 .desk.dev .dicerow{padding:0}
 .desk.dev .scopebox{position:fixed;left:50%;top:50%;width:0;height:0;overflow:visible;border:0;padding:0;box-shadow:none;background:none}   /* the developer view shows waves per oscillator; the audio button stays */
-.desk.dev #scope{display:none}
+.desk.dev #scope,.desk.dev .scopebox .lanes{display:none}
 .desk.dev .morphrow{padding:4px 0 0}
 .desk.dev .foot{display:none}
 .desk.dev main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}

@@ -15,27 +15,55 @@ body:not(.dev) main .group h2::before{content:'';width:10px;height:10px;border-r
 /* the developer view keeps one Wavetable (2026-11-10): the other oscillators are silent and hidden */
 .group[data-kind="osc"]:not([data-slot="0"]){display:none}
 /* phones: four macros across, even at 375 px */
-body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs,body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));max-width:none;gap:6px 0}
+body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .knob{width:62px;height:62px}
 body:not(.dev):not(.desk) main .kn{width:auto}
 /* desktop (plugin): designed at 1280 x 800 and scaled. Header, dice, wave display and morph on the left; the two cards on
    the right; the bottom panel below */
 .desk:not(.dev) #app{display:grid;grid-template-columns:minmax(0,1fr) 520px;grid-template-rows:minmax(0,1fr) auto;column-gap:16px;padding:0 16px}
 .desk:not(.dev) .top{grid-column:1;grid-row:1;display:flex;flex-direction:column;min-height:0}
 .desk:not(.dev) .top .wrap{max-width:none;width:100%;margin:0;padding:0;display:flex;flex-direction:column;flex:1;min-height:0}
-.desk:not(.dev) .scopebox{flex:1;min-height:0;display:flex}
+.desk:not(.dev) .scopebox{flex:1;min-height:0;display:flex;flex-direction:column}
+.desk:not(.dev) .scopebox .lanes{flex:0 0 auto;grid-template-rows:repeat(3,30px)} .desk:not(.dev) .scopebox .lanes canvas{height:30px}
 .desk:not(.dev) #scope{height:auto;flex:1;min-height:0}
-.desk:not(.dev) main{grid-column:2;grid-row:1;max-width:none;margin:0;padding:62px 0 0;display:flex;flex-direction:column;gap:12px;align-content:stretch;overflow:hidden}
+.desk:not(.dev) main{grid-column:2;grid-row:1;max-width:none;margin:0;padding:14px 0 0;display:flex;flex-direction:column;gap:12px;align-content:stretch;overflow:hidden}
 .desk:not(.dev) main .group{margin:0}
 .desk:not(.dev) main .knobs{display:grid;grid-template-columns:repeat(4,1fr);max-width:none;gap:4px}
+.desk:not(.dev) main .group[data-group="Sound"] .knobs{grid-template-columns:repeat(5,1fr)}
+.desk:not(.dev) main .group[data-group="Sound"] .knob{width:84px;height:84px}
 .desk:not(.dev) main .kn{width:auto}
 .desk:not(.dev) main .knob{width:96px;height:96px;margin:4px 0}
 .desk:not(.dev) main .kval{font-size:.9rem}
 .desk:not(.dev) .kb{grid-column:1 / -1;grid-row:2}
 .desk:not(.dev) .kb .wrap{max-width:none;padding:0}
-.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:140px}
-.desk:not(.dev) .lanes{grid-template-rows:repeat(3,34px)} .desk:not(.dev) .lanes canvas{height:34px}
 .desk:not(.dev) .foot{display:none}
 .desk:not(.dev) #app{margin:0 auto;overflow:hidden}
 .desk:not(.dev) .kb{position:static}
 .desk:not(.dev) .kbbar{padding:6px 0}
 .desk:not(.dev) .panes{margin-bottom:12px}
+
+/* the page takes the colour heard now (the morph colour, as the wave and the slider do); panels keep their own */
+body{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
+.top,.kb{background:transparent}
+.kb{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
+/* Sequence card rows: Walk / Swap and the Pattern's Set A / Set B; the copies and Edit */
+.seqrow{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.seqrow .spacer,.kbbar .spacer{flex:1}
+.key.send{font-size:.7rem;padding:4px 9px}
+/* bottom panel: the morph row, then Set A / Keys / Set B; Keys opens the keyboard drawer */
+.kbbar{display:flex;align-items:center;gap:6px;padding:4px 0 8px}
+.keysdrawer[hidden]{display:none}
+.keysdrawer .keys{margin-bottom:10px}
+/* settings sheet */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(5,7,12,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheetcard{width:min(520px,100%);background:var(--surface);border:1.5px solid var(--edge);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheetcard h2{font-family:var(--font-head);font-size:1rem;letter-spacing:.16em;text-transform:uppercase;margin:0;color:var(--ink)}
+.setrow{display:flex;flex-direction:column;gap:8px}
+.setrow .lbl{font-size:.66rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.schemes{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.scheme{display:flex;align-items:center;gap:8px;text-align:left;text-transform:none;letter-spacing:0;font-size:.8rem}
+.scheme i{width:28px;height:14px;border-radius:7px;flex:0 0 auto}
+@media (min-width:700px){ .sheet{align-items:center} .sheetcard{border-radius:20px} }
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56rem;letter-spacing:.04em}

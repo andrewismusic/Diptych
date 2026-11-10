@@ -73,47 +73,57 @@ button:disabled{opacity:.35;cursor:default}
 .bpm.drag,.bpm:focus-visible{box-shadow:0 1px 0 var(--shadow),0 0 0 2px var(--hold);transform:translateY(3px);outline:none}
 .view{display:none}
 body.dev .view{display:inline-flex}
-/* dice sliders (Orbital's): touch the track and let go; further right, bigger change. The raised die turns as it travels
-   over a yellow fill, and springs home with an overshoot. */
-.dicerow{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 12px}
-.dice{position:relative;height:36px;border-radius:9px;background:var(--well);border:1.5px solid var(--edge);
-  box-shadow:inset 0 2px 0 rgba(0,0,0,.12);touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
-.dice .dfill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--hold);opacity:.85;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
-.dice .dtile{position:absolute;left:1px;top:0;width:31px;height:31px;border-radius:7.5px;background:linear-gradient(180deg,#FFF,#DCE2EB);color:#0E1320;
-  border:1.5px solid #A9B3C3;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(16,21,33,.08);filter:drop-shadow(0 3px 0 var(--shadow));
-  display:flex;align-items:center;justify-content:center;z-index:2;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
-.dice .dtile svg{display:block;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
-.dice.drag .dtile,.dice.drag .dtile svg,.dice.drag .dfill{transition:none}
-.dice.drag .dtile{filter:drop-shadow(0 1px 0 var(--shadow));margin-top:2px}
-.dice .dlab{position:absolute;right:9px;top:0;bottom:0;display:flex;align-items:center;gap:6px;z-index:1;pointer-events:none;font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.dice .dlab i{font-style:normal;font-family:var(--font-mono);font-weight:700;letter-spacing:0;color:var(--dc,var(--ink))}
-.dice.drag .dlab{color:var(--on-ink)}
-.dice:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
-.dice.roll .dtile{animation:rolled .45s ease-out}
-@keyframes rolled{0%{rotate:0deg}30%{rotate:-14deg;scale:1.08}60%{rotate:8deg}100%{rotate:0deg;scale:1}}
-@media (prefers-reduced-motion:reduce){ .dice .dtile,.dice .dtile svg,.dice .dfill{transition:none} .dice.roll .dtile{animation:none} }
-body[data-sidefocus="A"] .dice{--dc:var(--a)} body[data-sidefocus="B"] .dice{--dc:var(--b)}
-/* the wave display: A on the left, B on the right, what you hear in the middle */
-.scopebox{position:relative;background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 5px 0 var(--shadow);padding:8px 10px;margin-bottom:12px}
-#scope{display:block;width:100%;height:120px}
-#audioBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:.78rem;white-space:nowrap;z-index:5}
+/* dice sliders (Orbital's, standing up): six tracks in one row under two headings. Touch and let go: higher, bigger
+   change. The raised die rolls as it travels over a yellow fill and springs home with an overshoot. */
+.dicerow{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:2px 0 12px}
+.dhead{font-family:var(--font-head);font-weight:600;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;text-align:center;margin:0 0 6px;color:var(--ink)}
+.dtracks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;justify-items:center}
+.dcol{display:flex;flex-direction:column;align-items:center;gap:5px}
+.dicetrack{--dh:34px;position:relative;width:var(--dh);height:84px;border-radius:9px;overflow:hidden;cursor:pointer;background:var(--well);border:1.5px solid var(--edge);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.12);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.dicetrack .fill{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--hold);opacity:.85;transition:height .5s cubic-bezier(.3,.9,.3,1.1)}
+.die{position:absolute;left:0;bottom:0;width:calc(var(--dh) - 3px);height:calc(var(--dh) - 3px);z-index:2;filter:drop-shadow(0 3px 0 var(--shadow));
+  transition:bottom .5s cubic-bezier(.3,.9,.3,1.1),transform .07s,filter .07s}
+.die .face{width:100%;height:100%;border-radius:7.5px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--dh)*.19);
+  background:linear-gradient(180deg,#FFF,#DCE2EB);border:1.5px solid #A9B3C3;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(16,21,33,.08);
+  transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
+.die .face i{width:4.5px;height:4.5px;border-radius:50%;background:#0E1320;place-self:center;box-shadow:inset 0 1px 0 rgba(0,0,0,.5)}
+/* pips, faces 1 to 6 */
+[data-face="1"] .face i{grid-area:2/2}
+[data-face="2"] .face i:nth-child(1){grid-area:1/1} [data-face="2"] .face i:nth-child(2){grid-area:3/3}
+[data-face="3"] .face i:nth-child(1){grid-area:1/1} [data-face="3"] .face i:nth-child(2){grid-area:2/2} [data-face="3"] .face i:nth-child(3){grid-area:3/3}
+[data-face="4"] .face i:nth-child(1){grid-area:1/1} [data-face="4"] .face i:nth-child(2){grid-area:1/3} [data-face="4"] .face i:nth-child(3){grid-area:3/1} [data-face="4"] .face i:nth-child(4){grid-area:3/3}
+[data-face="5"] .face i:nth-child(1){grid-area:1/1} [data-face="5"] .face i:nth-child(2){grid-area:1/3} [data-face="5"] .face i:nth-child(3){grid-area:2/2} [data-face="5"] .face i:nth-child(4){grid-area:3/1} [data-face="5"] .face i:nth-child(5){grid-area:3/3}
+[data-face="6"] .face i:nth-child(1){grid-area:1/1} [data-face="6"] .face i:nth-child(2){grid-area:1/3} [data-face="6"] .face i:nth-child(3){grid-area:2/1} [data-face="6"] .face i:nth-child(4){grid-area:2/3} [data-face="6"] .face i:nth-child(5){grid-area:3/1} [data-face="6"] .face i:nth-child(6){grid-area:3/3}
+.dicetrack.dragging .die,.dicetrack.dragging .fill{transition:none}
+.dicetrack.dragging .die{transform:translateY(2px);filter:drop-shadow(0 1px 0 var(--shadow))}
+.dicetrack.dragging .die .face{transition:none}
+.dicetrack:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+.die.rolled .face{animation:rolled .35s ease-out}
+@keyframes rolled{0%{rotate:0deg}30%{rotate:-8deg;scale:1.06}60%{rotate:6deg}100%{rotate:0deg;scale:1}}
+@media (prefers-reduced-motion:reduce){ .die,.die .face,.dicetrack .fill{transition:none} .die.rolled .face{animation:none} }
+.dcap{font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.dcap.a{color:var(--a)} .dcap.b{color:var(--b)}
+/* visual feedback: the wave heard now, and the three sequence lanes under it */
+.scopebox{position:relative;background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 5px 0 var(--shadow);padding:8px 10px 10px;margin-bottom:12px}
+#scope{display:block;width:100%;height:110px}
+.scopebox .lanes{margin-top:6px}
+#audioBtn{position:absolute;left:50%;top:60px;transform:translate(-50%,-50%);font-size:.78rem;white-space:nowrap;z-index:5}
 #audioBtn[hidden]{display:none}
-#audioBtn:active{transform:translate(-50%,calc(-50% + 2px))}
-/* morph slider; the A and B keys at its ends focus one side (tap again to morph) */
-.morphrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:10px 0 2px}
-.letter{font-family:var(--font-head);font-size:1.15rem;font-weight:700;line-height:1;width:44px;height:40px;padding:0;letter-spacing:0}
+/* morph slider: as tall as the A and B keys beside it, with a cap that reads MORPH; the track is the colour heard now,
+   glimmering (canvas #glim, drawn in ui/morph.js; it reaches above the track so glints can rise off it) */
+.morphrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:12px 0 4px}
+.letter{font-family:var(--font-head);font-size:1.15rem;font-weight:700;line-height:1;width:48px;height:44px;padding:0;letter-spacing:0}
 .letter.a{color:var(--a)} .letter.b{color:var(--b)}
-.letter.a[aria-pressed="true"]{background:var(--a);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--a)}
-.letter.b[aria-pressed="true"]{background:var(--b);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--b)}
-.morph-slider{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:0;cursor:pointer}
-.morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px;border-radius:8px}
-.morph-slider::-webkit-slider-runnable-track{height:12px;border-radius:6px;border:1.5px solid var(--edge);
-  background:linear-gradient(90deg,var(--a),var(--b));background:linear-gradient(to right in oklch,var(--a),var(--b))}
-.morph-slider::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;border-radius:10px;
-  background:radial-gradient(circle,var(--mc) 0 6px,transparent 6.5px),linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
-.morph-slider::-moz-range-track{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--a),var(--b))}
-.morph-slider::-moz-range-thumb{width:30px;height:30px;border-radius:10px;background:radial-gradient(circle,var(--mc) 0 6px,var(--cap-hi) 6.5px);border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
-.morph-slider:disabled{opacity:.3;cursor:default}
+.letter.a[aria-pressed="true"]{background:var(--a);color:#fff}
+.letter.b[aria-pressed="true"]{background:var(--b);color:#fff}
+.morph-slider{position:relative;height:44px;border-radius:10px;border:1.5px solid var(--edge);touch-action:none;cursor:pointer;box-shadow:inset 0 2px 0 rgba(0,0,0,.18);margin-bottom:4px}
+.morph-slider .glim{position:absolute;left:0;right:0;bottom:0;height:calc(100% + 26px);width:100%;pointer-events:none;border-radius:10px}
+.morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+.mcap{position:absolute;top:1px;bottom:1px;left:0;width:78px;min-height:0;padding:0;margin:0;font-family:var(--font-head);font-size:.7rem;letter-spacing:.14em;z-index:2}
+.morph-slider.drag .mcap{cursor:grabbing}
+.morph-slider.rest .glim{opacity:.45}
+.morph-slider.rest .mcap{color:var(--muted)}
 /* ---------- groups + knobs ---------- */
 main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
 .group{flex:1 1 100%;padding:12px 0 6px}
@@ -305,7 +315,7 @@ body.desk{overflow:hidden;height:100vh}
 .desk.dev .titlebar{padding:6px 0}
 .desk.dev .dicerow{padding:0}
 .desk.dev .scopebox{position:fixed;left:50%;top:50%;width:0;height:0;overflow:visible;border:0;padding:0;box-shadow:none;background:none}   /* the developer view shows waves per oscillator; the audio button stays */
-.desk.dev #scope{display:none}
+.desk.dev #scope,.desk.dev .scopebox .lanes{display:none}
 .desk.dev .morphrow{padding:4px 0 0}
 .desk.dev .foot{display:none}
 .desk.dev main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
@@ -410,30 +420,58 @@ body:not(.dev) main .group h2::before{content:'';width:10px;height:10px;border-r
 /* the developer view keeps one Wavetable (2026-11-10): the other oscillators are silent and hidden */
 .group[data-kind="osc"]:not([data-slot="0"]){display:none}
 /* phones: four macros across, even at 375 px */
-body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs,body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));max-width:none;gap:6px 0}
+body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .knob{width:62px;height:62px}
 body:not(.dev):not(.desk) main .kn{width:auto}
 /* desktop (plugin): designed at 1280 x 800 and scaled. Header, dice, wave display and morph on the left; the two cards on
    the right; the bottom panel below */
 .desk:not(.dev) #app{display:grid;grid-template-columns:minmax(0,1fr) 520px;grid-template-rows:minmax(0,1fr) auto;column-gap:16px;padding:0 16px}
 .desk:not(.dev) .top{grid-column:1;grid-row:1;display:flex;flex-direction:column;min-height:0}
 .desk:not(.dev) .top .wrap{max-width:none;width:100%;margin:0;padding:0;display:flex;flex-direction:column;flex:1;min-height:0}
-.desk:not(.dev) .scopebox{flex:1;min-height:0;display:flex}
+.desk:not(.dev) .scopebox{flex:1;min-height:0;display:flex;flex-direction:column}
+.desk:not(.dev) .scopebox .lanes{flex:0 0 auto;grid-template-rows:repeat(3,30px)} .desk:not(.dev) .scopebox .lanes canvas{height:30px}
 .desk:not(.dev) #scope{height:auto;flex:1;min-height:0}
-.desk:not(.dev) main{grid-column:2;grid-row:1;max-width:none;margin:0;padding:62px 0 0;display:flex;flex-direction:column;gap:12px;align-content:stretch;overflow:hidden}
+.desk:not(.dev) main{grid-column:2;grid-row:1;max-width:none;margin:0;padding:14px 0 0;display:flex;flex-direction:column;gap:12px;align-content:stretch;overflow:hidden}
 .desk:not(.dev) main .group{margin:0}
 .desk:not(.dev) main .knobs{display:grid;grid-template-columns:repeat(4,1fr);max-width:none;gap:4px}
+.desk:not(.dev) main .group[data-group="Sound"] .knobs{grid-template-columns:repeat(5,1fr)}
+.desk:not(.dev) main .group[data-group="Sound"] .knob{width:84px;height:84px}
 .desk:not(.dev) main .kn{width:auto}
 .desk:not(.dev) main .knob{width:96px;height:96px;margin:4px 0}
 .desk:not(.dev) main .kval{font-size:.9rem}
 .desk:not(.dev) .kb{grid-column:1 / -1;grid-row:2}
 .desk:not(.dev) .kb .wrap{max-width:none;padding:0}
-.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:140px}
-.desk:not(.dev) .lanes{grid-template-rows:repeat(3,34px)} .desk:not(.dev) .lanes canvas{height:34px}
 .desk:not(.dev) .foot{display:none}
 .desk:not(.dev) #app{margin:0 auto;overflow:hidden}
 .desk:not(.dev) .kb{position:static}
 .desk:not(.dev) .kbbar{padding:6px 0}
 .desk:not(.dev) .panes{margin-bottom:12px}
+
+/* the page takes the colour heard now (the morph colour, as the wave and the slider do); panels keep their own */
+body{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
+.top,.kb{background:transparent}
+.kb{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
+/* Sequence card rows: Walk / Swap and the Pattern's Set A / Set B; the copies and Edit */
+.seqrow{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.seqrow .spacer,.kbbar .spacer{flex:1}
+.key.send{font-size:.7rem;padding:4px 9px}
+/* bottom panel: the morph row, then Set A / Keys / Set B; Keys opens the keyboard drawer */
+.kbbar{display:flex;align-items:center;gap:6px;padding:4px 0 8px}
+.keysdrawer[hidden]{display:none}
+.keysdrawer .keys{margin-bottom:10px}
+/* settings sheet */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(5,7,12,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheetcard{width:min(520px,100%);background:var(--surface);border:1.5px solid var(--edge);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.sheetcard h2{font-family:var(--font-head);font-size:1rem;letter-spacing:.16em;text-transform:uppercase;margin:0;color:var(--ink)}
+.setrow{display:flex;flex-direction:column;gap:8px}
+.setrow .lbl{font-size:.66rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.schemes{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.scheme{display:flex;align-items:center;gap:8px;text-align:left;text-transform:none;letter-spacing:0;font-size:.8rem}
+.scheme i{width:28px;height:14px;border-radius:7px;flex:0 0 auto}
+@media (min-width:700px){ .sheet{align-items:center} .sheetcard{border-radius:20px} }
+body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56rem;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -448,15 +486,21 @@ body:not(.dev):not(.desk) main .kn{width:auto}
         <span class="key bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag up or down, or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120"><b id="bpmVal">120</b><small>BPM</small></span>
         <button type="button" id="undo" class="key icon" aria-label="Undo" disabled></button>
         <button type="button" id="redo" class="key icon" aria-label="Redo" disabled></button>
+        <button type="button" id="setBtn" class="key icon" aria-label="Settings"></button>
       </span>
       <span class="seg view" role="group" aria-label="View"><button type="button" class="key" id="viewBasic">Basic</button><button type="button" class="key" id="viewFull">Full</button></span>
     </div>
     <div class="dicerow" role="group" aria-label="Randomize">
-      <div class="dice" id="diceSound" data-what="sound" role="slider" tabindex="0" aria-label="Randomize the sound: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sound <i class="dtarget"></i></span></div>
-      <div class="dice" id="diceSeq" data-what="seq" role="slider" tabindex="0" aria-label="Randomize the sequence: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sequence <i class="dtarget"></i></span></div>
+      <div class="dgrp"><div class="dhead">Sound</div><div class="dtracks"><div class="dcol"><div class="dicetrack" data-what="sound" data-side="A" data-face="1" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, side A: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i></div></div></div><span class="dcap a">A</span></div><div class="dcol"><div class="dicetrack" data-what="sound" data-side="B" data-face="2" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, side B: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i></div></div></div><span class="dcap b">B</span></div><div class="dcol"><div class="dicetrack" data-what="sound" data-side="M" data-face="3" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, both sides: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i></div></div></div><span class="dcap">Both</span></div></div></div>
+      <div class="dgrp"><div class="dhead">Sequence</div><div class="dtracks"><div class="dcol"><div class="dicetrack" data-what="seq" data-side="A" data-face="4" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, side A: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i></div></div></div><span class="dcap a">A</span></div><div class="dcol"><div class="dicetrack" data-what="seq" data-side="B" data-face="5" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, side B: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i></div></div></div><span class="dcap b">B</span></div><div class="dcol"><div class="dicetrack" data-what="seq" data-side="M" data-face="6" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, both sides: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div><span class="dcap">Both</span></div></div></div>
     </div>
     <div class="scopebox">
-      <canvas id="scope" aria-label="Wave display: side A, the sound you hear now, and side B"></canvas>
+      <canvas id="scope" aria-label="Wave display: the sound you hear now"></canvas>
+      <div class="lanes">
+        <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
+        <span class="ln">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
+        <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
+      </div>
       <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
     </div>
   </div>
@@ -473,49 +517,43 @@ body:not(.dev):not(.desk) main .kn{width:auto}
   <div class="wrap">
     <div class="morphrow">
       <button type="button" class="key letter a" data-focus="A" aria-pressed="false" aria-label="Edit side A only (tap again to morph)">A</button>
-      <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">
+      <div class="morph-slider" id="morph" role="slider" tabindex="0" aria-label="Morph between A and B" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0">
+        <canvas class="glim" id="glim" aria-hidden="true"></canvas>
+        <button type="button" class="mcap" id="mcap" tabindex="-1" aria-label="Morph view">Morph</button>
+      </div>
       <button type="button" class="key letter b" data-focus="B" aria-pressed="false" aria-label="Edit side B only (tap again to morph)">B</button>
     </div>
     <div class="kbbar">
-      <span class="seg" role="group" aria-label="Bottom panel">
-        <button type="button" class="key" id="pmKeys" aria-pressed="true">Keys</button><button type="button" class="key" id="pmSeq" aria-pressed="false">Seq</button>
-      </span>
+      <button type="button" class="key send" id="sendA" aria-label="Make what you hear now side A">&larr; Set A</button>
       <span class="spacer"></span>
-      <span class="ctl" id="kctl">
+      <button type="button" class="key" id="pmKeys" aria-pressed="false">Keys</button>
+      <span class="spacer"></span>
+      <button type="button" class="key send" id="sendB" aria-label="Make what you hear now side B">Set B &rarr;</button>
+    </div>
+    <div class="keysdrawer" id="keysPane" hidden>
+      <div class="kbbar" id="kctl">
         <button type="button" class="key" id="octDown" aria-label="Octave down">−</button>
         <span class="oct" id="octLabel">C3</span>
         <button type="button" class="key" id="octUp" aria-label="Octave up">+</button>
-        <button type="button" id="monoBtn" class="key monobtn"></button>
+        <span class="spacer"></span>
         <button type="button" class="key" id="latch" aria-pressed="false">Latch</button>
-      </span>
-      <span class="ctl" id="sctl" hidden>
-        <button type="button" id="monoBtn2" class="key monobtn"></button>
-        <button type="button" id="play" class="key playbtn" aria-label="Play"></button>
-      </span>
-    </div>
-    <div class="panes">
-      <div class="slide" id="slide">
-        <div class="pane" id="keysPane"><div class="keys" id="keys"></div></div>
-        <div class="pane seqpane" id="seqPane" inert>
-          <div class="knobs" id="seqKnob"></div>
-          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></div>
-          <div class="seqright">
-            <div class="lanes">
-              <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
-              <span class="ln">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
-              <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
-            </div>
-            <div class="seqctl">
-              <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A→B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B→A</button>
-              <button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
-            </div>
-          </div>
-        </div>
       </div>
+      <div class="keys" id="keys"></div>
     </div>
   </div>
 </div>
+<button type="button" id="play" hidden></button>
+</div>
 </div><!-- #app -->
+
+<div class="sheet" id="settings" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
+  <div class="sheetcard">
+    <div class="edhead"><h2 id="setTitle">Settings</h2><button type="button" class="key" id="setDone">Done</button></div>
+    <div class="setrow"><span class="lbl">Theme</span><span class="seg" role="group" aria-label="Theme"><button type="button" class="key" data-theme-set="auto">Auto</button><button type="button" class="key" data-theme-set="light">Light</button><button type="button" class="key" data-theme-set="dark">Dark</button></span></div>
+    <div class="setrow"><span class="lbl">Colours</span><div class="schemes" id="schemes" role="group" aria-label="Colour scheme"></div></div>
+    <div class="setrow"><span class="lbl">Keys</span><span class="seg" role="group" aria-label="Voices"><button type="button" class="key" id="polyBtn">Poly</button><button type="button" class="key" id="monoBtn">Mono</button></span></div>
+  </div>
+</div>
 
 <div class="ed" id="ed" role="dialog" aria-modal="false" aria-labelledby="edTitle">
   <div class="edwrap">
@@ -1970,6 +2008,10 @@ const FX_ENG = {
 const OSC_LEVEL = [0.8, 0, 0, 0, 0];
 const DEFS = [];
 MACROS.forEach(p => DEFS.push({ ...p, id: p.key, group:'Sound' }));
+/* Position (2026-11-10): the Sound card's wavetable position. One knob whose A handle is where table A is read
+   (o1.posA) and whose B handle is where table B is read (o1.posB); the UI keeps them in step (syncPair in knobs.js).
+   pair: each handle is its side's own setting, with no curve (Wave does the morphing). The engine reads posA/posB. */
+DEFS.push({ ...P_('wpos', 'Position', 0, 1, 'lin', 0.667, 0.3), id:'wpos', group:'Sound', pair: true });
 OSC_KIND.forEach((eng, s) => {
   const group = OSC_NAMES[s], add = p => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
   OSC_ENG[eng].forEach(add);
@@ -1992,7 +2034,7 @@ const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' 
 const pct = v => Math.round(v * 100) + '%';
 const FM_RATIOS = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];   // OscFM.RATIOS
 const FMT = {
-  menv: pct, mbright: pct, mfx: pct, mwet: pct, harm: pct,
+  wpos: pct, menv: pct, mbright: pct, mfx: pct, mwet: pct, harm: pct,
   sqdens: pct, sqspeed: v => ['½×', '1×', '2×'][v], sqoct: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' oct',
   fmx: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
   fpitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st',
@@ -2468,7 +2510,7 @@ const switchRow = (d, i) => `<div class="swrow adv"><span>${d.label}</span>${['A
 DEFS.forEach((d, i) => {
   if (d.opts) { const g = sections[d.group] || (sections[d.group] = makeSection(d)); if (d.key !== 'sloop') g.querySelector('.gbody').insertAdjacentHTML('beforeend', switchRow(d, i)); return; }
   let box;
-  if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
+  if (d.group === 'Sequencer') { box = document.createElement('div'); box.id = 'patKnob'; document.body.appendChild(box); }   // moved into the Sequence card below
   else {
     const g = sections[d.group] || (sections[d.group] = makeSection(d));
     box = g.querySelector(d.sub ? `.knobs[data-sub="${d.sub}"]` : '.knobs:not([data-sub])');
@@ -2495,7 +2537,7 @@ function updateKnob(i) {
     document.querySelectorAll(`[data-sw="${i}"]`).forEach(b => { const v = Math.round(state[b.dataset.side][i]); b.setAttribute('aria-pressed', b.dataset.v === undefined ? v === 1 : +b.dataset.v === v); });
     return;
   }
-  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = d.seq ? a : resolveNorm(i);   // a side's own setting (seq) doesn't morph
+  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = d.seq || d.pair ? a : resolveNorm(i);   // a side's own setting (seq) doesn't morph
   setArc($('arcA' + i), a, r);
   setArc($('arcB' + i), r, b);
   const [ax, ay] = pt(a), [bx, by] = pt(b), [nx, ny] = pt(r);
@@ -2507,11 +2549,11 @@ function updateKnob(i) {
   // Linked (or single-side) parameters don't morph: one handle, one value, no curve
   const linked = isLinked(i), kn = $('k' + i), F = focusSide(i);
   kn.classList.toggle('kl-A', d.single === 'A'); kn.classList.toggle('kl-B', d.single === 'B'); kn.classList.toggle('kl-L', linked && !d.single);
-  $('now' + i).setAttribute('r', linked || d.seq ? 0 : 3.4);
+  $('now' + i).setAttribute('r', linked || d.seq || d.pair ? 0 : 3.4);
   $('hB' + i).style.display = linked ? 'none' : '';
   $('hB' + i).setAttribute('tabindex', linked ? -1 : 0);
-  $('c' + i).setAttribute('tabindex', linked || d.seq ? -1 : 0);
-  $('gd' + i).setAttribute('r', linked || d.seq ? 0 : 2);
+  $('c' + i).setAttribute('tabindex', linked || d.seq || d.pair ? -1 : 0);
+  $('gd' + i).setAttribute('r', linked || d.seq || d.pair ? 0 : 2);
   if (linked) { setArc($('arcA' + i), 0, a); setArc($('arcB' + i), a, a); }
   // side focus: only that side's value, one handle in its color, no curve
   kn.classList.toggle('kf-A', F === 'A'); kn.classList.toggle('kf-B', F === 'B');
@@ -2547,8 +2589,8 @@ function updateKnob(i) {
     for (let k = 0; k <= 20; k++) { const t = k / 20; path += (k ? 'L' : 'M') + (x0 + t * S).toFixed(2) + ' ' + (y0 - MorphEngine.bend(t, c) * S).toFixed(2); }
     gy = MorphEngine.bend(m, c);
   }
-  $('gl' + i).setAttribute('d', linked || d.seq || F ? '' : path);
-  { const x = F ? state[F][i] : linked || d.seq ? a : r, an = ang(x);
+  $('gl' + i).setAttribute('d', linked || d.seq || d.pair || F ? '' : path);
+  { const x = F ? state[F][i] : linked || d.seq || d.pair ? a : r, an = ang(x);
     $('ptr' + i).setAttribute('x1', (CX + 13.5 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y1', (CX + 13.5 * Math.sin(an)).toFixed(2));
     $('ptr' + i).setAttribute('x2', (CX + 19 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y2', (CX + 19 * Math.sin(an)).toFixed(2)); }
   $('gd' + i).setAttribute('cx', (x0 + m * S).toFixed(2)); $('gd' + i).setAttribute('cy', (y0 - gy * S).toFixed(2));
@@ -2565,7 +2607,7 @@ function updateKnob(i) {
     $('va' + i).classList.toggle('muted', !d.single);
   } else {
     v.className = 'kval' + (ed === 'A' ? ' a' : ed === 'B' ? ' b' : '');
-    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : d.seq ? '' : valText(i, r);
+    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : d.seq || d.pair ? '\u00a0' : valText(i, r);
     $('va' + i).textContent = valText(i, a); $('va' + i).classList.remove('muted');
     $('vb' + i).textContent = valText(i, b);
   }
@@ -2589,6 +2631,11 @@ function setParam(side, i, x) {
   }
   if (state[side][i] === x) return;
   state[side][i] = x;
+  if (DEFS[i].pair) {   // Position: the handle is that side's table position
+    const p = oi(0, side === 'A' ? 'posA' : 'posB'); state.A[p] = state.B[p] = x;
+    if (ready) { send({ type:'param', side:'A', i:p, v:x }); send({ type:'param', side:'B', i:p, v:x }); }
+    updateKnob(p);
+  }
   updateKnob(i);
   if (ready) send({ type:'param', side, i, v:x });
   if (DEFS[i].seq) seqChanged();
@@ -2618,7 +2665,7 @@ function bindKnob(i) {
     const x = (e.clientX - rc.left) / rc.width * 80 - CX, y = (e.clientY - rc.top) / rc.height * 80 - CX;
     if (focusSide(i)) mode = focusSide(i);   // side focus: the whole knob drags that side's value
     else if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
-    else if (Math.hypot(x, y) < 22 && !d.seq) mode = 'C';
+    else if (Math.hypot(x, y) < 22 && !d.seq && !d.pair) mode = 'C';
     else {
       let rel = (Math.atan2(y, x) * 180 / Math.PI - 135 + 720) % 360;
       const xp = rel <= 270 ? rel / 270 : (rel > 315 ? 0 : 1);
@@ -2681,6 +2728,8 @@ function bindKnob(i) {
   });
 }
 DEFS.forEach((d, i) => { if (!d.opts) bindKnob(i); });
+// Pattern sits first in the Sequence card (2026-11-10)
+{ const pk = $('patKnob'); sections.Sequence.querySelector('.knobs').prepend(...pk.children); pk.remove(); }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-sw]'); if (!b) return;
   const i = +b.dataset.sw, k = b.dataset.side;
@@ -2688,6 +2737,10 @@ document.addEventListener('click', e => {
 });
 
 
+
+// Position follows the two table positions after anything that sets them directly (randomize, undo, loading)
+function syncPair() { const w = IX.wpos; if (w === undefined) return; state.A[w] = state.A[oi(0, 'posA')]; state.B[w] = state.A[oi(0, 'posB')]; }
+syncPair();
 /* ---------- wave displays ---------- */
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const W = { fa:[new Float32Array(513), new Float32Array(513)], fb:[new Float32Array(513), new Float32Array(513)],
@@ -2868,37 +2921,104 @@ function drawWaves() {
 }
 function updateBlendUI() {}
 
-/* ---------- morph ---------- */
-const morphEl = $('morph');
+/* ---------- morph slider (2026-11-10) ----------
+   A track as tall as the A and B keys beside it, with a cap that reads MORPH. Drag the cap, or touch the track to
+   jump there. While a side is focused the slider rests at that end, and touching it (the cap, or anywhere) brings back
+   the morph view. The track is the colour you hear now (the same colour as the wave), with light glimmering across it
+   and glints rising off it (drawGlim, below); the page background takes the same colour. */
+const morphEl = $('morph'), mcap = $('mcap');
+const capFrac = m => { const W = morphEl.clientWidth, cw = mcap.offsetWidth; return W > cw ? m * (W - cw) / W * 100 : 0; };
 function updateMorphUI() {
   const m = state.morph;
   morphEl.value = Math.round(m * 1000);
+  mcap.style.left = capFrac(m) + '%';
   document.documentElement.style.setProperty('--mix', (m * 100).toFixed(1) + '%');
   const pa = Math.round((1 - m) * 100), pb = 100 - pa;
-  morphEl.setAttribute('aria-valuetext', `${pa}% A, ${pb}% B`);
+  morphEl.setAttribute('aria-valuenow', Math.round(m * 1000)); morphEl.setAttribute('aria-valuetext', `${pa}% A, ${pb}% B`);
+  glimColor = null;
   drawWaves();
 }
-morphEl.addEventListener('input', () => {
-  state.morph = morphEl.value / 1000;
+function setMorph(m) {
+  state.morph = clamp(m);
   updateMorphUI();
   DEFS.forEach((d, i) => updateKnob(i));
   if (ready) send({ type:'morph', v: state.morph });
   save();
-});
+}
+{
+  let pid = null, grab = 0;
+  const mAt = (x, off) => { const r = morphEl.getBoundingClientRect(), cw = mcap.offsetWidth; return (x - r.left - off) / Math.max(1, r.width - cw); };
+  morphEl.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (focus !== 'M') { setFocus('M'); return; }   // a focused side: touching the slider comes back to the morph
+    pid = e.pointerId; morphEl.setPointerCapture(pid); morphEl.classList.add('drag');
+    const cr = mcap.getBoundingClientRect();
+    if (e.clientX >= cr.left && e.clientX <= cr.right) grab = e.clientX - cr.left;   // on the cap: drag it from where you hold it
+    else { grab = cr.width / 2; setMorph(mAt(e.clientX, grab)); }                    // on the track: the cap jumps there
+  });
+  morphEl.addEventListener('pointermove', e => { if (e.pointerId === pid) setMorph(mAt(e.clientX, grab)); });
+  const end = e => { if (e.pointerId === pid) { pid = null; morphEl.classList.remove('drag'); } };
+  morphEl.addEventListener('pointerup', end); morphEl.addEventListener('pointercancel', end);
+  morphEl.addEventListener('keydown', e => {
+    const st = e.shiftKey ? 0.1 : 0.01;
+    const m = e.key === 'ArrowRight' || e.key === 'ArrowUp' ? state.morph + st : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? state.morph - st
+      : e.key === 'Home' ? 0 : e.key === 'End' ? 1 : null;
+    if (m === null) return;
+    e.preventDefault(); if (focus !== 'M') setFocus('M'); setMorph(m);
+  });
+}
+/* glimmer: the track's colour, a band of light sweeping across, and glints that sparkle and drift up off the top */
+const glim = $('glim'), glints = [];
+let glimColor = null, glimLast = 0;
+function drawGlim(now) {
+  const c = prep(glim); if (!c) return;
+  const { g, w, h } = c, top = h - morphEl.clientHeight, th = morphEl.clientHeight, t = now / 1000, rad = 10;
+  if (!glimColor) glimColor = mixColor(state.morph);
+  g.save();
+  g.beginPath(); g.roundRect(0, top, w, th, rad); g.clip();
+  g.fillStyle = glimColor; g.fillRect(0, top, w, th);
+  // two soft bands of light sweeping across at different speeds, and a shimmer along the top edge
+  for (const [sp, wd, a] of [[0.23, 0.35, 0.35], [0.37, 0.18, 0.25]]) {
+    const x = ((t * sp) % 1.6 - 0.3) * w, gr = g.createLinearGradient(x - wd * w, 0, x + wd * w, 0);
+    gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, `rgba(255,255,255,${a})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, top, w, th);
+  }
+  const sh = g.createLinearGradient(0, top, 0, top + th);
+  sh.addColorStop(0, 'rgba(255,255,255,.35)'); sh.addColorStop(0.45, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.12)');
+  g.fillStyle = sh; g.fillRect(0, top, w, th);
+  g.restore();
+  // glints: born on the track, twinkle, and some drift up and off it
+  if (glints.length < 26 && Math.random() < 0.5) glints.push({ x: Math.random() * w, y: top + 4 + Math.random() * (th - 8), vy: Math.random() < 0.45 ? -(6 + Math.random() * 16) : 0, born: t, life: 0.6 + Math.random() * 1.4, s: 1.5 + Math.random() * 3 });
+  for (let k = glints.length - 1; k >= 0; k--) {
+    const p = glints[k], age = (t - p.born) / p.life;
+    if (age >= 1) { glints.splice(k, 1); continue; }
+    const y = p.y + p.vy * (t - p.born), a = Math.sin(Math.PI * age), s = p.s * (0.6 + 0.4 * a);
+    g.globalAlpha = a * 0.95; g.fillStyle = '#fff';
+    g.beginPath();   // a four-point star
+    g.moveTo(p.x, y - s * 2); g.quadraticCurveTo(p.x, y, p.x + s * 2, y); g.quadraticCurveTo(p.x, y, p.x, y + s * 2); g.quadraticCurveTo(p.x, y, p.x - s * 2, y); g.quadraticCurveTo(p.x, y, p.x, y - s * 2);
+    g.fill();
+  }
+  g.globalAlpha = 1;
+}
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function glimLoop(now) {
+  if (!document.hidden && now - glimLast > 33) { glimLast = now; drawGlim(reduceMotion.matches ? 0 : now); }
+  requestAnimationFrame(glimLoop);
+}
+requestAnimationFrame(glimLoop);
 /* ---------- side focus: A | Morph | B (see knobs.js) ---------- */
 function setFocus(f) {
   if (f === focus) return;
   if (focus === 'M') focusMem = state.morph;
   focus = f;
   state.morph = f === 'A' ? 0 : f === 'B' ? 1 : focusMem;
-  morphEl.disabled = f !== 'M';
+  morphEl.disabled = f !== 'M'; morphEl.classList.toggle('rest', f !== 'M');
   document.body.dataset.sidefocus = f;
   document.querySelectorAll('[data-focus]').forEach(b => b.setAttribute('aria-pressed', b.dataset.focus === f));
   updateMorphUI();
   DEFS.forEach((d, i) => updateKnob(i));
   if (ready) send({ type:'morph', v: state.morph });
   drawLanes();
-  if (typeof updateDiceTarget === 'function') updateDiceTarget();
 }
 // tap A or B to edit only that side; tap it again (or the other) to come back to the morph or switch sides
 document.querySelectorAll('[data-focus]').forEach(b => b.addEventListener('click', () => setFocus(focus === b.dataset.focus ? 'M' : b.dataset.focus)));
@@ -2936,7 +3056,7 @@ document.addEventListener('keydown', e => {
 $('redo').addEventListener('click', () => { const s = redoStack.pop(); if (!s) return; undoStack.push(snapshot()); restore(s); updateUndoUI(); });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
-  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes(); syncScaleUI();
+  fn(); syncPair(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes(); syncScaleUI();
   if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
   if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
   if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
@@ -2952,6 +3072,19 @@ function resetPatch() {
     state.seq = defaultSeqs();
   });
 }
+/* Set A / Set B (2026-11-10, DESIGN.md section 15 "capture the midpoint"): what you hear at the current morph becomes
+   side A (or B). Every morphing value takes the value heard now (Wave included, so a side can hold a blend of the two
+   tables); each side's own settings (table positions, the sequencer's) and the Pattern knob stay. The morph then moves to
+   that end, so the sound doesn't change: the sweet spot is now the slider's destination. */
+function captureSound(side) {
+  bulk(() => {
+    const heard = DEFS.map((d, i) => resolveNorm(i));
+    DEFS.forEach((d, i) => { if (!d.single && !d.seq && !d.pair && d.group !== 'Sequencer' && !isLinked(i)) state[side][i] = heard[i]; });
+    if (focus === 'M') state.morph = side === 'A' ? 0 : 1;
+  });
+}
+$('sendA').addEventListener('click', () => captureSound('A'));
+$('sendB').addEventListener('click', () => captureSound('B'));
 /* ---------- randomize ----------
    Values are drawn from musically useful ranges rather than the full range
    of each knob, so results are usually playable. */
@@ -3274,7 +3407,7 @@ function randomizeSide(side, g, raw) {
   const other = side === 'A' ? 'B' : 'A';
   DEFS.forEach((d, i) => {
     if (!inGroup(d, g) || isLocked(d)) return;
-    if (d.seq) return;   // a side's sequencer settings change with the sequence dice, not the sound
+    if (d.seq || d.pair) return;   // a side's sequencer settings change with the sequence dice, not the sound; Position follows posA/posB
     if (d.eng === 'fm' && d.single) return;   // a side's FM patch comes whole from fmPatch
     if (d.single) { if (d.single === side) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, side); return; }
     if (state.links[d.id]) return;   // shared values only change with Randomize all or Randomize linked
@@ -3298,7 +3431,7 @@ function randomizeLinked(g, raw) {   // linked knobs only: one new value shared 
 function randomizeAll(g, raw) {
   randomizeSide('A', g, raw); randomizeSide('B', g, raw);
   randomizeLinked(g, raw);
-  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts || d.seq ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
+  state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts || d.seq || d.pair ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
 }
 /* ---------- lock / link icons ---------- */
@@ -3608,9 +3741,8 @@ smpFile.addEventListener('change', async () => {
 updateSamplerUI();
 /* =====================================================================
    SCOPE: the wave display (2026-11-10)
-   One picture of the sound: side A's wave on the left, side B's on the
-   right, and between them, large, the wave you hear at the current morph.
-   The middle wave is what the engine plays (Wavetable 1's blend, after the
+   The wave you hear at the current morph (2026-11-10: only that one; A and B
+   are what it shows with a side focused or the morph at an end). It is what the engine plays (Wavetable 1's blend, after the
    Harmonics control and the filter, with the four macros applied), and the
    effects each leave a fitting mark on it, scaled by how much of them is heard:
      Drive       the wave is shaped by the same kind of curve (soft clip, then folding)
@@ -3672,19 +3804,9 @@ let scopeT = 0, scopeAnim = 0, scopeQueued = false;
 function drawScope(now) {
   const c = prep(scopeEl); if (!c) return;
   const v = heardValues(), fx = fxMarks(v), g = c.g, H = c.h, Wd = c.w;
-  const colA = css('--a'), colB = css('--b'), colM = mixColor(state.morph), ink = css('--ink');
-  const side = Math.min(Wd * 0.2, H * 1.4), gap = Math.max(8, Wd * 0.02), mid0 = side + gap, midW = Wd - 2 * (side + gap);
+  const colM = mixColor(state.morph), ink = css('--ink');
+  const gap = 6, mid0 = gap, midW = Wd - 2 * gap;   // only the wave heard now (2026-11-10): A and B show when a side is focused or the morph is at an end
   const t = (now || performance.now()) / 1000;
-  // side panels: each side's own wave, plain
-  const small = (wave, x0, col, label, active) => {
-    const m = H / 2, amp = H * 0.32 / wave.pk;
-    g.globalAlpha = active ? 1 : 0.55; g.strokeStyle = col; g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath();
-    for (let i = 0; i <= SC.n; i++) { const x = x0 + i / SC.n * side, y = m - wave.w[i % SC.n] * amp; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    g.stroke(); g.globalAlpha = 1;
-    g.fillStyle = col; g.font = '600 12px ' + css('--font-ui'); g.textAlign = 'center'; g.fillText(label, x0 + side / 2, H - 6);
-  };
-  small(scopeWave(v, 'A'), 0, colA, 'A', focus !== 'B');
-  small(scopeWave(v, 'B'), Wd - side, colB, 'B', focus !== 'A');
   // the wave heard now, with the effects' marks
   const { w, pk } = scopeWave(v);
   const n = SC.n, m = H / 2, amp = (H / 2 - 10) / pk;
@@ -3765,22 +3887,21 @@ function scopeLoop() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) drawScopeSoon(); });
 /* =====================================================================
-   DICE SLIDERS (2026-11-10, from the family: Orbital, Pixy, Heather)
-   Touch the track and let go: the further right, the bigger the change (the die
-   sits under your finger and turns as it travels). As in Orbital, each value
-   moves 0.35 + 0.65 x strength of the way toward a fresh roll, so the far end
-   is a whole new sound. The die springs back with a tumble. What they act on follows the side focus: in A or B only that
-   side changes, in Morph both do (and a full sequence roll picks a new scale).
-   Keys: Enter or Space rolls at 50%, 1 to 9 at 10% to 90%, 0 at 100%.
+   DICE SLIDERS (2026-11-10, Orbital's dice, standing up)
+   Six tracks in one row: Sound A, B, Both and Sequence A, B, Both, the same
+   in every view. Touch a track and let go: the higher, the bigger the change
+   (the die sits under your finger and rolls as it travels over a yellow fill,
+   then springs home). Faces show 1 to 6 in order. As in Orbital, each sound
+   value moves 0.35 + 0.65 x strength of the way toward a fresh roll, so the
+   top is a whole new sound. Keys: Enter or Space rolls at 50%, 1 to 9 at 10%
+   to 90%, 0 at 100%.
    ===================================================================== */
-const PIPS = { 1: [[1, 1]], 2: [[0, 0], [2, 2]], 3: [[0, 0], [1, 1], [2, 2]], 4: [[0, 0], [2, 0], [0, 2], [2, 2]], 5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]], 6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]] };
-const dieFace = n => `<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">${PIPS[n].map(([x, y]) => `<circle cx="${4.5 + x * 5.5}" cy="${4.5 + y * 5.5}" r="1.9" fill="currentColor"/>`).join('')}</svg>`;
 /* Sound: the shaped randomizer runs for the target side(s), then every value moves only `amt` of the way from where it
    was toward the new roll (stepped values round, switches flip with chance amt), and each wavetable is replaced with
    chance amt. The guards (level match, sine and loudness guards) run again on the result. */
-function rollSound(s) {
+function rollSound(side, s) {
   const amt = 0.35 + 0.65 * s;
-  const sides = focus === 'M' ? ['A', 'B'] : [focus];
+  const sides = side === 'M' ? ['A', 'B'] : [side];
   const old = { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), t: tables.map(t => ({ A: t.A, B: t.B })), smp: { ...state.smp } };
   if (sides.length === 2) randomizeAll(); else randomizeSide(sides[0]);
   if (amt >= 0.98) return;
@@ -3799,8 +3920,8 @@ function rollSound(s) {
 /* Sequence: a full roll at the far end (as before: new rate, generator, rhythm, density, speed and octave; in Morph also a
    new shared scale). Below that the pattern keeps its rate and length, and each note is re-rolled with chance amt (a new
    melody in the scale), with rests and velocities shuffled in proportion. */
-function rollSeq(amt) {
-  const sides = focus === 'M' ? ['A', 'B'] : [focus];
+function rollSeq(side, amt) {
+  const sides = side === 'M' ? ['A', 'B'] : [side];
   if (amt >= 0.9) { if (sides.length === 2) randSeqs(); else randSeqSide(sides[0]); return; }
   for (const k of sides) {
     const q = state.seq[k], fresh = cloneSeq(q);
@@ -3813,41 +3934,75 @@ function rollSeq(amt) {
     shapeRandom(q);
   }
 }
-document.querySelectorAll('.dice').forEach(el => {
-  const tile = el.querySelector('.dtile'), what = el.dataset.what;
-  el.insertAdjacentHTML('afterbegin', '<span class="dfill"></span>');
-  const fill = el.querySelector('.dfill');
-  let face = 5, pid = null, s = 0;
-  tile.innerHTML = dieFace(face);
-  const dieW = () => tile.offsetWidth || 30, travel = () => Math.max(1, el.clientWidth - dieW() - 4);
-  // the die sits where you touch and turns as it travels (1.25 turns over the whole track); the track fills behind it
+document.querySelectorAll('.dicetrack').forEach(el => {
+  const die = el.querySelector('.die'), face = die.firstChild, fill = el.querySelector('.fill'), what = el.dataset.what, side = el.dataset.side;
+  let pid = null;
+  const dieH = () => die.offsetHeight || 31, travel = () => Math.max(1, el.clientHeight - dieH());
+  // the die sits under your finger and the whole face turns as it travels (1.25 turns over the track); the track fills behind it
   const place = x => {
-    tile.style.transform = `translateX(${x * travel()}px)`;
-    tile.firstChild.style.transform = `rotate(${x * 450}deg)`;
-    fill.style.width = x > 0 ? x * travel() + dieW() / 2 + 2 + 'px' : '0';
+    die.style.bottom = (x * travel()) + 'px';
+    face.style.transform = `rotate(${x * 450}deg)`;
+    fill.style.height = x > 0 ? x * travel() + dieH() / 2 + 'px' : '0';
     el.setAttribute('aria-valuenow', Math.round(x * 100));
   };
-  const fromX = cx => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, (cx - r.left - 2 - dieW() / 2) / travel())); };
+  const fromY = cy => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, (r.bottom - cy - dieH() / 2) / travel())); };
   const roll = a => {
-    bulk(() => (what === 'seq' ? rollSeq(a) : rollSound(a)));
-    el.classList.remove('drag'); place(0);
-    el.classList.remove('roll'); void el.offsetWidth; el.classList.add('roll');
-    let n = 0; const spin = setInterval(() => { face = 1 + Math.floor(rnd() * 6); tile.innerHTML = dieFace(face); if (++n >= 5) clearInterval(spin); }, 90);
-    setTimeout(() => el.classList.remove('roll'), 600);
+    bulk(() => (what === 'seq' ? rollSeq(side, a) : rollSound(side, a)));
+    el.classList.remove('dragging'); place(0);
+    die.classList.remove('rolled'); void die.offsetWidth; die.classList.add('rolled');
   };
-  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('drag'); s = fromX(e.clientX); place(s); });
-  el.addEventListener('pointermove', e => { if (e.pointerId === pid) { s = fromX(e.clientX); place(s); } });
-  el.addEventListener('pointerup', e => { if (e.pointerId !== pid) return; pid = null; s = fromX(e.clientX); if (s > 0.01) roll(s); else { el.classList.remove('drag'); place(0); } });
-  el.addEventListener('pointercancel', e => { if (e.pointerId !== pid) return; pid = null; el.classList.remove('drag'); place(0); });
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('dragging'); place(fromY(e.clientY)); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === pid) place(fromY(e.clientY)); });
+  el.addEventListener('pointerup', e => { if (e.pointerId !== pid) return; pid = null; const x = fromY(e.clientY); if (x > 0.01) roll(x); else { el.classList.remove('dragging'); place(0); } });
+  el.addEventListener('pointercancel', e => { if (e.pointerId !== pid) return; pid = null; el.classList.remove('dragging'); place(0); });
   el.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); roll(0.5); }
     else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); roll(+e.key / 10); }
     else if (e.key === '0') { e.preventDefault(); roll(1); }
   });
+  place(0);
 });
-// what the dice act on, shown on each slider: A, B, or A+B (follows the side focus)
-function updateDiceTarget() { document.querySelectorAll('.dtarget').forEach(t => { t.textContent = focus === 'M' ? 'A+B' : focus; }); }
-updateDiceTarget();
+/* =====================================================================
+   SETTINGS (2026-11-10): the cog in the header opens a sheet with the
+   theme (Auto, Light, Dark), the colour scheme (the colours of A and B; the
+   morph passes between them) and Mono / Poly for the keys. Per browser
+   conveniences, kept in localStorage, not part of the patch.
+   ===================================================================== */
+const SCHEMES = [   // [name, A light, B light, A dark, B dark]
+  ['Blue & pink', '#4F6FE0', '#E3308F', '#7F9BFF', '#FF5AAE'],
+  ['Teal & amber', '#11907D', '#D7861A', '#3DD9B8', '#FFAA3D'],
+  ['Violet & lime', '#7C5CE6', '#5E9410', '#A98BFF', '#B5E048'],
+  ['Sky & coral', '#0E8FC2', '#E0503A', '#53C6F2', '#FF7F66'],
+  ['Ink & rose', '#3B4A6B', '#C2416B', '#9DB0D8', '#FF8FB4'],
+];
+const COG = '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+$('setBtn').innerHTML = COG;
+const pref = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
+const setPref = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+let themePref = pref('diptych-theme', 'auto'), schemeIx = Math.max(0, Math.min(SCHEMES.length - 1, +pref('diptych-scheme', '0') || 0));
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+const isDark = () => (themePref === 'auto' ? darkMQ.matches : themePref === 'dark');
+function applyTheme() {
+  const root = document.documentElement;
+  if (themePref === 'auto') delete root.dataset.theme; else root.dataset.theme = themePref;
+  const sc = SCHEMES[schemeIx], dk = isDark();
+  root.style.setProperty('--a', dk ? sc[3] : sc[1]); root.style.setProperty('--b', dk ? sc[4] : sc[2]);
+  document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', b.dataset.themeSet === themePref));
+  document.querySelectorAll('[data-scheme]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.scheme === schemeIx));
+  if (typeof glimColor !== 'undefined') glimColor = null;
+  drawWaves();
+}
+$('schemes').innerHTML = SCHEMES.map(([n, a, b], k) => `<button type="button" class="key scheme" data-scheme="${k}" aria-label="${n}"><i style="background:linear-gradient(90deg,${a},${b})"></i><span>${n}</span></button>`).join('');
+document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('click', () => { themePref = b.dataset.themeSet; setPref('diptych-theme', themePref); applyTheme(); }));
+document.querySelectorAll('[data-scheme]').forEach(b => b.addEventListener('click', () => { schemeIx = +b.dataset.scheme; setPref('diptych-scheme', String(schemeIx)); applyTheme(); }));
+darkMQ.addEventListener('change', applyTheme);
+applyTheme();
+const openSettings = () => { $('settings').hidden = false; $('setDone').focus({ preventScroll: true }); };
+const closeSettings = () => { $('settings').hidden = true; $('setBtn').focus({ preventScroll: true }); };
+$('setBtn').addEventListener('click', openSettings);
+$('setDone').addEventListener('click', closeSettings);
+$('settings').addEventListener('click', e => { if (e.target === $('settings')) closeSettings(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('settings').hidden) closeSettings(); });
 /* =====================================================================
    BASIC VIEW AND SECTION OVERLAYS
    Basic view: every section shows its key controls (BASIC in knobs.js) in a
@@ -4001,10 +4156,9 @@ const KEYMAP = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k
 const heldKeys = new Map();
 window.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
-  if (panel === 'seq') {
-    if (e.key === ' ' && !e.target.closest('button,select,input')) { e.preventDefault(); setPlaying(!seqPlaying); }
-    return;
-  }
+  // space plays and stops the sequencer; the letter keys always play notes (2026-11-10: the keyboard is a drawer now)
+  if (e.key === ' ' && !e.target.closest('button,select,input,[role="slider"]')) { e.preventDefault(); setPlaying(!seqPlaying); return; }
+  if (e.target.closest('input,select,textarea')) return;
   const key = e.key.toLowerCase();
   if (key === 'z') { shiftOct(-1); return; }
   if (key === 'x') { shiftOct(1); return; }
@@ -4215,23 +4369,29 @@ function buildSeq() {
 function sendSeq() { if (ready) { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); } }
 function seqChanged() { seqCache = null; sendSeq(); drawLanes(); if (sq.classList.contains('open')) drawRoll(); if (typeof syncScaleUI === 'function') syncScaleUI(); save(); }
 
-/* ---------- bottom pane: keys / sequencer ---------- */
-let panel = 'keys', seqPlaying = false, seqPos = null, seqLoop = 1;
+/* ---------- bottom panel and the Sequence card (2026-11-10) ----------
+   The bottom panel always holds the morph row and Set A / Keys / Set B; Keys opens the keyboard drawer under them.
+   The sequencer's controls live in the Sequence card (Pattern with its own Set A / Set B, Walk / Swap, copies, Edit), and
+   its lanes in the visual-feedback panel under the wave. panel is 'keys' while the drawer is open. */
+let panel = 'seq', seqPlaying = false, seqPos = null, seqLoop = 1;
+sections.Sequence.querySelector('.gbody').insertAdjacentHTML('beforeend', `<div class="seqrow">
+  <span class="seg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></span>
+  <span class="spacer"></span>
+  <button type="button" class="key send" id="patA" aria-label="Make the pattern you hear now sequence A">&larr; Set A</button><button type="button" class="key send" id="patB" aria-label="Make the pattern you hear now sequence B">Set B &rarr;</button>
+</div><div class="seqrow">
+  <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A&rarr;B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B&rarr;A</button>
+  <span class="spacer"></span>
+  <button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
+</div>`);
 function setPanel(p, quiet) {
   if (p === panel) return;
   panel = p;
-  $('pmKeys').setAttribute('aria-pressed', p === 'keys'); $('pmSeq').setAttribute('aria-pressed', p === 'seq');
-  $('kctl').hidden = p !== 'keys'; $('sctl').hidden = p !== 'seq';
-  $('slide').classList.toggle('seq', p === 'seq');
-  $('keysPane').inert = p !== 'keys'; $('seqPane').inert = p !== 'seq';
-  if (p === 'seq') {   // leave normal playing cleanly
-    latch = false; $('latch').setAttribute('aria-pressed', 'false'); latched.clear();
-    sounding.clear(); markKeys(); if (!quiet) post({ type:'panic' });
-    drawLanes();
-  } else setPlaying(false);
+  $('pmKeys').setAttribute('aria-pressed', p === 'keys');
+  $('keysPane').hidden = p !== 'keys';
+  if (p !== 'keys') { latch = false; $('latch').setAttribute('aria-pressed', 'false'); latched.forEach(n => off(n)); latched.clear(); }
+  if (typeof applyLayout === 'function') applyLayout();
 }
-$('pmKeys').addEventListener('click', () => setPanel('keys'));
-$('pmSeq').addEventListener('click', () => { if (panel !== 'seq') { setPanel('seq'); setPlaying(true); } });
+$('pmKeys').addEventListener('click', () => setPanel(panel === 'keys' ? 'seq' : 'keys'));
 const ICON_PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>';
 const ICON_STOP = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>';
 function setPlaying(on) {
@@ -4242,7 +4402,7 @@ function setPlaying(on) {
 }
 $('play').addEventListener('click', () => setPlaying(!seqPlaying));
 // the header's play button plays the sequencer from anywhere (and shows its pane)
-$('hplay').addEventListener('click', () => { if (seqPlaying) { setPlaying(false); return; } if (panel !== 'seq') setPanel('seq', true); setPlaying(true); });
+$('hplay').addEventListener('click', () => setPlaying(!seqPlaying));
 function setBpm(v) { state.bpm = Math.max(50, Math.min(200, Math.round(v))); $('bpmVal').textContent = state.bpm; $('bpmBox').setAttribute('aria-valuenow', state.bpm); if (ready) send({ type:'bpm', v: state.bpm }); save(); }
 function holdRepeat(el, fn) {
   let t1 = null, t2 = null;
@@ -4261,16 +4421,16 @@ function onReport(d) {
   if (d.type === 'pos' && seqPlaying) { seqPos = d.pos; seqLoop = d.loop; drawLanesSoon(); }
   else if (d.type === 'ott') onOtt(d);
 }
-// mono / poly for playing the keys (the sequencer is always one note at a time)
-function updateMonoUI() { ['monoBtn', 'monoBtn2'].forEach(id => { $(id).textContent = state.mono ? 'Mono' : 'Poly'; $(id).setAttribute('aria-label', `Voice mode: ${state.mono ? 'mono, one note at a time' : 'poly'}. Tap to switch`); }); }
-['monoBtn', 'monoBtn2'].forEach(id => $(id).addEventListener('click', () => { state.mono = !state.mono; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); }));
+// mono / poly for playing the keys (the sequencer is always one note at a time), in Settings since 2026-11-10
+function updateMonoUI() { $('monoBtn').setAttribute('aria-pressed', state.mono); $('polyBtn').setAttribute('aria-pressed', !state.mono); }
+const setMono = m => { state.mono = m; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); };
+$('monoBtn').addEventListener('click', () => setMono(true)); $('polyBtn').addEventListener('click', () => setMono(false));
 updateMonoUI();
 
 /* ---------- mini lanes: A, what plays now, B ---------- */
 let lanesQueued = false;
 function drawLanesSoon() { if (lanesQueued) return; lanesQueued = true; requestAnimationFrame(() => { lanesQueued = false; drawLanes(); }); }
 function drawLanes() {
-  if (panel !== 'seq' && !sq.classList.contains('open')) return;
   const s = buildSeq(), mm = resolveNorm(IX.pattern), walk = state.walk;
   let lo = 127, hi = 0;
   s.events.forEach(e => { [e.a, e.b].forEach(x => { if (x) { lo = Math.min(lo, x.p); hi = Math.max(hi, x.p); } }); });
@@ -4498,6 +4658,29 @@ const refreshSeqKnobs = () => SEQ_KEYS.forEach(k => updateKnob(IX[k]));
 const copySeq = (from, to) => { pushUndo(); copySeqTo(from, to); refreshSeqKnobs(); if (ready) sendState(); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); };
 $('seqAB').addEventListener('click', () => copySeq('A', 'B'));
 $('seqBA').addEventListener('click', () => copySeq('B', 'A'));
+
+/* Pattern Set A / Set B (2026-11-10): the sequence heard at the Pattern knob's current value becomes sequence A (or B):
+   a 1/16 pattern as long as the loop (at most 32 sixteenths), each note at its sixteenth, with its length and velocity.
+   Speed and Octave are already in the notes, so that side's Speed goes to 1x, Octave to 0 and Density to 100%, and the Pattern
+   knob's handle for that side goes to its end (All A or All B), so that end plays exactly the captured sequence. */
+function capturePattern(side) {
+  pushUndo();
+  const s = buildSeq(), mm = resolveNorm(IX.pattern), n16 = Math.max(1, Math.min(MAXSTEPS, Math.round(s.loop / 12)));
+  const q = cloneSeq(state.seq[side]); q.rate = R16; q.n16 = n16; q.rot = 0;
+  q.steps = Array.from({ length: n16 }, () => ({ on: false, note: 48 + q.root, len: 1, vel: 0.75, dur: 12 }));
+  s.events.forEach(e => {
+    const k = Math.round(e.tick / 12); if (k >= n16) return;
+    const r = MorphEngine.seqEval(e, mm, state.walk, s.scale); if (!r) return;
+    q.steps[k] = { on: true, note: r.note, len: Math.max(0.25, Math.round(r.len / 12 * 4) / 4), vel: r.vel, dur: 12 };
+  });
+  state.seq[side] = q;
+  state[side][IX.sqspeed] = norm(DEFS[IX.sqspeed], 1); state[side][IX.sqoct] = norm(DEFS[IX.sqoct], 0); state[side][IX.sqdens] = 1;
+  state[side][IX.pattern] = side === 'A' ? 0 : 1;   // that end of the Pattern knob plays the captured sequence
+  if (ready) sendState();
+  refreshSeqKnobs(); updateKnob(IX.pattern); if (sq.classList.contains('open')) syncSeqControls(); seqChanged();
+}
+$('patA').addEventListener('click', () => capturePattern('A'));
+$('patB').addEventListener('click', () => capturePattern('B'));
 const GUT = 34, RH = 14;
 function rollRows() { const pcs = scalePcs(cur()), rows = []; for (let n = 84; n >= 36; n--) if (pcs.has(n % 12)) rows.push(n); return rows; }
 function rowOf(rows, note) { let best = 0; rows.forEach((n, i) => { if (Math.abs(n - note) < Math.abs(rows[best] - note)) best = i; }); return best; }
@@ -4591,7 +4774,6 @@ velCv.addEventListener('pointermove', e => { if (velDrag === e.pointerId) velAt(
 $('bpmVal').textContent = state.bpm;
 ['play', 'hplay'].forEach(id => { $(id).innerHTML = ICON_PLAY; $(id).setAttribute('aria-label', 'Play'); });
 updateWalkUI();
-setPanel('seq', true);   // the sequencer is the starting view
 
 
 labelOct();

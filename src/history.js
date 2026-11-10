@@ -30,7 +30,7 @@ document.addEventListener('keydown', e => {
 $('redo').addEventListener('click', () => { const s = redoStack.pop(); if (!s) return; undoStack.push(snapshot()); restore(s); updateUndoUI(); });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
-  fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes(); syncScaleUI();
+  fn(); syncPair(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes(); syncScaleUI();
   if (sq.classList.contains('open')) { syncSeqControls(); drawRoll(); }
   if (ready) { sendAll(); send({ type:'morph', v: state.morph }); }
   if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
@@ -46,3 +46,16 @@ function resetPatch() {
     state.seq = defaultSeqs();
   });
 }
+/* Set A / Set B (2026-11-10, DESIGN.md section 15 "capture the midpoint"): what you hear at the current morph becomes
+   side A (or B). Every morphing value takes the value heard now (Wave included, so a side can hold a blend of the two
+   tables); each side's own settings (table positions, the sequencer's) and the Pattern knob stay. The morph then moves to
+   that end, so the sound doesn't change: the sweet spot is now the slider's destination. */
+function captureSound(side) {
+  bulk(() => {
+    const heard = DEFS.map((d, i) => resolveNorm(i));
+    DEFS.forEach((d, i) => { if (!d.single && !d.seq && !d.pair && d.group !== 'Sequencer' && !isLinked(i)) state[side][i] = heard[i]; });
+    if (focus === 'M') state.morph = side === 'A' ? 0 : 1;
+  });
+}
+$('sendA').addEventListener('click', () => captureSound('A'));
+$('sendB').addEventListener('click', () => captureSound('B'));

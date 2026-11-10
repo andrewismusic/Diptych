@@ -1,8 +1,7 @@
 /* =====================================================================
    SCOPE: the wave display (2026-11-10)
-   One picture of the sound: side A's wave on the left, side B's on the
-   right, and between them, large, the wave you hear at the current morph.
-   The middle wave is what the engine plays (Wavetable 1's blend, after the
+   The wave you hear at the current morph (2026-11-10: only that one; A and B
+   are what it shows with a side focused or the morph at an end). It is what the engine plays (Wavetable 1's blend, after the
    Harmonics control and the filter, with the four macros applied), and the
    effects each leave a fitting mark on it, scaled by how much of them is heard:
      Drive       the wave is shaped by the same kind of curve (soft clip, then folding)
@@ -64,19 +63,9 @@ let scopeT = 0, scopeAnim = 0, scopeQueued = false;
 function drawScope(now) {
   const c = prep(scopeEl); if (!c) return;
   const v = heardValues(), fx = fxMarks(v), g = c.g, H = c.h, Wd = c.w;
-  const colA = css('--a'), colB = css('--b'), colM = mixColor(state.morph), ink = css('--ink');
-  const side = Math.min(Wd * 0.2, H * 1.4), gap = Math.max(8, Wd * 0.02), mid0 = side + gap, midW = Wd - 2 * (side + gap);
+  const colM = mixColor(state.morph), ink = css('--ink');
+  const gap = 6, mid0 = gap, midW = Wd - 2 * gap;   // only the wave heard now (2026-11-10): A and B show when a side is focused or the morph is at an end
   const t = (now || performance.now()) / 1000;
-  // side panels: each side's own wave, plain
-  const small = (wave, x0, col, label, active) => {
-    const m = H / 2, amp = H * 0.32 / wave.pk;
-    g.globalAlpha = active ? 1 : 0.55; g.strokeStyle = col; g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath();
-    for (let i = 0; i <= SC.n; i++) { const x = x0 + i / SC.n * side, y = m - wave.w[i % SC.n] * amp; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-    g.stroke(); g.globalAlpha = 1;
-    g.fillStyle = col; g.font = '600 12px ' + css('--font-ui'); g.textAlign = 'center'; g.fillText(label, x0 + side / 2, H - 6);
-  };
-  small(scopeWave(v, 'A'), 0, colA, 'A', focus !== 'B');
-  small(scopeWave(v, 'B'), Wd - side, colB, 'B', focus !== 'A');
   // the wave heard now, with the effects' marks
   const { w, pk } = scopeWave(v);
   const n = SC.n, m = H / 2, amp = (H / 2 - 10) / pk;

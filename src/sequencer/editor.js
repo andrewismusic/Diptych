@@ -195,3 +195,26 @@ const refreshSeqKnobs = () => SEQ_KEYS.forEach(k => updateKnob(IX[k]));
 const copySeq = (from, to) => { pushUndo(); copySeqTo(from, to); refreshSeqKnobs(); if (ready) sendState(); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); };
 $('seqAB').addEventListener('click', () => copySeq('A', 'B'));
 $('seqBA').addEventListener('click', () => copySeq('B', 'A'));
+
+/* Pattern Set A / Set B (2026-11-10): the sequence heard at the Pattern knob's current value becomes sequence A (or B):
+   a 1/16 pattern as long as the loop (at most 32 sixteenths), each note at its sixteenth, with its length and velocity.
+   Speed and Octave are already in the notes, so that side's Speed goes to 1x, Octave to 0 and Density to 100%, and the Pattern
+   knob's handle for that side goes to its end (All A or All B), so that end plays exactly the captured sequence. */
+function capturePattern(side) {
+  pushUndo();
+  const s = buildSeq(), mm = resolveNorm(IX.pattern), n16 = Math.max(1, Math.min(MAXSTEPS, Math.round(s.loop / 12)));
+  const q = cloneSeq(state.seq[side]); q.rate = R16; q.n16 = n16; q.rot = 0;
+  q.steps = Array.from({ length: n16 }, () => ({ on: false, note: 48 + q.root, len: 1, vel: 0.75, dur: 12 }));
+  s.events.forEach(e => {
+    const k = Math.round(e.tick / 12); if (k >= n16) return;
+    const r = MorphEngine.seqEval(e, mm, state.walk, s.scale); if (!r) return;
+    q.steps[k] = { on: true, note: r.note, len: Math.max(0.25, Math.round(r.len / 12 * 4) / 4), vel: r.vel, dur: 12 };
+  });
+  state.seq[side] = q;
+  state[side][IX.sqspeed] = norm(DEFS[IX.sqspeed], 1); state[side][IX.sqoct] = norm(DEFS[IX.sqoct], 0); state[side][IX.sqdens] = 1;
+  state[side][IX.pattern] = side === 'A' ? 0 : 1;   // that end of the Pattern knob plays the captured sequence
+  if (ready) sendState();
+  refreshSeqKnobs(); updateKnob(IX.pattern); if (sq.classList.contains('open')) syncSeqControls(); seqChanged();
+}
+$('patA').addEventListener('click', () => capturePattern('A'));
+$('patB').addEventListener('click', () => capturePattern('B'));

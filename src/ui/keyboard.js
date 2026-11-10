@@ -65,10 +65,9 @@ const KEYMAP = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k
 const heldKeys = new Map();
 window.addEventListener('keydown', e => {
   if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
-  if (panel === 'seq') {
-    if (e.key === ' ' && !e.target.closest('button,select,input')) { e.preventDefault(); setPlaying(!seqPlaying); }
-    return;
-  }
+  // space plays and stops the sequencer; the letter keys always play notes (2026-11-10: the keyboard is a drawer now)
+  if (e.key === ' ' && !e.target.closest('button,select,input,[role="slider"]')) { e.preventDefault(); setPlaying(!seqPlaying); return; }
+  if (e.target.closest('input,select,textarea')) return;
   const key = e.key.toLowerCase();
   if (key === 'z') { shiftOct(-1); return; }
   if (key === 'x') { shiftOct(1); return; }

@@ -91,5 +91,4 @@ velCv.addEventListener('pointermove', e => { if (velDrag === e.pointerId) velAt(
 $('bpmVal').textContent = state.bpm;
 ['play', 'hplay'].forEach(id => { $(id).innerHTML = ICON_PLAY; $(id).setAttribute('aria-label', 'Play'); });
 updateWalkUI();
-setPanel('seq', true);   // the sequencer is the starting view
 

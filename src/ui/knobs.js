@@ -79,7 +79,7 @@ const switchRow = (d, i) => `<div class="swrow adv"><span>${d.label}</span>${['A
 DEFS.forEach((d, i) => {
   if (d.opts) { const g = sections[d.group] || (sections[d.group] = makeSection(d)); if (d.key !== 'sloop') g.querySelector('.gbody').insertAdjacentHTML('beforeend', switchRow(d, i)); return; }
   let box;
-  if (d.group === 'Sequencer') box = document.getElementById('seqKnob');
+  if (d.group === 'Sequencer') { box = document.createElement('div'); box.id = 'patKnob'; document.body.appendChild(box); }   // moved into the Sequence card below
   else {
     const g = sections[d.group] || (sections[d.group] = makeSection(d));
     box = g.querySelector(d.sub ? `.knobs[data-sub="${d.sub}"]` : '.knobs:not([data-sub])');
@@ -106,7 +106,7 @@ function updateKnob(i) {
     document.querySelectorAll(`[data-sw="${i}"]`).forEach(b => { const v = Math.round(state[b.dataset.side][i]); b.setAttribute('aria-pressed', b.dataset.v === undefined ? v === 1 : +b.dataset.v === v); });
     return;
   }
-  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = d.seq ? a : resolveNorm(i);   // a side's own setting (seq) doesn't morph
+  const d = DEFS[i], a = state.A[i], b = state.B[i], c = state.C[i], r = d.seq || d.pair ? a : resolveNorm(i);   // a side's own setting (seq) doesn't morph
   setArc($('arcA' + i), a, r);
   setArc($('arcB' + i), r, b);
   const [ax, ay] = pt(a), [bx, by] = pt(b), [nx, ny] = pt(r);
@@ -118,11 +118,11 @@ function updateKnob(i) {
   // Linked (or single-side) parameters don't morph: one handle, one value, no curve
   const linked = isLinked(i), kn = $('k' + i), F = focusSide(i);
   kn.classList.toggle('kl-A', d.single === 'A'); kn.classList.toggle('kl-B', d.single === 'B'); kn.classList.toggle('kl-L', linked && !d.single);
-  $('now' + i).setAttribute('r', linked || d.seq ? 0 : 3.4);
+  $('now' + i).setAttribute('r', linked || d.seq || d.pair ? 0 : 3.4);
   $('hB' + i).style.display = linked ? 'none' : '';
   $('hB' + i).setAttribute('tabindex', linked ? -1 : 0);
-  $('c' + i).setAttribute('tabindex', linked || d.seq ? -1 : 0);
-  $('gd' + i).setAttribute('r', linked || d.seq ? 0 : 2);
+  $('c' + i).setAttribute('tabindex', linked || d.seq || d.pair ? -1 : 0);
+  $('gd' + i).setAttribute('r', linked || d.seq || d.pair ? 0 : 2);
   if (linked) { setArc($('arcA' + i), 0, a); setArc($('arcB' + i), a, a); }
   // side focus: only that side's value, one handle in its color, no curve
   kn.classList.toggle('kf-A', F === 'A'); kn.classList.toggle('kf-B', F === 'B');
@@ -158,8 +158,8 @@ function updateKnob(i) {
     for (let k = 0; k <= 20; k++) { const t = k / 20; path += (k ? 'L' : 'M') + (x0 + t * S).toFixed(2) + ' ' + (y0 - MorphEngine.bend(t, c) * S).toFixed(2); }
     gy = MorphEngine.bend(m, c);
   }
-  $('gl' + i).setAttribute('d', linked || d.seq || F ? '' : path);
-  { const x = F ? state[F][i] : linked || d.seq ? a : r, an = ang(x);
+  $('gl' + i).setAttribute('d', linked || d.seq || d.pair || F ? '' : path);
+  { const x = F ? state[F][i] : linked || d.seq || d.pair ? a : r, an = ang(x);
     $('ptr' + i).setAttribute('x1', (CX + 13.5 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y1', (CX + 13.5 * Math.sin(an)).toFixed(2));
     $('ptr' + i).setAttribute('x2', (CX + 19 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y2', (CX + 19 * Math.sin(an)).toFixed(2)); }
   $('gd' + i).setAttribute('cx', (x0 + m * S).toFixed(2)); $('gd' + i).setAttribute('cy', (y0 - gy * S).toFixed(2));
@@ -176,7 +176,7 @@ function updateKnob(i) {
     $('va' + i).classList.toggle('muted', !d.single);
   } else {
     v.className = 'kval' + (ed === 'A' ? ' a' : ed === 'B' ? ' b' : '');
-    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : d.seq ? '' : valText(i, r);
+    v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : d.seq || d.pair ? '\u00a0' : valText(i, r);
     $('va' + i).textContent = valText(i, a); $('va' + i).classList.remove('muted');
     $('vb' + i).textContent = valText(i, b);
   }
@@ -200,6 +200,11 @@ function setParam(side, i, x) {
   }
   if (state[side][i] === x) return;
   state[side][i] = x;
+  if (DEFS[i].pair) {   // Position: the handle is that side's table position
+    const p = oi(0, side === 'A' ? 'posA' : 'posB'); state.A[p] = state.B[p] = x;
+    if (ready) { send({ type:'param', side:'A', i:p, v:x }); send({ type:'param', side:'B', i:p, v:x }); }
+    updateKnob(p);
+  }
   updateKnob(i);
   if (ready) send({ type:'param', side, i, v:x });
   if (DEFS[i].seq) seqChanged();
@@ -229,7 +234,7 @@ function bindKnob(i) {
     const x = (e.clientX - rc.left) / rc.width * 80 - CX, y = (e.clientY - rc.top) / rc.height * 80 - CX;
     if (focusSide(i)) mode = focusSide(i);   // side focus: the whole knob drags that side's value
     else if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
-    else if (Math.hypot(x, y) < 22 && !d.seq) mode = 'C';
+    else if (Math.hypot(x, y) < 22 && !d.seq && !d.pair) mode = 'C';
     else {
       let rel = (Math.atan2(y, x) * 180 / Math.PI - 135 + 720) % 360;
       const xp = rel <= 270 ? rel / 270 : (rel > 315 ? 0 : 1);
@@ -292,6 +297,8 @@ function bindKnob(i) {
   });
 }
 DEFS.forEach((d, i) => { if (!d.opts) bindKnob(i); });
+// Pattern sits first in the Sequence card (2026-11-10)
+{ const pk = $('patKnob'); sections.Sequence.querySelector('.knobs').prepend(...pk.children); pk.remove(); }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-sw]'); if (!b) return;
   const i = +b.dataset.sw, k = b.dataset.side;
@@ -299,3 +306,7 @@ document.addEventListener('click', e => {
 });
 
 
+
+// Position follows the two table positions after anything that sets them directly (randomize, undo, loading)
+function syncPair() { const w = IX.wpos; if (w === undefined) return; state.A[w] = state.A[oi(0, 'posA')]; state.B[w] = state.A[oi(0, 'posB')]; }
+syncPair();

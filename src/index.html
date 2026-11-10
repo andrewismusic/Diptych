@@ -31,15 +31,21 @@
         <span class="key bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag up or down, or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120"><b id="bpmVal">120</b><small>BPM</small></span>
         <button type="button" id="undo" class="key icon" aria-label="Undo" disabled></button>
         <button type="button" id="redo" class="key icon" aria-label="Redo" disabled></button>
+        <button type="button" id="setBtn" class="key icon" aria-label="Settings"></button>
       </span>
       <span class="seg view" role="group" aria-label="View"><button type="button" class="key" id="viewBasic">Basic</button><button type="button" class="key" id="viewFull">Full</button></span>
     </div>
     <div class="dicerow" role="group" aria-label="Randomize">
-      <div class="dice" id="diceSound" data-what="sound" role="slider" tabindex="0" aria-label="Randomize the sound: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sound <i class="dtarget"></i></span></div>
-      <div class="dice" id="diceSeq" data-what="seq" role="slider" tabindex="0" aria-label="Randomize the sequence: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sequence <i class="dtarget"></i></span></div>
+      <div class="dgrp"><div class="dhead">Sound</div><div class="dtracks"><div class="dcol"><div class="dicetrack" data-what="sound" data-side="A" data-face="1" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, side A: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i></div></div></div><span class="dcap a">A</span></div><div class="dcol"><div class="dicetrack" data-what="sound" data-side="B" data-face="2" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, side B: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i></div></div></div><span class="dcap b">B</span></div><div class="dcol"><div class="dicetrack" data-what="sound" data-side="M" data-face="3" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, both sides: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i></div></div></div><span class="dcap">Both</span></div></div></div>
+      <div class="dgrp"><div class="dhead">Sequence</div><div class="dtracks"><div class="dcol"><div class="dicetrack" data-what="seq" data-side="A" data-face="4" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, side A: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i></div></div></div><span class="dcap a">A</span></div><div class="dcol"><div class="dicetrack" data-what="seq" data-side="B" data-face="5" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, side B: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i></div></div></div><span class="dcap b">B</span></div><div class="dcol"><div class="dicetrack" data-what="seq" data-side="M" data-face="6" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, both sides: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div><span class="dcap">Both</span></div></div></div>
     </div>
     <div class="scopebox">
-      <canvas id="scope" aria-label="Wave display: side A, the sound you hear now, and side B"></canvas>
+      <canvas id="scope" aria-label="Wave display: the sound you hear now"></canvas>
+      <div class="lanes">
+        <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
+        <span class="ln">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
+        <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
+      </div>
       <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
     </div>
   </div>
@@ -56,49 +62,43 @@
   <div class="wrap">
     <div class="morphrow">
       <button type="button" class="key letter a" data-focus="A" aria-pressed="false" aria-label="Edit side A only (tap again to morph)">A</button>
-      <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">
+      <div class="morph-slider" id="morph" role="slider" tabindex="0" aria-label="Morph between A and B" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0">
+        <canvas class="glim" id="glim" aria-hidden="true"></canvas>
+        <button type="button" class="mcap" id="mcap" tabindex="-1" aria-label="Morph view">Morph</button>
+      </div>
       <button type="button" class="key letter b" data-focus="B" aria-pressed="false" aria-label="Edit side B only (tap again to morph)">B</button>
     </div>
     <div class="kbbar">
-      <span class="seg" role="group" aria-label="Bottom panel">
-        <button type="button" class="key" id="pmKeys" aria-pressed="true">Keys</button><button type="button" class="key" id="pmSeq" aria-pressed="false">Seq</button>
-      </span>
+      <button type="button" class="key send" id="sendA" aria-label="Make what you hear now side A">&larr; Set A</button>
       <span class="spacer"></span>
-      <span class="ctl" id="kctl">
+      <button type="button" class="key" id="pmKeys" aria-pressed="false">Keys</button>
+      <span class="spacer"></span>
+      <button type="button" class="key send" id="sendB" aria-label="Make what you hear now side B">Set B &rarr;</button>
+    </div>
+    <div class="keysdrawer" id="keysPane" hidden>
+      <div class="kbbar" id="kctl">
         <button type="button" class="key" id="octDown" aria-label="Octave down">−</button>
         <span class="oct" id="octLabel">C3</span>
         <button type="button" class="key" id="octUp" aria-label="Octave up">+</button>
-        <button type="button" id="monoBtn" class="key monobtn"></button>
+        <span class="spacer"></span>
         <button type="button" class="key" id="latch" aria-pressed="false">Latch</button>
-      </span>
-      <span class="ctl" id="sctl" hidden>
-        <button type="button" id="monoBtn2" class="key monobtn"></button>
-        <button type="button" id="play" class="key playbtn" aria-label="Play"></button>
-      </span>
-    </div>
-    <div class="panes">
-      <div class="slide" id="slide">
-        <div class="pane" id="keysPane"><div class="keys" id="keys"></div></div>
-        <div class="pane seqpane" id="seqPane" inert>
-          <div class="knobs" id="seqKnob"></div>
-          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></div>
-          <div class="seqright">
-            <div class="lanes">
-              <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
-              <span class="ln">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
-              <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
-            </div>
-            <div class="seqctl">
-              <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A→B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B→A</button>
-              <button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
-            </div>
-          </div>
-        </div>
       </div>
+      <div class="keys" id="keys"></div>
     </div>
   </div>
 </div>
+<button type="button" id="play" hidden></button>
+</div>
 </div><!-- #app -->
+
+<div class="sheet" id="settings" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
+  <div class="sheetcard">
+    <div class="edhead"><h2 id="setTitle">Settings</h2><button type="button" class="key" id="setDone">Done</button></div>
+    <div class="setrow"><span class="lbl">Theme</span><span class="seg" role="group" aria-label="Theme"><button type="button" class="key" data-theme-set="auto">Auto</button><button type="button" class="key" data-theme-set="light">Light</button><button type="button" class="key" data-theme-set="dark">Dark</button></span></div>
+    <div class="setrow"><span class="lbl">Colours</span><div class="schemes" id="schemes" role="group" aria-label="Colour scheme"></div></div>
+    <div class="setrow"><span class="lbl">Keys</span><span class="seg" role="group" aria-label="Voices"><button type="button" class="key" id="polyBtn">Poly</button><button type="button" class="key" id="monoBtn">Mono</button></span></div>
+  </div>
+</div>
 
 <div class="ed" id="ed" role="dialog" aria-modal="false" aria-labelledby="edTitle">
   <div class="edwrap">
@@ -215,6 +215,7 @@
 // @include ui/sampler.js
 // @include ui/scope.js
 // @include ui/dice.js
+// @include ui/settings.js
 // @include ui/overlay.js
 // @include ui/layout.js
 // @include ui/keyboard.js

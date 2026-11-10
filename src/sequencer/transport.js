@@ -1,20 +1,26 @@
-/* ---------- bottom pane: keys / sequencer ---------- */
-let panel = 'keys', seqPlaying = false, seqPos = null, seqLoop = 1;
+/* ---------- bottom panel and the Sequence card (2026-11-10) ----------
+   The bottom panel always holds the morph row and Set A / Keys / Set B; Keys opens the keyboard drawer under them.
+   The sequencer's controls live in the Sequence card (Pattern with its own Set A / Set B, Walk / Swap, copies, Edit), and
+   its lanes in the visual-feedback panel under the wave. panel is 'keys' while the drawer is open. */
+let panel = 'seq', seqPlaying = false, seqPos = null, seqLoop = 1;
+sections.Sequence.querySelector('.gbody').insertAdjacentHTML('beforeend', `<div class="seqrow">
+  <span class="seg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></span>
+  <span class="spacer"></span>
+  <button type="button" class="key send" id="patA" aria-label="Make the pattern you hear now sequence A">&larr; Set A</button><button type="button" class="key send" id="patB" aria-label="Make the pattern you hear now sequence B">Set B &rarr;</button>
+</div><div class="seqrow">
+  <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A&rarr;B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B&rarr;A</button>
+  <span class="spacer"></span>
+  <button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
+</div>`);
 function setPanel(p, quiet) {
   if (p === panel) return;
   panel = p;
-  $('pmKeys').setAttribute('aria-pressed', p === 'keys'); $('pmSeq').setAttribute('aria-pressed', p === 'seq');
-  $('kctl').hidden = p !== 'keys'; $('sctl').hidden = p !== 'seq';
-  $('slide').classList.toggle('seq', p === 'seq');
-  $('keysPane').inert = p !== 'keys'; $('seqPane').inert = p !== 'seq';
-  if (p === 'seq') {   // leave normal playing cleanly
-    latch = false; $('latch').setAttribute('aria-pressed', 'false'); latched.clear();
-    sounding.clear(); markKeys(); if (!quiet) post({ type:'panic' });
-    drawLanes();
-  } else setPlaying(false);
+  $('pmKeys').setAttribute('aria-pressed', p === 'keys');
+  $('keysPane').hidden = p !== 'keys';
+  if (p !== 'keys') { latch = false; $('latch').setAttribute('aria-pressed', 'false'); latched.forEach(n => off(n)); latched.clear(); }
+  if (typeof applyLayout === 'function') applyLayout();
 }
-$('pmKeys').addEventListener('click', () => setPanel('keys'));
-$('pmSeq').addEventListener('click', () => { if (panel !== 'seq') { setPanel('seq'); setPlaying(true); } });
+$('pmKeys').addEventListener('click', () => setPanel(panel === 'keys' ? 'seq' : 'keys'));
 const ICON_PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>';
 const ICON_STOP = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>';
 function setPlaying(on) {
@@ -25,7 +31,7 @@ function setPlaying(on) {
 }
 $('play').addEventListener('click', () => setPlaying(!seqPlaying));
 // the header's play button plays the sequencer from anywhere (and shows its pane)
-$('hplay').addEventListener('click', () => { if (seqPlaying) { setPlaying(false); return; } if (panel !== 'seq') setPanel('seq', true); setPlaying(true); });
+$('hplay').addEventListener('click', () => setPlaying(!seqPlaying));
 function setBpm(v) { state.bpm = Math.max(50, Math.min(200, Math.round(v))); $('bpmVal').textContent = state.bpm; $('bpmBox').setAttribute('aria-valuenow', state.bpm); if (ready) send({ type:'bpm', v: state.bpm }); save(); }
 function holdRepeat(el, fn) {
   let t1 = null, t2 = null;
@@ -44,16 +50,16 @@ function onReport(d) {
   if (d.type === 'pos' && seqPlaying) { seqPos = d.pos; seqLoop = d.loop; drawLanesSoon(); }
   else if (d.type === 'ott') onOtt(d);
 }
-// mono / poly for playing the keys (the sequencer is always one note at a time)
-function updateMonoUI() { ['monoBtn', 'monoBtn2'].forEach(id => { $(id).textContent = state.mono ? 'Mono' : 'Poly'; $(id).setAttribute('aria-label', `Voice mode: ${state.mono ? 'mono, one note at a time' : 'poly'}. Tap to switch`); }); }
-['monoBtn', 'monoBtn2'].forEach(id => $(id).addEventListener('click', () => { state.mono = !state.mono; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); }));
+// mono / poly for playing the keys (the sequencer is always one note at a time), in Settings since 2026-11-10
+function updateMonoUI() { $('monoBtn').setAttribute('aria-pressed', state.mono); $('polyBtn').setAttribute('aria-pressed', !state.mono); }
+const setMono = m => { state.mono = m; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); };
+$('monoBtn').addEventListener('click', () => setMono(true)); $('polyBtn').addEventListener('click', () => setMono(false));
 updateMonoUI();
 
 /* ---------- mini lanes: A, what plays now, B ---------- */
 let lanesQueued = false;
 function drawLanesSoon() { if (lanesQueued) return; lanesQueued = true; requestAnimationFrame(() => { lanesQueued = false; drawLanes(); }); }
 function drawLanes() {
-  if (panel !== 'seq' && !sq.classList.contains('open')) return;
   const s = buildSeq(), mm = resolveNorm(IX.pattern), walk = state.walk;
   let lo = 127, hi = 0;
   s.events.forEach(e => { [e.a, e.b].forEach(x => { if (x) { lo = Math.min(lo, x.p); hi = Math.max(hi, x.p); } }); });

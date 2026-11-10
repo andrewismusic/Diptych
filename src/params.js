@@ -89,6 +89,10 @@ const FX_ENG = {
 const OSC_LEVEL = [0.8, 0, 0, 0, 0];
 const DEFS = [];
 MACROS.forEach(p => DEFS.push({ ...p, id: p.key, group:'Sound' }));
+/* Position (2026-11-10): the Sound card's wavetable position. One knob whose A handle is where table A is read
+   (o1.posA) and whose B handle is where table B is read (o1.posB); the UI keeps them in step (syncPair in knobs.js).
+   pair: each handle is its side's own setting, with no curve (Wave does the morphing). The engine reads posA/posB. */
+DEFS.push({ ...P_('wpos', 'Position', 0, 1, 'lin', 0.667, 0.3), id:'wpos', group:'Sound', pair: true });
 OSC_KIND.forEach((eng, s) => {
   const group = OSC_NAMES[s], add = p => DEFS.push({ ...p, id: `o${s + 1}.${p.key}`, group, kind:'osc', slot:s, eng });
   OSC_ENG[eng].forEach(add);
@@ -111,7 +115,7 @@ const time = v => (v < 0.9995 ? Math.round(v * 1000) + ' ms' : v.toFixed(2) + ' 
 const pct = v => Math.round(v * 100) + '%';
 const FM_RATIOS = [0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];   // OscFM.RATIOS
 const FMT = {
-  menv: pct, mbright: pct, mfx: pct, mwet: pct, harm: pct,
+  wpos: pct, menv: pct, mbright: pct, mfx: pct, mwet: pct, harm: pct,
   sqdens: pct, sqspeed: v => ['½×', '1×', '2×'][v], sqoct: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' oct',
   fmx: v => (v < 0.005 ? 'All A' : v > 0.995 ? 'All B' : Math.round(v * 100) + '% B'),
   fpitch: v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + ' st',

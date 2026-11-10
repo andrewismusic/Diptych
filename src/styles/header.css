@@ -14,44 +14,54 @@
 .bpm.drag,.bpm:focus-visible{box-shadow:0 1px 0 var(--shadow),0 0 0 2px var(--hold);transform:translateY(3px);outline:none}
 .view{display:none}
 body.dev .view{display:inline-flex}
-/* dice sliders (Orbital's): touch the track and let go; further right, bigger change. The raised die turns as it travels
-   over a yellow fill, and springs home with an overshoot. */
-.dicerow{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 12px}
-.dice{position:relative;height:36px;border-radius:9px;background:var(--well);border:1.5px solid var(--edge);
-  box-shadow:inset 0 2px 0 rgba(0,0,0,.12);touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
-.dice .dfill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--hold);opacity:.85;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
-.dice .dtile{position:absolute;left:1px;top:0;width:31px;height:31px;border-radius:7.5px;background:linear-gradient(180deg,#FFF,#DCE2EB);color:#0E1320;
-  border:1.5px solid #A9B3C3;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(16,21,33,.08);filter:drop-shadow(0 3px 0 var(--shadow));
-  display:flex;align-items:center;justify-content:center;z-index:2;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
-.dice .dtile svg{display:block;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
-.dice.drag .dtile,.dice.drag .dtile svg,.dice.drag .dfill{transition:none}
-.dice.drag .dtile{filter:drop-shadow(0 1px 0 var(--shadow));margin-top:2px}
-.dice .dlab{position:absolute;right:9px;top:0;bottom:0;display:flex;align-items:center;gap:6px;z-index:1;pointer-events:none;font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.dice .dlab i{font-style:normal;font-family:var(--font-mono);font-weight:700;letter-spacing:0;color:var(--dc,var(--ink))}
-.dice.drag .dlab{color:var(--on-ink)}
-.dice:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
-.dice.roll .dtile{animation:rolled .45s ease-out}
-@keyframes rolled{0%{rotate:0deg}30%{rotate:-14deg;scale:1.08}60%{rotate:8deg}100%{rotate:0deg;scale:1}}
-@media (prefers-reduced-motion:reduce){ .dice .dtile,.dice .dtile svg,.dice .dfill{transition:none} .dice.roll .dtile{animation:none} }
-body[data-sidefocus="A"] .dice{--dc:var(--a)} body[data-sidefocus="B"] .dice{--dc:var(--b)}
-/* the wave display: A on the left, B on the right, what you hear in the middle */
-.scopebox{position:relative;background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 5px 0 var(--shadow);padding:8px 10px;margin-bottom:12px}
-#scope{display:block;width:100%;height:120px}
-#audioBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:.78rem;white-space:nowrap;z-index:5}
+/* dice sliders (Orbital's, standing up): six tracks in one row under two headings. Touch and let go: higher, bigger
+   change. The raised die rolls as it travels over a yellow fill and springs home with an overshoot. */
+.dicerow{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:2px 0 12px}
+.dhead{font-family:var(--font-head);font-weight:600;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;text-align:center;margin:0 0 6px;color:var(--ink)}
+.dtracks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;justify-items:center}
+.dcol{display:flex;flex-direction:column;align-items:center;gap:5px}
+.dicetrack{--dh:34px;position:relative;width:var(--dh);height:84px;border-radius:9px;overflow:hidden;cursor:pointer;background:var(--well);border:1.5px solid var(--edge);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.12);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.dicetrack .fill{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--hold);opacity:.85;transition:height .5s cubic-bezier(.3,.9,.3,1.1)}
+.die{position:absolute;left:0;bottom:0;width:calc(var(--dh) - 3px);height:calc(var(--dh) - 3px);z-index:2;filter:drop-shadow(0 3px 0 var(--shadow));
+  transition:bottom .5s cubic-bezier(.3,.9,.3,1.1),transform .07s,filter .07s}
+.die .face{width:100%;height:100%;border-radius:7.5px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--dh)*.19);
+  background:linear-gradient(180deg,#FFF,#DCE2EB);border:1.5px solid #A9B3C3;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(16,21,33,.08);
+  transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
+.die .face i{width:4.5px;height:4.5px;border-radius:50%;background:#0E1320;place-self:center;box-shadow:inset 0 1px 0 rgba(0,0,0,.5)}
+/* pips, faces 1 to 6 */
+[data-face="1"] .face i{grid-area:2/2}
+[data-face="2"] .face i:nth-child(1){grid-area:1/1} [data-face="2"] .face i:nth-child(2){grid-area:3/3}
+[data-face="3"] .face i:nth-child(1){grid-area:1/1} [data-face="3"] .face i:nth-child(2){grid-area:2/2} [data-face="3"] .face i:nth-child(3){grid-area:3/3}
+[data-face="4"] .face i:nth-child(1){grid-area:1/1} [data-face="4"] .face i:nth-child(2){grid-area:1/3} [data-face="4"] .face i:nth-child(3){grid-area:3/1} [data-face="4"] .face i:nth-child(4){grid-area:3/3}
+[data-face="5"] .face i:nth-child(1){grid-area:1/1} [data-face="5"] .face i:nth-child(2){grid-area:1/3} [data-face="5"] .face i:nth-child(3){grid-area:2/2} [data-face="5"] .face i:nth-child(4){grid-area:3/1} [data-face="5"] .face i:nth-child(5){grid-area:3/3}
+[data-face="6"] .face i:nth-child(1){grid-area:1/1} [data-face="6"] .face i:nth-child(2){grid-area:1/3} [data-face="6"] .face i:nth-child(3){grid-area:2/1} [data-face="6"] .face i:nth-child(4){grid-area:2/3} [data-face="6"] .face i:nth-child(5){grid-area:3/1} [data-face="6"] .face i:nth-child(6){grid-area:3/3}
+.dicetrack.dragging .die,.dicetrack.dragging .fill{transition:none}
+.dicetrack.dragging .die{transform:translateY(2px);filter:drop-shadow(0 1px 0 var(--shadow))}
+.dicetrack.dragging .die .face{transition:none}
+.dicetrack:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+.die.rolled .face{animation:rolled .35s ease-out}
+@keyframes rolled{0%{rotate:0deg}30%{rotate:-8deg;scale:1.06}60%{rotate:6deg}100%{rotate:0deg;scale:1}}
+@media (prefers-reduced-motion:reduce){ .die,.die .face,.dicetrack .fill{transition:none} .die.rolled .face{animation:none} }
+.dcap{font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.dcap.a{color:var(--a)} .dcap.b{color:var(--b)}
+/* visual feedback: the wave heard now, and the three sequence lanes under it */
+.scopebox{position:relative;background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 5px 0 var(--shadow);padding:8px 10px 10px;margin-bottom:12px}
+#scope{display:block;width:100%;height:110px}
+.scopebox .lanes{margin-top:6px}
+#audioBtn{position:absolute;left:50%;top:60px;transform:translate(-50%,-50%);font-size:.78rem;white-space:nowrap;z-index:5}
 #audioBtn[hidden]{display:none}
-#audioBtn:active{transform:translate(-50%,calc(-50% + 2px))}
-/* morph slider; the A and B keys at its ends focus one side (tap again to morph) */
-.morphrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:10px 0 2px}
-.letter{font-family:var(--font-head);font-size:1.15rem;font-weight:700;line-height:1;width:44px;height:40px;padding:0;letter-spacing:0}
+/* morph slider: as tall as the A and B keys beside it, with a cap that reads MORPH; the track is the colour heard now,
+   glimmering (canvas #glim, drawn in ui/morph.js; it reaches above the track so glints can rise off it) */
+.morphrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:12px 0 4px}
+.letter{font-family:var(--font-head);font-size:1.15rem;font-weight:700;line-height:1;width:48px;height:44px;padding:0;letter-spacing:0}
 .letter.a{color:var(--a)} .letter.b{color:var(--b)}
-.letter.a[aria-pressed="true"]{background:var(--a);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--a)}
-.letter.b[aria-pressed="true"]{background:var(--b);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--b)}
-.morph-slider{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:0;cursor:pointer}
-.morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px;border-radius:8px}
-.morph-slider::-webkit-slider-runnable-track{height:12px;border-radius:6px;border:1.5px solid var(--edge);
-  background:linear-gradient(90deg,var(--a),var(--b));background:linear-gradient(to right in oklch,var(--a),var(--b))}
-.morph-slider::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;border-radius:10px;
-  background:radial-gradient(circle,var(--mc) 0 6px,transparent 6.5px),linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
-.morph-slider::-moz-range-track{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--a),var(--b))}
-.morph-slider::-moz-range-thumb{width:30px;height:30px;border-radius:10px;background:radial-gradient(circle,var(--mc) 0 6px,var(--cap-hi) 6.5px);border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
-.morph-slider:disabled{opacity:.3;cursor:default}
+.letter.a[aria-pressed="true"]{background:var(--a);color:#fff}
+.letter.b[aria-pressed="true"]{background:var(--b);color:#fff}
+.morph-slider{position:relative;height:44px;border-radius:10px;border:1.5px solid var(--edge);touch-action:none;cursor:pointer;box-shadow:inset 0 2px 0 rgba(0,0,0,.18);margin-bottom:4px}
+.morph-slider .glim{position:absolute;left:0;right:0;bottom:0;height:calc(100% + 26px);width:100%;pointer-events:none;border-radius:10px}
+.morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+.mcap{position:absolute;top:1px;bottom:1px;left:0;width:78px;min-height:0;padding:0;margin:0;font-family:var(--font-head);font-size:.7rem;letter-spacing:.14em;z-index:2}
+.morph-slider.drag .mcap{cursor:grabbing}
+.morph-slider.rest .glim{opacity:.45}
+.morph-slider.rest .mcap{color:var(--muted)}

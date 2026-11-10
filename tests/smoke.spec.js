@@ -54,10 +54,12 @@ test('computer keyboard plays notes', async ({ page }) => {
 });
 
 // drag a dice slider from its start to a share of its width and let go
+// the dice tracks stand up (2026-11-10): what ('sound' or 'seq') and side ('A', 'B' or 'M' for both)
+const dice = (what, side) => `.dicetrack[data-what="${what}"][data-side="${side}"]`;
 async function dragDice(page, sel, share) {
-  const box = await page.locator(sel).boundingBox();
-  await page.mouse.move(box.x + 16, box.y + box.height / 2); await page.mouse.down();
-  await page.mouse.move(box.x + 16 + (box.width - 32) * share, box.y + box.height / 2, { steps: 4 }); await page.mouse.up();
+  const box = await page.locator(sel).boundingBox(), x = box.x + box.width / 2, bot = box.y + box.height - 16;
+  await page.mouse.move(x, bot); await page.mouse.down();
+  await page.mouse.move(x, bot - (box.height - 32) * share, { steps: 4 }); await page.mouse.up();
 }
 test('dice sliders, side focus, undo and redo, and the section dice work without errors', async ({ page }) => {
   const errors = [];
@@ -65,7 +67,7 @@ test('dice sliders, side focus, undo and redo, and the section dice work without
   await openSynth(page);
   const snap = () => page.evaluate(() => JSON.stringify({ A: state.A, B: state.B, smp: state.smp, t: tables.map(t => [t.A.name, t.B.name]), seq: state.seq }));
   const s0 = await snap();
-  await dragDice(page, '#diceSound', 1); await dragDice(page, '#diceSeq', 1);
+  await dragDice(page, dice('sound', 'M'), 1); await dragDice(page, dice('seq', 'M'), 1);
   for (const g of ['Wavetable 1', 'Filter', 'OTT']) {   // in the Basic view the dice sit in each section's overlay
     await page.click(`section[data-group="${g}"] .gname`);
     await page.click(`[data-dice="${g}"]:not([data-side])`);
@@ -80,13 +82,13 @@ test('dice sliders, side focus, undo and redo, and the section dice work without
   expect(await snap()).toEqual(before);
   await page.click('#redo'); await page.click('#undo');
   expect(await snap()).toEqual(before);
-  // side focus: the dice change only the focused side; the morph comes back exactly as it was
+  // side focus, and the A dice change only side A; the morph comes back exactly as it was
   await page.evaluate(() => { state.morph = 0.37; updateMorphUI(); });
   await page.click('[data-focus="A"]');
   expect(await page.evaluate(() => [state.morph, $('morph').disabled])).toEqual([0, true]);
   const sideB = () => page.evaluate(() => state.B.filter((_, i) => DEFS[i].single !== 'A'));   // A-only parameters are stored on both sides
   const b0 = await sideB();
-  await dragDice(page, '#diceSound', 0.6);
+  await dragDice(page, dice('sound', 'A'), 0.6);
   expect(await sideB()).toEqual(b0);
   await page.click('[data-focus="A"]');
   expect(await page.evaluate(() => [state.morph, $('morph').disabled])).toEqual([0.37, false]);
@@ -156,23 +158,25 @@ test.describe('phone', () => {
     expect(await page.evaluate(() => [$('cvA1').parentNode.classList.contains('mute'), $('cvB1').parentNode.classList.contains('mute')])).toEqual([true, false]);
   });
 
-  test('the dice sliders sit at the top and fit; a short drag changes less than a long one', async ({ page }) => {
+  test('six dice sit at the top in one row and fit; a short roll changes less than a tall one', async ({ page }) => {
     await openSynth(page, { dev: false });
-    const m = await page.evaluate(() => { const r = [...document.querySelectorAll('.dice')].map(d => d.getBoundingClientRect()); return { right: Math.max(...r.map(x => x.right)), vw: innerWidth, top: Math.max(...r.map(x => x.top)) }; });
+    const m = await page.evaluate(() => { const r = [...document.querySelectorAll('.dicetrack')].map(d => d.getBoundingClientRect());
+      return { n: r.length, right: Math.max(...r.map(x => x.right)), vw: innerWidth, rows: new Set(r.map(x => Math.round(x.top))).size, top: Math.max(...r.map(x => x.top)),
+        faces: [...document.querySelectorAll('.dicetrack')].map(d => d.querySelectorAll('.face i').length), caps: [...document.querySelectorAll('.dcap')].map(c => c.textContent) }; });
+    expect(m).toMatchObject({ n: 6, rows: 1, faces: [1, 2, 3, 4, 5, 6], caps: ['A', 'B', 'Both', 'A', 'B', 'Both'] });
     expect(m.right).toBeLessThanOrEqual(m.vw); expect(m.top).toBeLessThan(150);
     const moved = () => page.evaluate(() => { const u = undoStack[undoStack.length - 1]; return state.A.reduce((t, x, i) => t + Math.abs(x - u.A[i]) + Math.abs(state.B[i] - u.B[i]), 0); });
     let small = 0, big = 0;
     for (let k = 0; k < 6; k++) {
-      const b1 = await page.locator('#diceSound').boundingBox();
-      await page.touchscreen.tap(b1.x + b1.width * 0.2, b1.y + 18);   // a tap near the start: a nudge (the die sits under the finger)
+      const b1 = await page.locator('.dicetrack[data-what="sound"][data-side="M"]').boundingBox();
+      await page.touchscreen.tap(b1.x + b1.width / 2, b1.y + b1.height * 0.75);   // low on the track: a nudge
       small += await moved();
-      await page.touchscreen.tap(b1.x + b1.width - 18, b1.y + 18);   // at the end: a whole new roll
+      await page.touchscreen.tap(b1.x + b1.width / 2, b1.y + 10);                 // at the top: a whole new roll
       big += await moved();
     }
     expect(small).toBeLessThan(big);
     await expect(page.locator('#undo')).toBeEnabled();
-    // copy a sequence to the other side
-    await page.locator('#pmSeq').tap();
+    // copy a sequence to the other side (in the Sequence card)
     await page.locator('#seqAB').tap();
     expect(await page.evaluate(() => JSON.stringify(state.seq.A) === JSON.stringify(state.seq.B))).toBe(true);
   });
@@ -248,6 +252,6 @@ test('oscillator On/Off is a bypass: it dims the section and is never randomized
   await openSynth(page);
   await page.click('section[data-group="Wavetable 1"] [data-osc]');
   expect(await page.evaluate(() => [state.oscOn[0], sections['Wavetable 1'].classList.contains('fxoff')])).toEqual([false, true]);
-  await dragDice(page, '#diceSound', 1);
+  await dragDice(page, dice('sound', 'M'), 1);
   expect(await page.evaluate(() => state.oscOn)).toEqual([false, true, true, true, true]);
 });
