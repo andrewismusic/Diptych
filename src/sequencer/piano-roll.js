@@ -88,8 +88,8 @@ velCv.addEventListener('pointerdown', e => { e.preventDefault(); velCv.setPointe
 velCv.addEventListener('pointermove', e => { if (velDrag === e.pointerId) velAt(e); });
 ['pointerup', 'pointercancel'].forEach(t => velCv.addEventListener(t, () => { velDrag = null; }));
 
-$('bpmVal').textContent = state.bpm; drawBpmKnob();
-$('play').innerHTML = ICON_PLAY; $('play').setAttribute('aria-label', 'Play');
+$('bpmVal').textContent = state.bpm;
+['play', 'hplay'].forEach(id => { $(id).innerHTML = ICON_PLAY; $(id).setAttribute('aria-label', 'Play'); });
 updateWalkUI();
 setPanel('seq', true);   // the sequencer is the starting view
 

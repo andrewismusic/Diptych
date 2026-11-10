@@ -1,27 +1,41 @@
 /* ---------- the player's view (body without .dev, see ui/overlay.js) ----------
-   Only the Sound card (the four macros) and the Sequence card. Larger knobs, no padlocks or links. */
+   The wave display and morph above; the Sound card (the four macros) and the Sequence card as panels like the
+   family's (Orbital's instrument card). Larger knobs, no padlocks or links. */
 body:not(.dev) main .group:not([data-group="Sound"]):not([data-group="Sequence"]){display:none}
-body:not(.dev) .view{display:none}
 body:not(.dev) .kwrap .icons{display:none}
 body:not(.dev) .group .more{display:none}
 .group[data-group="Sound"] .gname,.group[data-group="Sequence"] .gname{cursor:default}
+body:not(.dev) main .group{padding:0;margin:0 0 10px}
+body:not(.dev) main .gcard{background:var(--surface);border:1px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:12px 12px 10px}
+body:not(.dev) main .group h2{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+body:not(.dev) main .group h2::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--mc)}
 .qscale{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}
-.qscale .lbl{font-weight:600;font-size:.92rem;margin-right:2px}
+.qscale .lbl{font-weight:600;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:2px}
 .qscale select{min-height:32px}
-/* desktop: the two cards side by side, centered, with large knobs */
-.desk:not(.dev) main{justify-content:center;align-content:center;gap:24px}
-.desk:not(.dev) .group[data-group="Sound"],.desk:not(.dev) .group[data-group="Sequence"]{width:auto;flex:0 0 auto;padding:14px 22px 12px}
-.desk:not(.dev) .group h2{font-size:1.05rem;margin-bottom:8px}
-.desk:not(.dev) main .kn{width:150px}
-.desk:not(.dev) main .knob{width:124px;height:124px;margin:6px 0}
-.desk:not(.dev) main .kname{font-size:1.1rem}
-.desk:not(.dev) main .kval{font-size:1.05rem}
-.desk:not(.dev) main .kab{font-size:.9rem;max-width:150px}
-.desk:not(.dev) main .knobs{gap:8px 10px}
-.desk:not(.dev) .qscale{margin-top:14px}
-.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:150px}
-.desk:not(.dev) .lanes{grid-template-rows:repeat(3,36px)} .desk:not(.dev) .lanes canvas{height:36px}
+/* the developer view keeps one Wavetable (2026-11-10): the other oscillators are silent and hidden */
+.group[data-kind="osc"]:not([data-slot="0"]){display:none}
 /* phones: four macros across, even at 375 px */
 body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs,body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
 body:not(.dev):not(.desk) main .kn{width:auto}
-body:not(.dev) #rndLinked{display:none}   /* linked knobs belong to the developer view */
+/* desktop (plugin): designed at 1280 x 800 and scaled. Header, dice, wave display and morph on the left; the two cards on
+   the right; the bottom panel below */
+.desk:not(.dev) #app{display:grid;grid-template-columns:minmax(0,1fr) 520px;grid-template-rows:minmax(0,1fr) auto;column-gap:16px;padding:0 16px}
+.desk:not(.dev) .top{grid-column:1;grid-row:1;display:flex;flex-direction:column;min-height:0}
+.desk:not(.dev) .top .wrap{max-width:none;width:100%;margin:0;padding:0;display:flex;flex-direction:column;flex:1;min-height:0}
+.desk:not(.dev) .scopebox{flex:1;min-height:0;display:flex}
+.desk:not(.dev) #scope{height:auto;flex:1;min-height:0}
+.desk:not(.dev) main{grid-column:2;grid-row:1;max-width:none;margin:0;padding:62px 0 0;display:flex;flex-direction:column;gap:12px;align-content:stretch;overflow:hidden}
+.desk:not(.dev) main .group{margin:0}
+.desk:not(.dev) main .knobs{display:grid;grid-template-columns:repeat(4,1fr);max-width:none;gap:4px}
+.desk:not(.dev) main .kn{width:auto}
+.desk:not(.dev) main .knob{width:96px;height:96px;margin:4px 0}
+.desk:not(.dev) main .kval{font-size:.9rem}
+.desk:not(.dev) .kb{grid-column:1 / -1;grid-row:2}
+.desk:not(.dev) .kb .wrap{max-width:none;padding:0}
+.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:140px}
+.desk:not(.dev) .lanes{grid-template-rows:repeat(3,34px)} .desk:not(.dev) .lanes canvas{height:34px}
+.desk:not(.dev) .foot{display:none}
+.desk:not(.dev) #app{margin:0 auto;overflow:hidden}
+.desk:not(.dev) .kb{position:static}
+.desk:not(.dev) .kbbar{padding:6px 0}
+.desk:not(.dev) .panes{margin-bottom:12px}

@@ -5,77 +5,74 @@
    and Output in the middle; the seven effects in one row below, each as wide as two rows of its knobs need; the
    bottom panel last. Knobs are compact and A/B values sit on one line. Rows are flex lines of fixed shares. */
 body.desk{overflow:hidden;height:100vh}
-.desk #app{width:1440px;height:900px;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
-.desk .top .wrap,.desk .kb .wrap{max-width:none;padding:0 12px}
-.desk .titlebar{padding:6px 0;justify-content:flex-start}
-.desk .top .wrap{display:flex;align-items:center;gap:16px}
-.desk .morphfoot{padding:0;margin-left:auto}
-.desk .titlebar #audioBtn{order:3}
-.desk .foot{display:none}
-.desk main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
-.desk .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
-.desk .group{box-sizing:border-box}
-.desk .group[data-kind="osc"]{width:calc((100% - 4 * var(--g)) / 5)}
-.desk .group[data-group="Voice"],.desk .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
-.desk .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 5 / 12)}
-.desk .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) / 12)}
+.desk.dev #app{width:1440px;height:900px;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+.desk.dev .top .wrap,.desk.dev .kb .wrap{max-width:none;padding:0 12px}
+.desk.dev .top .wrap{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px}
+.desk.dev .titlebar{padding:6px 0}
+.desk.dev .dicerow{padding:0}
+.desk.dev .scopebox{position:fixed;left:50%;top:50%;width:0;height:0;overflow:visible;border:0;padding:0;box-shadow:none;background:none}   /* the developer view shows waves per oscillator; the audio button stays */
+.desk.dev #scope{display:none}
+.desk.dev .morphrow{padding:4px 0 0}
+.desk.dev .foot{display:none}
+.desk.dev main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
+.desk.dev .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
+.desk.dev .group{box-sizing:border-box}
+.desk.dev .group[data-kind="osc"]{width:calc((100% - 4 * var(--g)) / 5)}
+.desk.dev .group[data-group="Voice"],.desk.dev .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
+.desk.dev .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 5 / 12)}
+.desk.dev .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) / 12)}
 /* effects: shares of 23, three knobs to a row (Lo-fi and OTT four) */
-.desk .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 23)}
-.desk .group[data-group="Lo-fi"],.desk .group[data-group="OTT"]{width:calc((100% - 6 * var(--g)) * 4 / 23)}
-.desk .group[data-group="Drive"]{width:calc((100% - 6 * var(--g)) * 2.7 / 23)}   /* a short name: room for Modulation's */
-.desk .group[data-group="Modulation"]{width:calc((100% - 6 * var(--g)) * 3.3 / 23)}
-.desk .group[data-kind="fx"] .knobs{justify-content:flex-start}
-.desk .group[data-group="Output"] .sectool.da,.desk .group[data-group="Output"] .sectool.db{display:none}
-.desk .group[data-group="Output"] .knobs{flex-wrap:nowrap;justify-content:center}
-.desk .group[data-group="Output"] .kn{width:46px} .desk .group[data-group="Output"] .knob{width:34px;height:34px}
-.desk .group h2{margin:0 0 3px;font-size:.85rem}
-.desk .group h2 .lock{width:20px;height:20px}
-.desk .fxsw{min-height:20px;padding:0 8px;font-size:.72rem}
-.desk .group[data-kind="fx"]{padding-left:6px;padding-right:6px}
-.desk .group[data-kind="fx"] h2{gap:2px}
-.desk .group[data-kind="fx"] h2 .lock{width:17px;margin-left:1px}
-.desk .group[data-kind="fx"] .fxsw{margin-left:auto;padding:0 6px}
-.desk .knobs{max-width:none;gap:2px 0}
-.desk .kn{width:54px}
-.desk .knob{width:40px;height:40px;margin:1px 0}
-.desk .kname{font-size:.7rem}
-.desk .kval{font-size:.7rem;min-height:1.2em}
-.desk .kab,.desk .group[data-kind] .kab{font-size:.6rem;min-height:1.25em;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;max-width:54px}
-.desk .kwrap .icons{bottom:-6px;transform:translateX(-50%) scale(.8)}
-.desk .viz{height:38px;max-width:none;margin:1px 0 4px}
-.desk .wt{gap:5px}
-.desk .wtcard{padding:3px 4px;gap:1px}
-.desk .wtcard canvas{height:26px}
-.desk .wtlabel{font-size:.68rem;min-height:20px}
-.desk .group[data-kind="osc"] .wt{margin-bottom:3px}
-.desk .smpsel,.desk .swb{min-height:20px;font-size:.68rem}
-.desk .swb{padding:0 5px}
-.desk .swrow{margin-top:2px;gap:3px 8px;font-size:.72rem}
-.desk .swrow .seg button{min-height:20px;padding:0 6px;font-size:.7rem}
-.desk .group[data-group="Filter"] .gbody{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.desk .sub + .sub{margin-top:0}
-.desk .subh{display:none}
-.desk .group[data-group="Output"] .knobs{justify-content:center}
+.desk.dev .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 23)}
+.desk.dev .group[data-group="Lo-fi"],.desk.dev .group[data-group="OTT"]{width:calc((100% - 6 * var(--g)) * 4 / 23)}
+.desk.dev .group[data-group="Drive"]{width:calc((100% - 6 * var(--g)) * 2.7 / 23)}   /* a short name: room for Modulation's */
+.desk.dev .group[data-group="Modulation"]{width:calc((100% - 6 * var(--g)) * 3.3 / 23)}
+.desk.dev .group[data-kind="fx"] .knobs{justify-content:flex-start}
+.desk.dev .group[data-group="Output"] .sectool.da,.desk.dev .group[data-group="Output"] .sectool.db{display:none}
+.desk.dev .group[data-group="Output"] .knobs{flex-wrap:nowrap;justify-content:center}
+.desk.dev .group[data-group="Output"] .kn{width:46px} .desk.dev .group[data-group="Output"] .knob{width:34px;height:34px}
+.desk.dev .group h2{margin:0 0 3px;font-size:.85rem}
+.desk.dev .group h2 .lock{width:20px;height:20px}
+.desk.dev .fxsw{min-height:20px;padding:0 8px;font-size:.72rem}
+.desk.dev .group[data-kind="fx"]{padding-left:6px;padding-right:6px}
+.desk.dev .group[data-kind="fx"] h2{gap:2px}
+.desk.dev .group[data-kind="fx"] h2 .lock{width:17px;margin-left:1px}
+.desk.dev .group[data-kind="fx"] .fxsw{margin-left:auto;padding:0 6px}
+.desk.dev .knobs{max-width:none;gap:2px 0}
+.desk.dev .kn{width:54px}
+.desk.dev .knob{width:40px;height:40px;margin:1px 0}
+.desk.dev .kname{font-size:.7rem}
+.desk.dev .kval{font-size:.7rem;min-height:1.2em}
+.desk.dev .kab,.desk.dev .group[data-kind] .kab{font-size:.6rem;min-height:1.25em;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;max-width:54px}
+.desk.dev .kwrap .icons{bottom:-6px;transform:translateX(-50%) scale(.8)}
+.desk.dev .viz{height:38px;max-width:none;margin:1px 0 4px}
+.desk.dev .wt{gap:5px}
+.desk.dev .wtcard{padding:3px 4px;gap:1px}
+.desk.dev .wtcard canvas{height:26px}
+.desk.dev .wtlabel{font-size:.68rem;min-height:20px}
+.desk.dev .group[data-kind="osc"] .wt{margin-bottom:3px}
+.desk.dev .smpsel,.desk.dev .swb{min-height:20px;font-size:.68rem}
+.desk.dev .swb{padding:0 5px}
+.desk.dev .swrow{margin-top:2px;gap:3px 8px;font-size:.72rem}
+.desk.dev .swrow .seg button{min-height:20px;padding:0 6px;font-size:.7rem}
+.desk.dev .group[data-group="Filter"] .gbody{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.desk.dev .sub + .sub{margin-top:0}
+.desk.dev .subh{display:none}
+.desk.dev .group[data-group="Output"] .knobs{justify-content:center}
 /* bottom panel: randomize row and morph slider share a line */
-.desk .kb{position:static}
-.desk .kb .wrap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:16px;align-items:center}
-.desk .rbar{padding:4px 0}
-.desk .kb .morph{padding:0}
-.desk .panes{grid-column:1 / -1}
-.desk .kbbar{grid-row:1;grid-column:3}
-.desk .kbbar{padding:2px 0 4px}
-.desk .panes{margin-bottom:6px}
-.desk .keys,.desk .seqpane{height:100px}
-.desk .lanes{grid-template-rows:repeat(3,22px)} .desk .lanes canvas{height:22px}
+.desk.dev .kb{position:static}
+.desk.dev .kbbar{padding:2px 0 4px}
+.desk.dev .panes{margin-bottom:6px}
+.desk.dev .keys,.desk.dev .seqpane{height:100px}
+.desk.dev .lanes{grid-template-rows:repeat(3,22px)} .desk.dev .lanes canvas{height:22px}
 /* oscillators: engine knobs, then Level, Pan, Bypass, six to a row */
-.desk .group[data-kind="osc"] .knobs{justify-content:flex-start}
-.desk .seqright{flex-direction:row;align-items:center}
-.desk .lanes{flex:1 1 auto;min-width:0}
-.desk .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
-.desk .seqctl button{min-height:26px;padding:1px 8px;font-size:.8rem}
+.desk.dev .group[data-kind="osc"] .knobs{justify-content:flex-start}
+.desk.dev .seqright{flex-direction:row;align-items:center}
+.desk.dev .lanes{flex:1 1 auto;min-width:0}
+.desk.dev .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
+.desk.dev .seqctl button{min-height:26px;padding:1px 8px;font-size:.8rem}
 /* ---------- Basic view on desktop: tiles with larger knobs, sized by their key controls ---------- */
-.desk #app{position:relative}
-.desk .kb{position:relative;z-index:25}
+.desk.dev #app{position:relative}
+.desk.dev .kb{position:relative;z-index:25}
 .desk.dev:not(.full) .group:not(.open) .kn{width:62px}
 .desk.dev:not(.full) .group:not(.open) .knob{width:48px;height:48px}
 .desk.dev:not(.full) .group:not(.open) .kname,.desk.dev:not(.full) .group:not(.open) .kval{font-size:.78rem}
@@ -91,11 +88,14 @@ body.desk{overflow:hidden;height:100vh}
 .desk.dev:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
 .desk.dev:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
 /* the overlay sits over the sections, inside the scaled design */
-.desk .ovlback{bottom:0}
-.desk .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
-.desk .group.open .gdone{min-height:24px;font-size:.78rem}
+.desk.dev .ovlback{bottom:0}
+.desk.dev .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
+.desk.dev .group.open .gdone{min-height:24px;font-size:.78rem}
 /* developer view: the sections scroll inside the window (the bottom panel stays put); the player's cards sit in the middle row */
 .desk.dev main{overflow:auto}
 .desk.dev .group[data-group="Sound"],.desk.dev .group[data-group="Sequence"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
 /* rows: the five oscillators; Sound, Voice, Filter, Amp envelope, Output; the seven effects; Sequence last */
 .desk.dev .group:not([data-kind="osc"]){order:1} .desk.dev .group[data-kind="fx"]{order:2} .desk.dev .group[data-group="Sequence"]{order:3}
+/* the family's tracked uppercase labels are too wide for the developer view's small knobs */
+.dev .kname{letter-spacing:.02em;text-transform:none;font-size:.72rem}
+.dev .group h2{letter-spacing:.06em}

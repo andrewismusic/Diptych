@@ -183,9 +183,9 @@ test.describe('player\'s view on a phone', () => {
       const shown = [...document.querySelectorAll('main .group')].filter(g => g.offsetParent).map(g => g.dataset.group);
       const tops = [...sections.Sound.querySelectorAll('.kn')].map(k => Math.round(k.getBoundingClientRect().top));
       return { shown, oneRow: new Set(tops).size === 1, icons: [...document.querySelectorAll('main .lock')].filter(b => b.offsetParent).length,
-        side: document.documentElement.scrollWidth - innerWidth, link: !!$('rndLinked').offsetParent, view: !!$('viewFull').offsetParent };
+        side: document.documentElement.scrollWidth - innerWidth, view: !!$('viewFull').offsetParent };
     });
-    expect(m).toEqual({ shown: ['Sound', 'Sequence'], oneRow: true, icons: 0, side: 0, link: false, view: false });
+    expect(m).toEqual({ shown: ['Sound', 'Sequence'], oneRow: true, icons: 0, side: 0, view: false });
     await page.locator('#qScale').selectOption('Dorian');
     expect(await page.evaluate(() => [state.seq.A.scale, state.seq.B.scale])).toEqual(['Dorian', 'Dorian']);
   });

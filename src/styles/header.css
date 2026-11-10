@@ -1,28 +1,57 @@
-/* ---------- top: title + morph ---------- */
-.top{background:var(--bg);border-bottom:1px solid var(--line)}
-.titlebar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 2px}
-h1{font-size:1.2rem;font-weight:600;margin:0}
-h1 span{font-weight:400;color:var(--muted)}
-.morph{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:2px 0 0}
-.kb .letter{font-size:1.6rem}
-.letter{font-size:2rem;font-weight:600;line-height:1;width:1.1ch;text-align:center}
+/* ---------- top: wordmark, transport, undo/redo, dice, wave display, morph ---------- */
+.top{background:var(--bg)}
+.titlebar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 0 8px}
+.wordmark{font-family:var(--font-head);font-weight:700;font-size:1.25rem;letter-spacing:.22em;text-transform:uppercase;margin:0 auto 0 0}
+.hctl{display:inline-flex;gap:6px;align-items:center}
+.key.icon{width:40px;min-width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+#hplay.playing{background:var(--mc);border-color:var(--mc);color:#fff}
+/* tempo: a keycap you drag up or down */
+.bpm{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;height:40px;min-width:54px;padding:0 6px;margin-bottom:4px;
+  background:linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);border-radius:10px;box-shadow:0 4px 0 var(--shadow);
+  touch-action:none;cursor:ns-resize;user-select:none;-webkit-user-select:none;line-height:1}
+.bpm b{font:700 15px/1 var(--font-mono)}
+.bpm small{font:600 8px/1 var(--font-ui);letter-spacing:.16em;color:var(--muted);margin-top:2px}
+.bpm.drag,.bpm:focus-visible{box-shadow:0 1px 0 var(--shadow),0 0 0 2px var(--hold);transform:translateY(3px);outline:none}
+.view{display:none}
+body.dev .view{display:inline-flex}
+/* dice sliders (Orbital's): touch the track and let go; further right, bigger change. The raised die turns as it travels
+   over a yellow fill, and springs home with an overshoot. */
+.dicerow{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 12px}
+.dice{position:relative;height:36px;border-radius:9px;background:var(--well);border:1.5px solid var(--edge);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.12);touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.dice .dfill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--hold);opacity:.85;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
+.dice .dtile{position:absolute;left:1px;top:0;width:31px;height:31px;border-radius:7.5px;background:linear-gradient(180deg,#FFF,#DCE2EB);color:#0E1320;
+  border:1.5px solid #A9B3C3;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(16,21,33,.08);filter:drop-shadow(0 3px 0 var(--shadow));
+  display:flex;align-items:center;justify-content:center;z-index:2;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
+.dice .dtile svg{display:block;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
+.dice.drag .dtile,.dice.drag .dtile svg,.dice.drag .dfill{transition:none}
+.dice.drag .dtile{filter:drop-shadow(0 1px 0 var(--shadow));margin-top:2px}
+.dice .dlab{position:absolute;right:9px;top:0;bottom:0;display:flex;align-items:center;gap:6px;z-index:1;pointer-events:none;font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.dice .dlab i{font-style:normal;font-family:var(--font-mono);font-weight:700;letter-spacing:0;color:var(--dc,var(--ink))}
+.dice.drag .dlab{color:var(--on-ink)}
+.dice:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+.dice.roll .dtile{animation:rolled .45s ease-out}
+@keyframes rolled{0%{rotate:0deg}30%{rotate:-14deg;scale:1.08}60%{rotate:8deg}100%{rotate:0deg;scale:1}}
+@media (prefers-reduced-motion:reduce){ .dice .dtile,.dice .dtile svg,.dice .dfill{transition:none} .dice.roll .dtile{animation:none} }
+body[data-sidefocus="A"] .dice{--dc:var(--a)} body[data-sidefocus="B"] .dice{--dc:var(--b)}
+/* the wave display: A on the left, B on the right, what you hear in the middle */
+.scopebox{position:relative;background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 5px 0 var(--shadow);padding:8px 10px;margin-bottom:12px}
+#scope{display:block;width:100%;height:120px}
+#audioBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:.78rem;white-space:nowrap;z-index:5}
+#audioBtn[hidden]{display:none}
+#audioBtn:active{transform:translate(-50%,calc(-50% + 2px))}
+/* morph slider; the A and B keys at its ends focus one side (tap again to morph) */
+.morphrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:10px 0 2px}
+.letter{font-family:var(--font-head);font-size:1.15rem;font-weight:700;line-height:1;width:44px;height:40px;padding:0;letter-spacing:0}
 .letter.a{color:var(--a)} .letter.b{color:var(--b)}
-.morph-slider{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;margin:0;cursor:pointer}
-.morph-slider:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:8px}
-.morph-slider::-webkit-slider-runnable-track{
-  height:10px;border-radius:5px;
-  background:linear-gradient(90deg,var(--a),var(--b));
-  background:linear-gradient(to right in oklch,var(--a),var(--b));
-}
-.morph-slider::-webkit-slider-thumb{
-  -webkit-appearance:none;width:30px;height:30px;margin-top:-10px;border-radius:50%;
-  background:var(--mc);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line),0 1px 3px rgba(0,0,0,.35);
-}
-.morph-slider::-moz-range-track{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--a),var(--b))}
-.morph-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--mc);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
-.morphfoot{display:flex;justify-content:flex-start;align-items:center;gap:8px;padding:6px 0 10px;flex-wrap:wrap}
-.readout{color:var(--muted);font-size:.95rem}
-.readout b{color:var(--ink);font-weight:600}
-.btns{display:flex;gap:6px;flex-wrap:wrap}
-.btns .view{margin-left:6px}
-
+.letter.a[aria-pressed="true"]{background:var(--a);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--a)}
+.letter.b[aria-pressed="true"]{background:var(--b);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--b)}
+.morph-slider{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:0;cursor:pointer}
+.morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px;border-radius:8px}
+.morph-slider::-webkit-slider-runnable-track{height:12px;border-radius:6px;border:1.5px solid var(--edge);
+  background:linear-gradient(90deg,var(--a),var(--b));background:linear-gradient(to right in oklch,var(--a),var(--b))}
+.morph-slider::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;border-radius:10px;
+  background:radial-gradient(circle,var(--mc) 0 6px,transparent 6.5px),linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
+.morph-slider::-moz-range-track{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--a),var(--b))}
+.morph-slider::-moz-range-thumb{width:30px;height:30px;border-radius:10px;background:radial-gradient(circle,var(--mc) 0 6px,var(--cap-hi) 6.5px);border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
+.morph-slider:disabled{opacity:.3;cursor:default}

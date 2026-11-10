@@ -57,7 +57,7 @@ function sendAll() {   // runs during startup, before ready is set
 // (notably iOS) can drop back to a suspended or "interrupted" state later.
 // Every tap, click and key press therefore tries to wake the audio up again.
 function kick() {
-  if (!ctx || userMuted) return;
+  if (!ctx) return;
   if (ctx.state !== 'running') {
     try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); s.connect(ctx.destination); s.start(0); } catch (e) {}
     ctx.resume().then(updateAudioBtn, () => {});
@@ -119,19 +119,14 @@ registerProcessor('morph-engine', MorphProcessor);`;
   return starting;
 }
 function engineInfo(t) { document.getElementById('engineInfo').textContent = t; }
-let userMuted = false;
+/* The audio button only appears while audio is off ("Tap to start audio", over the wave display); there is no mute
+   (owner, 2026-11-10). */
 const audioBtn = document.getElementById('audioBtn');
 function updateAudioBtn() {
-  const off = !ready || !ctx || (ctx.state !== 'running' && !userMuted);
-  audioBtn.textContent = off ? 'Tap to start audio' : userMuted ? 'Unmute' : 'Mute';
-  audioBtn.classList.toggle('attn', off);
+  const off = !ready || !ctx || ctx.state !== 'running';
+  audioBtn.hidden = !off;
 }
-audioBtn.addEventListener('click', () => {
-  if (!ready || ctx.state !== 'running' && !userMuted) { ensureAudio(); kick(); return; }
-  userMuted = !userMuted;
-  if (userMuted) { send({ type:'panic' }); ctx.suspend(); } else ctx.resume();
-  updateAudioBtn();
-});
+audioBtn.addEventListener('click', () => { ensureAudio(); kick(); });
 ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'click', 'keydown'].forEach(t =>
   document.addEventListener(t, () => ensureAudio(), { capture:true, passive:true }));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });

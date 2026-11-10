@@ -180,9 +180,6 @@ function randSpeedOct(q) {
 }
 function fullSeqRandom(q) { fixSeq(q); randRate(q); roomForNotes(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); setSeqDensity(q, highDensity()); randSpeedOct(q); shapeRandom(q); }
 function randSeqSide(k) { fullSeqRandom(state.seq[k]); }
-$('rsA').addEventListener('click', () => bulk(() => randSeqSide('A')));
-$('rsB').addEventListener('click', () => bulk(() => randSeqSide('B')));
-$('rsBoth').addEventListener('click', () => bulk(() => randSeqs()));
 $('rzVel').addEventListener('click', () => editSeq(randVel));
 function randRate(s) { s.rate = Math.floor(Math.random() * RATES.length); fitSlots(s, true); }
 $('rzRate').addEventListener('click', () => editSeq(randRate));

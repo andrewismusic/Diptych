@@ -6,7 +6,7 @@
 <title>Diptych</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 /* @include styles/base.css */
 /* @include styles/header.css */
@@ -20,21 +20,27 @@
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="capg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--cap-hi)"/><stop offset="1" style="stop-color:var(--cap-lo)"/></linearGradient></defs></svg>
 <div id="app">
 <header class="top">
   <div class="wrap">
     <div class="titlebar">
-      <h1>Diptych <span>morph synth</span></h1>
-      <button id="audioBtn" class="attn" type="button">Tap to start audio</button>
+      <h1 class="wordmark">Diptych</h1>
+      <span class="hctl">
+        <button type="button" id="hplay" class="key icon" aria-label="Play"></button>
+        <span class="key bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag up or down, or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120"><b id="bpmVal">120</b><small>BPM</small></span>
+        <button type="button" id="undo" class="key icon" aria-label="Undo" disabled></button>
+        <button type="button" id="redo" class="key icon" aria-label="Redo" disabled></button>
+      </span>
+      <span class="seg view" role="group" aria-label="View"><button type="button" class="key" id="viewBasic">Basic</button><button type="button" class="key" id="viewFull">Full</button></span>
     </div>
-    <div class="morphfoot">
-      <div class="btns">
-        <button type="button" id="copyAB">Copy A to B</button>
-        <button type="button" id="copyBA">Copy B to A</button>
-        <button type="button" id="swap">Swap</button>
-        <button type="button" id="resetAll">Reset patch</button>
-        <span class="seg view" role="group" aria-label="View"><button type="button" id="viewBasic">Basic</button><button type="button" id="viewFull">Full</button></span>
-      </div>
+    <div class="dicerow" role="group" aria-label="Randomize">
+      <div class="dice" id="diceSound" data-what="sound" role="slider" tabindex="0" aria-label="Randomize the sound: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sound <i class="dtarget"></i></span></div>
+      <div class="dice" id="diceSeq" data-what="seq" role="slider" tabindex="0" aria-label="Randomize the sequence: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sequence <i class="dtarget"></i></span></div>
+    </div>
+    <div class="scopebox">
+      <canvas id="scope" aria-label="Wave display: side A, the sound you hear now, and side B"></canvas>
+      <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
     </div>
   </div>
 </header>
@@ -48,41 +54,26 @@
 
 <div class="kb" id="kb">
   <div class="wrap">
-    <div class="rbar" role="group" aria-label="Randomize">
-      <span class="rgrp" role="group" aria-label="Randomize sound"><span class="rlab">Sound</span>
-        <button type="button" id="rndA" class="ra" aria-label="Randomize sound, side A">A</button><button type="button" id="rndLinked" aria-label="Randomize linked knobs">Link</button><button type="button" id="rndAll" aria-label="Randomize all of the sound">All</button><button type="button" id="rndB" class="rb" aria-label="Randomize sound, side B">B</button></span>
-      <span class="rgrp" role="group" aria-label="Randomize sequence"><span class="rlab"><span class="long">Sequence</span><span class="short">Seq</span></span>
-        <button type="button" id="rsA" class="ra" aria-label="Randomize sequence A">A</button><button type="button" id="rsBoth" aria-label="Randomize both sequences">Both</button><button type="button" id="rsB" class="rb" aria-label="Randomize sequence B">B</button></span>
-      <button type="button" id="undo" class="undo" aria-label="Undo" disabled>Undo</button>
-    </div>
-    <div class="morph">
-      <span class="letter a" aria-hidden="true">A</span>
+    <div class="morphrow">
+      <button type="button" class="key letter a" data-focus="A" aria-pressed="false" aria-label="Edit side A only (tap again to morph)">A</button>
       <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">
-      <span class="letter b" aria-hidden="true">B</span>
+      <button type="button" class="key letter b" data-focus="B" aria-pressed="false" aria-label="Edit side B only (tap again to morph)">B</button>
     </div>
     <div class="kbbar">
       <span class="seg" role="group" aria-label="Bottom panel">
-        <button type="button" id="pmKeys" aria-pressed="true">Keys</button><button type="button" id="pmSeq" aria-pressed="false">Seq</button>
+        <button type="button" class="key" id="pmKeys" aria-pressed="true">Keys</button><button type="button" class="key" id="pmSeq" aria-pressed="false">Seq</button>
       </span>
       <span class="spacer"></span>
       <span class="ctl" id="kctl">
-        <button type="button" id="octDown" aria-label="Octave down">−</button>
+        <button type="button" class="key" id="octDown" aria-label="Octave down">−</button>
         <span class="oct" id="octLabel">C3</span>
-        <button type="button" id="octUp" aria-label="Octave up">+</button>
-        <button type="button" id="monoBtn" class="monobtn"></button>
-        <button type="button" id="latch" aria-pressed="false">Latch</button>
+        <button type="button" class="key" id="octUp" aria-label="Octave up">+</button>
+        <button type="button" id="monoBtn" class="key monobtn"></button>
+        <button type="button" class="key" id="latch" aria-pressed="false">Latch</button>
       </span>
       <span class="ctl" id="sctl" hidden>
-        <button type="button" id="monoBtn2" class="monobtn"></button>
-        <button type="button" id="play" class="playbtn" aria-label="Play"></button>
-        <span class="bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120">
-          <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
-            <circle cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="75 200" transform="rotate(135 20 20)" fill="none" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
-            <circle id="bpmArc" cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="0 200" transform="rotate(135 20 20)" fill="none" stroke="var(--mc)" stroke-width="4" stroke-linecap="round"/>
-            <line id="bpmPtr" x1="20" y1="20" x2="20" y2="9" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
-          </svg>
-          <span class="bpmtxt"><b id="bpmVal">120</b> bpm</span>
-        </span>
+        <button type="button" id="monoBtn2" class="key monobtn"></button>
+        <button type="button" id="play" class="key playbtn" aria-label="Play"></button>
       </span>
     </div>
     <div class="panes">
@@ -90,7 +81,7 @@
         <div class="pane" id="keysPane"><div class="keys" id="keys"></div></div>
         <div class="pane seqpane" id="seqPane" inert>
           <div class="knobs" id="seqKnob"></div>
-          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" id="pmWalk">Walk</button><button type="button" id="pmSwap">Swap</button></div>
+          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></div>
           <div class="seqright">
             <div class="lanes">
               <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
@@ -98,8 +89,8 @@
               <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
             </div>
             <div class="seqctl">
-              <button type="button" id="seqAB" aria-label="Copy sequence A to B">A→B</button><button type="button" id="seqBA" aria-label="Copy sequence B to A">B→A</button>
-              <button type="button" id="seqEdit" aria-label="Edit sequences">Edit</button>
+              <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A→B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B→A</button>
+              <button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
             </div>
           </div>
         </div>
@@ -222,6 +213,8 @@
 // @include ui/wavetable-editor.js
 // @include ui/section-tools.js
 // @include ui/sampler.js
+// @include ui/scope.js
+// @include ui/dice.js
 // @include ui/overlay.js
 // @include ui/layout.js
 // @include ui/keyboard.js

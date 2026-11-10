@@ -1,7 +1,13 @@
+/* Tokens shared with the family (Orbital, Pixy, Heather, Drumroll, 2026-11-10): cool grey panels, raised keycap
+   buttons, Oxanium / Chakra Petch / JetBrains Mono. A stays blue and B pink; the morph passes through purple. */
 :root{
-  --bg:#E8E6F3; --surface:#F5F4FB; --ink:#1B1733; --muted:#5F5979; --line:#C9C4DD;
-  --a:#2F5BFF; --b:#E3308F; --key:#FCFBFF; --keyb:#221D3A;
+  --bg:#E6EAF0; --surface:#F4F6F9; --well:#DCE1E9; --ink:#101521; --muted:#556076; --line:#C3CAD6; --edge:#A9B3C3;
+  --shadow:#A9B1C0; --cap-hi:#FFFFFF; --cap-lo:#E3E7EE; --hold:#F2C200; --on-ink:#15120A;
+  --a:#4F6FE0; --b:#E3308F; --key:#FFFFFF; --keyb:#1A2030;
   --mix:0%; --mc:color-mix(in oklch, var(--a), var(--b) var(--mix));
+  --font-head:'Oxanium','Eurostile',system-ui,sans-serif;
+  --font-ui:'Chakra Petch','Eurostile',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
   color-scheme:light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -9,35 +15,35 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#131124; --surface:#1D1A33; --ink:#ECEAF7; --muted:#9A94B6; --line:#363152;
-    --a:#5C83FF; --b:#FF55A8; --key:#DCD8EC; --keyb:#0C0A18; color-scheme:dark;
+    --bg:#05070C; --surface:#0C111B; --well:#0E1320; --ink:#E4E9F3; --muted:#8590A8; --line:#232C40; --edge:#2B3650;
+    --shadow:#000; --cap-hi:#1E2638; --cap-lo:#141B29; --hold:#FFD21F;
+    --a:#7F9BFF; --b:#FF5AAE; --key:#D6DCE8; --keyb:#05070C; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#131124; --surface:#1D1A33; --ink:#ECEAF7; --muted:#9A94B6; --line:#363152;
-  --a:#5C83FF; --b:#FF55A8; --key:#DCD8EC; --keyb:#0C0A18; color-scheme:dark;
+  --bg:#05070C; --surface:#0C111B; --well:#0E1320; --ink:#E4E9F3; --muted:#8590A8; --line:#232C40; --edge:#2B3650;
+  --shadow:#000; --cap-hi:#1E2638; --cap-lo:#141B29; --hold:#FFD21F;
+  --a:#7F9BFF; --b:#FF5AAE; --key:#D6DCE8; --keyb:#05070C; color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 *,*::before,*::after{box-sizing:inherit}
 body{
   margin:0;background:var(--bg);color:var(--ink);
-  font-family:"Barlow Semi Condensed","Arial Narrow",system-ui,-apple-system,sans-serif;
-  font-size:16px;line-height:1.35;font-variant-numeric:tabular-nums;
+  font-family:var(--font-ui);font-weight:500;
+  font-size:15px;line-height:1.35;font-variant-numeric:tabular-nums;
   -webkit-tap-highlight-color:transparent;
 }
+/* keycap buttons: a raised cap with a solid shadow underneath; pressed (on) is the family yellow */
 button,select{
-  font:inherit;font-weight:500;font-size:.92rem;color:var(--ink);
-  background:var(--surface);border:1px solid var(--line);border-radius:6px;
-  padding:6px 10px;cursor:pointer;min-height:34px;
+  font:inherit;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);
+  background:linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);border-radius:10px;
+  padding:6px 10px;cursor:pointer;min-height:36px;box-shadow:0 4px 0 var(--shadow);margin-bottom:4px;
+  transition:transform .07s,box-shadow .07s,background-color .12s;touch-action:manipulation;
 }
-button:hover,select:hover{border-color:var(--muted)}
-button:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-button:disabled{opacity:.45;cursor:default}
-#audioBtn.attn{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.wrap{max-width:780px;margin:0 auto;padding:0 12px}
-.seg{display:inline-flex}
-.seg button{border-radius:0;margin-left:-1px}
-.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
-.seg button:last-child{border-radius:0 6px 6px 0}
-
+select{text-transform:none;letter-spacing:0;font-size:.85rem}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--shadow)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+button[aria-pressed="true"]{background:var(--hold);color:var(--on-ink);border-color:transparent;transform:translateY(3px);box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--hold)}
+button:disabled{opacity:.35;cursor:default}
+.wrap{max-width:780px;margin:0 auto;padding:0 14px}
+.seg{display:inline-flex;gap:4px}

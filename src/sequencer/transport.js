@@ -19,19 +19,14 @@ const ICON_PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="
 const ICON_STOP = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>';
 function setPlaying(on) {
   seqPlaying = on;
-  $('play').innerHTML = on ? ICON_STOP : ICON_PLAY;
-  $('play').setAttribute('aria-label', on ? 'Stop' : 'Play');
-  $('play').classList.toggle('playing', on);
+  ['play', 'hplay'].forEach(id => { $(id).innerHTML = on ? ICON_STOP : ICON_PLAY; $(id).setAttribute('aria-label', on ? 'Stop' : 'Play'); $(id).classList.toggle('playing', on); });
   if (on) { sendSeq(); post({ type:'seqPlay', on:true }); }
   else { if (ready) send({ type:'seqPlay', on:false }); seqPos = null; drawLanes(); }
 }
 $('play').addEventListener('click', () => setPlaying(!seqPlaying));
-function drawBpmKnob() {
-  const x = (state.bpm - 50) / 150;
-  $('bpmArc').setAttribute('stroke-dasharray', `${(75 * x).toFixed(2)} 200`);
-  $('bpmPtr').setAttribute('transform', `rotate(${-135 + 270 * x} 20 20)`);
-}
-function setBpm(v) { state.bpm = Math.max(50, Math.min(200, Math.round(v))); $('bpmVal').textContent = state.bpm; $('bpmBox').setAttribute('aria-valuenow', state.bpm); drawBpmKnob(); if (ready) send({ type:'bpm', v: state.bpm }); save(); }
+// the header's play button plays the sequencer from anywhere (and shows its pane)
+$('hplay').addEventListener('click', () => { if (seqPlaying) { setPlaying(false); return; } if (panel !== 'seq') setPanel('seq', true); setPlaying(true); });
+function setBpm(v) { state.bpm = Math.max(50, Math.min(200, Math.round(v))); $('bpmVal').textContent = state.bpm; $('bpmBox').setAttribute('aria-valuenow', state.bpm); if (ready) send({ type:'bpm', v: state.bpm }); save(); }
 function holdRepeat(el, fn) {
   let t1 = null, t2 = null;
   const stop = () => { clearTimeout(t1); clearInterval(t2); };
@@ -40,9 +35,9 @@ function holdRepeat(el, fn) {
 }
 { // drag the tempo readout up/down or sideways
   const el = $('bpmBox'); let pid = null, x0 = 0, y0 = 0, b0 = 0;
-  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); x0 = e.clientX; y0 = e.clientY; b0 = state.bpm; });
-  el.addEventListener('pointermove', e => { if (e.pointerId === pid) setBpm(b0 + ((e.clientX - x0) - (e.clientY - y0)) / 3); });
-  ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { pid = null; }));
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); x0 = e.clientX; y0 = e.clientY; b0 = state.bpm; el.classList.add('drag'); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === pid) setBpm(b0 + (y0 - e.clientY) / 3); });
+  ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { pid = null; el.classList.remove('drag'); }));
   el.addEventListener('keydown', e => { const d = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -1 : 0; if (d) { e.preventDefault(); setBpm(state.bpm + d * (e.shiftKey ? 10 : 1)); } });
 }
 function onReport(d) {

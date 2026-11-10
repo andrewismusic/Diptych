@@ -32,12 +32,12 @@ test('sequencer plays real audio through the AudioWorklet', async ({ page }) => 
   await openSynth(page, { tapAudio: true });
   await startAudio(page);
   const idle = await outputLevel(page);   // not always silent: Lo-fi noise plays even with no notes
-  await page.click('#play');
+  await page.click('#hplay');
   await page.waitForTimeout(800);
   const playing = await outputLevel(page);
   expect(playing).toBeGreaterThan(-65);   // random launch patches range from about -60 to -15 dB
   expect(playing - idle).toBeGreaterThan(30);
-  await page.click('#play');
+  await page.click('#hplay');
 });
 
 test('computer keyboard plays notes', async ({ page }) => {
@@ -53,28 +53,46 @@ test('computer keyboard plays notes', async ({ page }) => {
   await page.keyboard.up('a');
 });
 
-test('patch buttons: Copy, Swap, Reset, Undo and the dice work without errors', async ({ page }) => {
+// drag a dice slider from its start to a share of its width and let go
+async function dragDice(page, sel, share) {
+  const box = await page.locator(sel).boundingBox();
+  await page.mouse.move(box.x + 16, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(box.x + 16 + (box.width - 32) * share, box.y + box.height / 2, { steps: 4 }); await page.mouse.up();
+}
+test('dice sliders, side focus, undo and redo, and the section dice work without errors', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await openSynth(page);
-  const snap = () => page.evaluate(() => JSON.stringify({ A: state.A, B: state.B, smp: state.smp, t: tables.map(t => [t.A.name, t.B.name]) }));
-  await page.click('#copyAB');
-  expect(await page.evaluate(() => tables.every(t => t.A.name === t.B.name))).toBe(true);
-  await page.click('#swap'); await page.click('#rndAll'); await page.click('#rndA'); await page.click('#rndLinked');
-  for (const g of ['Wavetable 1', 'Sampler', 'Filter', 'OTT']) {   // in the Basic view the dice sit in each section's overlay
+  const snap = () => page.evaluate(() => JSON.stringify({ A: state.A, B: state.B, smp: state.smp, t: tables.map(t => [t.A.name, t.B.name]), seq: state.seq }));
+  const s0 = await snap();
+  await dragDice(page, '#diceSound', 1); await dragDice(page, '#diceSeq', 1);
+  for (const g of ['Wavetable 1', 'Filter', 'OTT']) {   // in the Basic view the dice sit in each section's overlay
     await page.click(`section[data-group="${g}"] .gname`);
     await page.click(`[data-dice="${g}"]:not([data-side])`);
     await page.click(`section[data-group="${g}"] .gdone`);
   }
   const before = await snap();
-  await page.click('#resetAll');
+  expect(before).not.toEqual(s0);
+  await page.evaluate(() => resetPatch());
   // the default patch: Wavetable 1 heard, the other oscillators at Level 0
   expect(await page.evaluate(() => OSC_KIND.map((_, s) => state.A[oi(s, 'olevel')] > 0))).toEqual([true, false, false, false, false]);
   await page.click('#undo');
   expect(await snap()).toEqual(before);
-  await page.locator('#wtA1').click();
+  await page.click('#redo'); await page.click('#undo');
+  expect(await snap()).toEqual(before);
+  // side focus: the dice change only the focused side; the morph comes back exactly as it was
+  await page.evaluate(() => { state.morph = 0.37; updateMorphUI(); });
+  await page.click('[data-focus="A"]');
+  expect(await page.evaluate(() => [state.morph, $('morph').disabled])).toEqual([0, true]);
+  const sideB = () => page.evaluate(() => state.B.filter((_, i) => DEFS[i].single !== 'A'));   // A-only parameters are stored on both sides
+  const b0 = await sideB();
+  await dragDice(page, '#diceSound', 0.6);
+  expect(await sideB()).toEqual(b0);
+  await page.click('[data-focus="A"]');
+  expect(await page.evaluate(() => [state.morph, $('morph').disabled])).toEqual([0.37, false]);
+  await page.locator('#wtA0').click();
   await expect(page.locator('#ed')).toHaveClass(/open/);
-  expect(await page.textContent('#ed')).toContain('Wavetable 2');
+  expect(await page.textContent('#ed')).toContain('Wavetable 1');
   expect(errors).toEqual([]);
 });
 
@@ -138,25 +156,30 @@ test.describe('phone', () => {
     expect(await page.evaluate(() => [$('cvA1').parentNode.classList.contains('mute'), $('cvB1').parentNode.classList.contains('mute')])).toEqual([true, false]);
   });
 
-  test('the randomize buttons sit in the bottom panel and fit', async ({ page }) => {
-    await openSynth(page);
-    const m = await page.evaluate(() => {
-      const bar = document.querySelector('#kb .rbar'), r = bar.getBoundingClientRect();
-      return { inPanel: !!bar, right: Math.max(...[...bar.querySelectorAll('button')].map(b => b.getBoundingClientRect().right)), vw: innerWidth, bottom: r.bottom, vh: innerHeight };
-    });
-    expect(m.inPanel).toBe(true);
-    expect(m.right).toBeLessThanOrEqual(m.vw);
-    expect(m.bottom).toBeLessThanOrEqual(m.vh);
-    await page.locator('#rndAll').tap();
-    await page.locator('#rsBoth').tap();
+  test('the dice sliders sit at the top and fit; a short drag changes less than a long one', async ({ page }) => {
+    await openSynth(page, { dev: false });
+    const m = await page.evaluate(() => { const r = [...document.querySelectorAll('.dice')].map(d => d.getBoundingClientRect()); return { right: Math.max(...r.map(x => x.right)), vw: innerWidth, top: Math.max(...r.map(x => x.top)) }; });
+    expect(m.right).toBeLessThanOrEqual(m.vw); expect(m.top).toBeLessThan(150);
+    const moved = () => page.evaluate(() => { const u = undoStack[undoStack.length - 1]; return state.A.reduce((t, x, i) => t + Math.abs(x - u.A[i]) + Math.abs(state.B[i] - u.B[i]), 0); });
+    let small = 0, big = 0;
+    for (let k = 0; k < 6; k++) {
+      const b1 = await page.locator('#diceSound').boundingBox();
+      await page.touchscreen.tap(b1.x + b1.width * 0.2, b1.y + 18);   // a tap near the start: a nudge (the die sits under the finger)
+      small += await moved();
+      await page.touchscreen.tap(b1.x + b1.width - 18, b1.y + 18);   // at the end: a whole new roll
+      big += await moved();
+    }
+    expect(small).toBeLessThan(big);
     await expect(page.locator('#undo')).toBeEnabled();
     // copy a sequence to the other side
+    await page.locator('#pmSeq').tap();
     await page.locator('#seqAB').tap();
     expect(await page.evaluate(() => JSON.stringify(state.seq.A) === JSON.stringify(state.seq.B))).toBe(true);
   });
 
   test('Sampler: built-in sample menus, and a loaded file that survives a reload', async ({ page }) => {
     await openSynth(page, { storage: {} });
+    await page.addStyleTag({ content: '.group[data-kind="osc"]{display:block!important}' });   // hidden since the single-wavetable change (2026-11-10)
     const smp = page.locator('section[data-group="Sampler"]');
     await expect(smp.locator('select[data-side="A"]')).toBeVisible();   // the sample menus sit in the wave cards
     await smp.locator('select[data-side="A"]').selectOption('f:Bell');
@@ -185,7 +208,7 @@ for (const [name, size] of [['desktop', { width: 1440, height: 900 }], ['phone',
     await page.setViewportSize(size);
     await openSynth(page);
     // positions in the page (the developer view's sections can scroll inside main on desktop)
-    const rects = () => page.evaluate(() => [...document.querySelectorAll('main .group')].map(g => { const r = g.getBoundingClientRect(); return [Math.round(r.top + scrollY + document.querySelector('main').scrollTop), Math.round(r.left), Math.round(r.width), Math.round(r.height)].join(); }));
+    const rects = () => page.evaluate(() => [...document.querySelectorAll('main .group')].filter(g => g.offsetParent).map(g => { const r = g.getBoundingClientRect(); return [Math.round(r.top + scrollY + document.querySelector('main').scrollTop), Math.round(r.left), Math.round(r.width), Math.round(r.height)].join(); }));
     const shown = g => page.evaluate(g => [...sections[g].querySelectorAll('.kn')].filter(k => k.offsetParent).length, g);
     expect(await page.evaluate(() => document.body.classList.contains('full'))).toBe(false);   // Basic is the default
     const before = await rects(), basic = await shown('Delay');
@@ -212,7 +235,7 @@ for (const [name, size] of [['desktop', { width: 1440, height: 900 }], ['phone',
 
 test('the Full view shows every control, and the choice is remembered', async ({ page }) => {
   await openSynth(page);
-  const hidden = () => page.evaluate(() => [...document.querySelectorAll('main .kn')].filter(k => !k.offsetParent).length);
+  const hidden = () => page.evaluate(() => [...document.querySelectorAll('main .group')].filter(g => g.offsetParent).flatMap(g => [...g.querySelectorAll('.kn')]).filter(k => !k.offsetParent).length);
   expect(await hidden()).toBeGreaterThan(20);
   await page.click('#viewFull');
   expect(await hidden()).toBe(0);
@@ -223,8 +246,8 @@ test('the Full view shows every control, and the choice is remembered', async ({
 
 test('oscillator On/Off is a bypass: it dims the section and is never randomized', async ({ page }) => {
   await openSynth(page);
-  await page.click('section[data-group="Wavetable 2"] [data-osc]');
-  expect(await page.evaluate(() => [state.oscOn[1], sections['Wavetable 2'].classList.contains('fxoff')])).toEqual([false, true]);
-  await page.click('#rndAll');
-  expect(await page.evaluate(() => state.oscOn)).toEqual([true, false, true, true, true]);
+  await page.click('section[data-group="Wavetable 1"] [data-osc]');
+  expect(await page.evaluate(() => [state.oscOn[0], sections['Wavetable 1'].classList.contains('fxoff')])).toEqual([false, true]);
+  await dragDice(page, '#diceSound', 1);
+  expect(await page.evaluate(() => state.oscOn)).toEqual([false, true, true, true, true]);
 });

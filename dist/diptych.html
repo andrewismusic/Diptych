@@ -6,12 +6,18 @@
 <title>Diptych</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
+/* Tokens shared with the family (Orbital, Pixy, Heather, Drumroll, 2026-11-10): cool grey panels, raised keycap
+   buttons, Oxanium / Chakra Petch / JetBrains Mono. A stays blue and B pink; the morph passes through purple. */
 :root{
-  --bg:#E8E6F3; --surface:#F5F4FB; --ink:#1B1733; --muted:#5F5979; --line:#C9C4DD;
-  --a:#2F5BFF; --b:#E3308F; --key:#FCFBFF; --keyb:#221D3A;
+  --bg:#E6EAF0; --surface:#F4F6F9; --well:#DCE1E9; --ink:#101521; --muted:#556076; --line:#C3CAD6; --edge:#A9B3C3;
+  --shadow:#A9B1C0; --cap-hi:#FFFFFF; --cap-lo:#E3E7EE; --hold:#F2C200; --on-ink:#15120A;
+  --a:#4F6FE0; --b:#E3308F; --key:#FFFFFF; --keyb:#1A2030;
   --mix:0%; --mc:color-mix(in oklch, var(--a), var(--b) var(--mix));
+  --font-head:'Oxanium','Eurostile',system-ui,sans-serif;
+  --font-ui:'Chakra Petch','Eurostile',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
   color-scheme:light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -19,73 +25,103 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#131124; --surface:#1D1A33; --ink:#ECEAF7; --muted:#9A94B6; --line:#363152;
-    --a:#5C83FF; --b:#FF55A8; --key:#DCD8EC; --keyb:#0C0A18; color-scheme:dark;
+    --bg:#05070C; --surface:#0C111B; --well:#0E1320; --ink:#E4E9F3; --muted:#8590A8; --line:#232C40; --edge:#2B3650;
+    --shadow:#000; --cap-hi:#1E2638; --cap-lo:#141B29; --hold:#FFD21F;
+    --a:#7F9BFF; --b:#FF5AAE; --key:#D6DCE8; --keyb:#05070C; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#131124; --surface:#1D1A33; --ink:#ECEAF7; --muted:#9A94B6; --line:#363152;
-  --a:#5C83FF; --b:#FF55A8; --key:#DCD8EC; --keyb:#0C0A18; color-scheme:dark;
+  --bg:#05070C; --surface:#0C111B; --well:#0E1320; --ink:#E4E9F3; --muted:#8590A8; --line:#232C40; --edge:#2B3650;
+  --shadow:#000; --cap-hi:#1E2638; --cap-lo:#141B29; --hold:#FFD21F;
+  --a:#7F9BFF; --b:#FF5AAE; --key:#D6DCE8; --keyb:#05070C; color-scheme:dark;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
 *,*::before,*::after{box-sizing:inherit}
 body{
   margin:0;background:var(--bg);color:var(--ink);
-  font-family:"Barlow Semi Condensed","Arial Narrow",system-ui,-apple-system,sans-serif;
-  font-size:16px;line-height:1.35;font-variant-numeric:tabular-nums;
+  font-family:var(--font-ui);font-weight:500;
+  font-size:15px;line-height:1.35;font-variant-numeric:tabular-nums;
   -webkit-tap-highlight-color:transparent;
 }
+/* keycap buttons: a raised cap with a solid shadow underneath; pressed (on) is the family yellow */
 button,select{
-  font:inherit;font-weight:500;font-size:.92rem;color:var(--ink);
-  background:var(--surface);border:1px solid var(--line);border-radius:6px;
-  padding:6px 10px;cursor:pointer;min-height:34px;
+  font:inherit;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);
+  background:linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);border-radius:10px;
+  padding:6px 10px;cursor:pointer;min-height:36px;box-shadow:0 4px 0 var(--shadow);margin-bottom:4px;
+  transition:transform .07s,box-shadow .07s,background-color .12s;touch-action:manipulation;
 }
-button:hover,select:hover{border-color:var(--muted)}
-button:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-button:disabled{opacity:.45;cursor:default}
-#audioBtn.attn{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.wrap{max-width:780px;margin:0 auto;padding:0 12px}
-.seg{display:inline-flex}
-.seg button{border-radius:0;margin-left:-1px}
-.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
-.seg button:last-child{border-radius:0 6px 6px 0}
-
-/* ---------- top: title + morph ---------- */
-.top{background:var(--bg);border-bottom:1px solid var(--line)}
-.titlebar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 2px}
-h1{font-size:1.2rem;font-weight:600;margin:0}
-h1 span{font-weight:400;color:var(--muted)}
-.morph{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:2px 0 0}
-.kb .letter{font-size:1.6rem}
-.letter{font-size:2rem;font-weight:600;line-height:1;width:1.1ch;text-align:center}
+select{text-transform:none;letter-spacing:0;font-size:.85rem}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--shadow)}
+button:focus-visible,select:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+button[aria-pressed="true"]{background:var(--hold);color:var(--on-ink);border-color:transparent;transform:translateY(3px);box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--hold)}
+button:disabled{opacity:.35;cursor:default}
+.wrap{max-width:780px;margin:0 auto;padding:0 14px}
+.seg{display:inline-flex;gap:4px}
+/* ---------- top: wordmark, transport, undo/redo, dice, wave display, morph ---------- */
+.top{background:var(--bg)}
+.titlebar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 0 8px}
+.wordmark{font-family:var(--font-head);font-weight:700;font-size:1.25rem;letter-spacing:.22em;text-transform:uppercase;margin:0 auto 0 0}
+.hctl{display:inline-flex;gap:6px;align-items:center}
+.key.icon{width:40px;min-width:40px;height:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+#hplay.playing{background:var(--mc);border-color:var(--mc);color:#fff}
+/* tempo: a keycap you drag up or down */
+.bpm{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;height:40px;min-width:54px;padding:0 6px;margin-bottom:4px;
+  background:linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);border-radius:10px;box-shadow:0 4px 0 var(--shadow);
+  touch-action:none;cursor:ns-resize;user-select:none;-webkit-user-select:none;line-height:1}
+.bpm b{font:700 15px/1 var(--font-mono)}
+.bpm small{font:600 8px/1 var(--font-ui);letter-spacing:.16em;color:var(--muted);margin-top:2px}
+.bpm.drag,.bpm:focus-visible{box-shadow:0 1px 0 var(--shadow),0 0 0 2px var(--hold);transform:translateY(3px);outline:none}
+.view{display:none}
+body.dev .view{display:inline-flex}
+/* dice sliders (Orbital's): touch the track and let go; further right, bigger change. The raised die turns as it travels
+   over a yellow fill, and springs home with an overshoot. */
+.dicerow{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0 12px}
+.dice{position:relative;height:36px;border-radius:9px;background:var(--well);border:1.5px solid var(--edge);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.12);touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none;overflow:hidden}
+.dice .dfill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--hold);opacity:.85;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
+.dice .dtile{position:absolute;left:1px;top:0;width:31px;height:31px;border-radius:7.5px;background:linear-gradient(180deg,#FFF,#DCE2EB);color:#0E1320;
+  border:1.5px solid #A9B3C3;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(16,21,33,.08);filter:drop-shadow(0 3px 0 var(--shadow));
+  display:flex;align-items:center;justify-content:center;z-index:2;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
+.dice .dtile svg{display:block;transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
+.dice.drag .dtile,.dice.drag .dtile svg,.dice.drag .dfill{transition:none}
+.dice.drag .dtile{filter:drop-shadow(0 1px 0 var(--shadow));margin-top:2px}
+.dice .dlab{position:absolute;right:9px;top:0;bottom:0;display:flex;align-items:center;gap:6px;z-index:1;pointer-events:none;font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.dice .dlab i{font-style:normal;font-family:var(--font-mono);font-weight:700;letter-spacing:0;color:var(--dc,var(--ink))}
+.dice.drag .dlab{color:var(--on-ink)}
+.dice:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
+.dice.roll .dtile{animation:rolled .45s ease-out}
+@keyframes rolled{0%{rotate:0deg}30%{rotate:-14deg;scale:1.08}60%{rotate:8deg}100%{rotate:0deg;scale:1}}
+@media (prefers-reduced-motion:reduce){ .dice .dtile,.dice .dtile svg,.dice .dfill{transition:none} .dice.roll .dtile{animation:none} }
+body[data-sidefocus="A"] .dice{--dc:var(--a)} body[data-sidefocus="B"] .dice{--dc:var(--b)}
+/* the wave display: A on the left, B on the right, what you hear in the middle */
+.scopebox{position:relative;background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 5px 0 var(--shadow);padding:8px 10px;margin-bottom:12px}
+#scope{display:block;width:100%;height:120px}
+#audioBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:.78rem;white-space:nowrap;z-index:5}
+#audioBtn[hidden]{display:none}
+#audioBtn:active{transform:translate(-50%,calc(-50% + 2px))}
+/* morph slider; the A and B keys at its ends focus one side (tap again to morph) */
+.morphrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:10px 0 2px}
+.letter{font-family:var(--font-head);font-size:1.15rem;font-weight:700;line-height:1;width:44px;height:40px;padding:0;letter-spacing:0}
 .letter.a{color:var(--a)} .letter.b{color:var(--b)}
-.morph-slider{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;margin:0;cursor:pointer}
-.morph-slider:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:8px}
-.morph-slider::-webkit-slider-runnable-track{
-  height:10px;border-radius:5px;
-  background:linear-gradient(90deg,var(--a),var(--b));
-  background:linear-gradient(to right in oklch,var(--a),var(--b));
-}
-.morph-slider::-webkit-slider-thumb{
-  -webkit-appearance:none;width:30px;height:30px;margin-top:-10px;border-radius:50%;
-  background:var(--mc);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line),0 1px 3px rgba(0,0,0,.35);
-}
-.morph-slider::-moz-range-track{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--a),var(--b))}
-.morph-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--mc);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
-.morphfoot{display:flex;justify-content:flex-start;align-items:center;gap:8px;padding:6px 0 10px;flex-wrap:wrap}
-.readout{color:var(--muted);font-size:.95rem}
-.readout b{color:var(--ink);font-weight:600}
-.btns{display:flex;gap:6px;flex-wrap:wrap}
-.btns .view{margin-left:6px}
-
+.letter.a[aria-pressed="true"]{background:var(--a);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--a)}
+.letter.b[aria-pressed="true"]{background:var(--b);color:#fff;box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--b)}
+.morph-slider{-webkit-appearance:none;appearance:none;width:100%;height:40px;background:transparent;margin:0;cursor:pointer}
+.morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px;border-radius:8px}
+.morph-slider::-webkit-slider-runnable-track{height:12px;border-radius:6px;border:1.5px solid var(--edge);
+  background:linear-gradient(90deg,var(--a),var(--b));background:linear-gradient(to right in oklch,var(--a),var(--b))}
+.morph-slider::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;border-radius:10px;
+  background:radial-gradient(circle,var(--mc) 0 6px,transparent 6.5px),linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
+.morph-slider::-moz-range-track{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--a),var(--b))}
+.morph-slider::-moz-range-thumb{width:30px;height:30px;border-radius:10px;background:radial-gradient(circle,var(--mc) 0 6px,var(--cap-hi) 6.5px);border:1.5px solid var(--edge);box-shadow:0 4px 0 var(--shadow)}
+.morph-slider:disabled{opacity:.3;cursor:default}
 /* ---------- groups + knobs ---------- */
 main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
 .group{flex:1 1 100%;padding:12px 0 6px}
-.group h2{margin:0 0 6px;font-size:.95rem;font-weight:600;color:var(--muted)}
+.gcard{}
+.group h2{margin:0 0 6px;font-family:var(--font-ui);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
 .knobs{display:flex;flex-wrap:wrap;gap:6px 2px;max-width:calc(4 * 88px + 6px)}
 .kn{width:88px;display:flex;flex-direction:column;align-items:center;text-align:center}
-.kname{font-weight:600;font-size:.92rem;white-space:nowrap}
+.kname{font-weight:600;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap;order:3}
 .kwrap{position:relative}
 .kwrap .icons{position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);z-index:1;display:flex;gap:0}
 .lock{border:0;background:none;padding:0;min-height:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);opacity:.45;border-radius:4px;flex:0 0 auto}
@@ -106,21 +142,24 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .knob.dragging{cursor:grabbing}
 .knob svg{width:100%;height:100%;display:block;overflow:visible}
 .knob svg *{pointer-events:none}
-.knob .bg{stroke:var(--line)}
+.knob .bg{stroke:var(--well)}
 .knob .arcA,.knob .arcB{stroke:var(--mc)}
-.knob .cap{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.knob .cap{fill:url(#capg);stroke:var(--edge);stroke-width:1;filter:drop-shadow(0 2px 0 var(--shadow))}
+.knob .ptr{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round}
 .knob .glyph{stroke:var(--muted);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .knob .gdot{fill:var(--ink)}
-.knob .h{stroke:var(--surface);stroke-width:2}
+.knob .h{stroke:var(--cap-hi);stroke-width:2}
+.knob.kf-A .arcA{stroke:var(--a)} .knob.kf-B .arcA{stroke:var(--b)}
 .knob .hA .h{fill:var(--a)} .knob .hB .h{fill:var(--b)}
 .knob .now{fill:var(--ink);stroke:var(--surface);stroke-width:1.5}
 .knob .ring{fill:none;stroke:var(--ink);stroke-width:1.5;opacity:0}
 .knob g:focus{outline:none}
 .knob g:focus-visible .ring,.knob g.active .ring{opacity:1}
 .knob .ctr .ring{stroke-dasharray:2 2}
-.kval{font-size:.9rem;min-height:1.3em;white-space:nowrap}
+.kval{font-family:var(--font-mono);font-weight:500;font-size:.74rem;min-height:1.3em;white-space:nowrap;padding:1px 5px;border-radius:4px}
+.kn:has(.knob.dragging) .kval{background:var(--hold);color:var(--on-ink)}
 .kval.a{color:var(--a);font-weight:600} .kval.b{color:var(--b);font-weight:600}
-.kab{font-size:.76rem;display:flex;flex-wrap:wrap;column-gap:5px;justify-content:center;line-height:1.2}
+.kab{order:4;font-family:var(--font-mono);font-size:.66rem;display:flex;flex-wrap:wrap;column-gap:5px;justify-content:center;line-height:1.2}
 .kab .a{color:var(--a)} .kab .b{color:var(--b)}
 
 .fxh .tools{display:inline-flex;align-items:center;gap:0}
@@ -144,7 +183,8 @@ main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wra
 .smpnote:empty{display:none}
 .group[data-kind="osc"] .wt{margin-bottom:6px}
 .group[data-kind] .kab{min-height:2.4em;align-content:flex-start}   /* oscillator and effect knobs keep the same height whatever their values say */
-.gname{font:inherit;font-weight:600;color:inherit;white-space:nowrap;margin-right:4px;border:0;background:none;padding:0;min-height:0;display:inline-flex;align-items:baseline;gap:5px;cursor:pointer}
+.gname{font:inherit;font-weight:600;letter-spacing:inherit;text-transform:inherit;color:inherit;white-space:nowrap;margin:0 4px 0 0;border:0;background:none;box-shadow:none;padding:0;min-height:0;display:inline-flex;align-items:baseline;gap:5px;cursor:pointer;transform:none}
+.gname:active{transform:none!important;box-shadow:none!important}
 .gname:disabled{cursor:default;opacity:1}
 .gname .more{font-size:.75em;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:0 6px}
 .gname .more:empty{display:none}
@@ -200,20 +240,15 @@ body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
 .ednote{margin:0;color:var(--muted);font-size:.88rem}
 
 /* ---------- keyboard ---------- */
-.kb{position:sticky;bottom:0;z-index:25;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.kb{position:sticky;bottom:0;z-index:25;background:var(--bg);border-top:1px solid var(--edge);padding-bottom:env(safe-area-inset-bottom,0px)}
 .kbbar{display:flex;align-items:center;gap:6px;padding:8px 0}
-.kbbar .oct{min-width:3.2ch;text-align:center;font-weight:600}
+.kbbar .oct{min-width:3.4ch;text-align:center;font-family:var(--font-mono);font-weight:700;font-size:.85rem}
 .ctl{display:inline-flex;align-items:center;gap:6px}
 .ctl[hidden]{display:none}
-.bpm{display:inline-flex;align-items:center;gap:4px;font-size:.9rem;color:var(--muted);touch-action:none;cursor:ns-resize;padding:0 2px;border-radius:6px;user-select:none;-webkit-user-select:none;white-space:nowrap}
-.bpm svg{display:block}
-.bpmtxt{display:inline-block;width:4.8em;white-space:nowrap}
-#bpmVal{display:inline-block;width:1.9em;text-align:right;font-variant-numeric:tabular-nums}
-.monobtn{min-width:3.8em}
+.monobtn{min-width:4.6em}
 .playbtn{min-width:44px;display:inline-flex;align-items:center;justify-content:center}
-.playbtn.playing{background:var(--mc);border-color:var(--mc);color:#fff;animation:breathe 1.6s ease-in-out infinite}
+.playbtn.playing,#hplay.playing{background:var(--mc);border-color:var(--mc);color:#fff;animation:breathe 1.6s ease-in-out infinite}
 @keyframes breathe{0%,100%{filter:brightness(.72) saturate(.9);box-shadow:0 0 0 0 color-mix(in srgb,var(--mc) 70%,transparent)}50%{filter:brightness(1.45) saturate(1.2);box-shadow:0 0 0 7px color-mix(in srgb,var(--mc) 0%,transparent)}}
-.bpm:focus-visible{outline:2px solid var(--ink)} .bpm b{color:var(--ink);font-weight:600}
 .panes{overflow:hidden;margin-bottom:10px}
 .slide{display:flex;width:200%;transition:transform .28s ease}
 .slide.seq{transform:translateX(-50%)}
@@ -221,17 +256,16 @@ body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
 .seqpane{height:136px;display:flex;gap:6px;align-items:flex-start}
 .seqpane .knobs{flex:0 0 auto}
 .vseg{flex-direction:column;align-self:center;margin-left:-4px}
-.vseg button{margin:0;margin-top:-1px;border-radius:0;min-width:4.2em}
-.vseg button:first-child{border-radius:6px 6px 0 0;margin-top:0}
-.vseg button:last-child{border-radius:0 0 6px 6px}
+.vseg{gap:6px}
+.vseg button{min-width:4.6em}
 .seqright{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding-top:4px}
 .seqctl{display:flex;gap:6px;justify-content:flex-end}
 .seqctl button{min-height:30px;padding:2px 10px;white-space:nowrap}
 .lanes{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:repeat(3,26px);gap:4px 6px;align-items:center}
-.lanes canvas{width:100%;height:26px;display:block;background:var(--surface);border:1px solid var(--line);border-radius:6px;min-width:0}
-.ln{font-size:.85rem;font-weight:600;color:var(--muted);text-align:right}
+.lanes canvas{width:100%;height:26px;display:block;background:var(--well);border:1px solid var(--edge);border-radius:7px;min-width:0}
+.ln{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:right}
 .ln.a{color:var(--a)} .ln.b{color:var(--b)}
-#roll{width:100%;display:block;touch-action:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+#roll{width:100%;display:block;touch-action:none;background:var(--surface);border:1px solid var(--edge);border-radius:8px;cursor:pointer}
 #sqDens{width:110px;accent-color:var(--side)}
 #velCv{width:100%;height:56px;display:block;touch-action:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;cursor:ns-resize}
 .edrow .lbl{color:var(--muted);font-size:.92rem}
@@ -244,20 +278,12 @@ body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
 @media (prefers-reduced-motion:reduce){ .slide{transition:none} .playbtn.playing{animation:none} }
 .kbbar .spacer{flex:1}
 .keys{position:relative;height:136px;display:flex;touch-action:none;user-select:none;-webkit-user-select:none}
-.white{flex:1;background:var(--key);border:1px solid var(--line);border-radius:0 0 6px 6px;margin-right:-1px;position:relative}
-.white span{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.75rem;color:#6B7483}
-.black{position:absolute;top:0;height:62%;width:7.5%;background:var(--keyb);border-radius:0 0 4px 4px;z-index:2}
-.white.on{background:color-mix(in srgb,var(--ink) 20%,var(--key))}
-.black.on{background:var(--muted)}
-.rbar{display:flex;align-items:center;gap:4px;padding:8px 0 2px;flex-wrap:wrap}
-.rgrp{display:inline-flex;align-items:center;gap:3px}
-.rgrp + .rgrp{margin-left:4px}
-.rlab{color:var(--muted);font-size:.85rem;margin-right:2px}
-.rbar button{min-height:32px;padding:2px 7px;font-size:.88rem}
-.rlab .short{display:none}
-@media (max-width:520px){ .rlab .long{display:none} .rlab .short{display:inline} .rbar button{padding:2px 6px} .rgrp + .rgrp{margin-left:2px} }
-.rbar .ra{color:var(--a)} .rbar .rb{color:var(--b)}
-.rbar .undo{margin-left:auto;padding:2px 8px;display:inline-flex;align-items:center}
+.white{flex:1;background:linear-gradient(var(--key),color-mix(in srgb,var(--key) 88%,var(--edge)));border:1px solid var(--edge);border-radius:0 0 8px 8px;margin-right:-1px;position:relative;box-shadow:inset 0 -3px 0 color-mix(in srgb,var(--edge) 60%,transparent)}
+.white span{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-family:var(--font-mono);font-size:.62rem;color:#6B7483}
+.black{position:absolute;top:0;height:62%;width:7.5%;background:var(--keyb);border-radius:0 0 5px 5px;z-index:2;box-shadow:inset 0 -4px 0 rgba(255,255,255,.12)}
+.white.on{background:var(--hold)}
+.black.on{background:color-mix(in srgb,var(--hold) 80%,#000)}
+#play{display:none}   /* play lives in the header since 2026-11-10 */
 @media (min-width:640px){
   .seqpane{height:148px} .lanes{grid-template-rows:repeat(3,30px)} .lanes canvas{height:30px} .keys{height:148px}
   .group{flex:0 1 auto} .group.wide{flex:1 1 100%}
@@ -273,77 +299,74 @@ body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
    and Output in the middle; the seven effects in one row below, each as wide as two rows of its knobs need; the
    bottom panel last. Knobs are compact and A/B values sit on one line. Rows are flex lines of fixed shares. */
 body.desk{overflow:hidden;height:100vh}
-.desk #app{width:1440px;height:900px;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
-.desk .top .wrap,.desk .kb .wrap{max-width:none;padding:0 12px}
-.desk .titlebar{padding:6px 0;justify-content:flex-start}
-.desk .top .wrap{display:flex;align-items:center;gap:16px}
-.desk .morphfoot{padding:0;margin-left:auto}
-.desk .titlebar #audioBtn{order:3}
-.desk .foot{display:none}
-.desk main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
-.desk .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
-.desk .group{box-sizing:border-box}
-.desk .group[data-kind="osc"]{width:calc((100% - 4 * var(--g)) / 5)}
-.desk .group[data-group="Voice"],.desk .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
-.desk .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 5 / 12)}
-.desk .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) / 12)}
+.desk.dev #app{width:1440px;height:900px;margin:0 auto;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+.desk.dev .top .wrap,.desk.dev .kb .wrap{max-width:none;padding:0 12px}
+.desk.dev .top .wrap{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px}
+.desk.dev .titlebar{padding:6px 0}
+.desk.dev .dicerow{padding:0}
+.desk.dev .scopebox{position:fixed;left:50%;top:50%;width:0;height:0;overflow:visible;border:0;padding:0;box-shadow:none;background:none}   /* the developer view shows waves per oscillator; the audio button stays */
+.desk.dev #scope{display:none}
+.desk.dev .morphrow{padding:4px 0 0}
+.desk.dev .foot{display:none}
+.desk.dev main{--g:6px;max-width:none;margin:0;padding:6px 12px;display:flex;flex-wrap:wrap;gap:var(--g);align-content:flex-start;overflow:hidden}
+.desk.dev .group{padding:5px 8px 4px;border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,var(--bg));min-width:0}
+.desk.dev .group{box-sizing:border-box}
+.desk.dev .group[data-kind="osc"]{width:calc((100% - 4 * var(--g)) / 5)}
+.desk.dev .group[data-group="Voice"],.desk.dev .group[data-group="Amp envelope"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
+.desk.dev .group[data-group="Filter"]{width:calc((100% - 3 * var(--g)) * 5 / 12)}
+.desk.dev .group[data-group="Output"]{width:calc((100% - 3 * var(--g)) / 12)}
 /* effects: shares of 23, three knobs to a row (Lo-fi and OTT four) */
-.desk .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 23)}
-.desk .group[data-group="Lo-fi"],.desk .group[data-group="OTT"]{width:calc((100% - 6 * var(--g)) * 4 / 23)}
-.desk .group[data-group="Drive"]{width:calc((100% - 6 * var(--g)) * 2.7 / 23)}   /* a short name: room for Modulation's */
-.desk .group[data-group="Modulation"]{width:calc((100% - 6 * var(--g)) * 3.3 / 23)}
-.desk .group[data-kind="fx"] .knobs{justify-content:flex-start}
-.desk .group[data-group="Output"] .sectool.da,.desk .group[data-group="Output"] .sectool.db{display:none}
-.desk .group[data-group="Output"] .knobs{flex-wrap:nowrap;justify-content:center}
-.desk .group[data-group="Output"] .kn{width:46px} .desk .group[data-group="Output"] .knob{width:34px;height:34px}
-.desk .group h2{margin:0 0 3px;font-size:.85rem}
-.desk .group h2 .lock{width:20px;height:20px}
-.desk .fxsw{min-height:20px;padding:0 8px;font-size:.72rem}
-.desk .group[data-kind="fx"]{padding-left:6px;padding-right:6px}
-.desk .group[data-kind="fx"] h2{gap:2px}
-.desk .group[data-kind="fx"] h2 .lock{width:17px;margin-left:1px}
-.desk .group[data-kind="fx"] .fxsw{margin-left:auto;padding:0 6px}
-.desk .knobs{max-width:none;gap:2px 0}
-.desk .kn{width:54px}
-.desk .knob{width:40px;height:40px;margin:1px 0}
-.desk .kname{font-size:.7rem}
-.desk .kval{font-size:.7rem;min-height:1.2em}
-.desk .kab,.desk .group[data-kind] .kab{font-size:.6rem;min-height:1.25em;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;max-width:54px}
-.desk .kwrap .icons{bottom:-6px;transform:translateX(-50%) scale(.8)}
-.desk .viz{height:38px;max-width:none;margin:1px 0 4px}
-.desk .wt{gap:5px}
-.desk .wtcard{padding:3px 4px;gap:1px}
-.desk .wtcard canvas{height:26px}
-.desk .wtlabel{font-size:.68rem;min-height:20px}
-.desk .group[data-kind="osc"] .wt{margin-bottom:3px}
-.desk .smpsel,.desk .swb{min-height:20px;font-size:.68rem}
-.desk .swb{padding:0 5px}
-.desk .swrow{margin-top:2px;gap:3px 8px;font-size:.72rem}
-.desk .swrow .seg button{min-height:20px;padding:0 6px;font-size:.7rem}
-.desk .group[data-group="Filter"] .gbody{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.desk .sub + .sub{margin-top:0}
-.desk .subh{display:none}
-.desk .group[data-group="Output"] .knobs{justify-content:center}
+.desk.dev .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 23)}
+.desk.dev .group[data-group="Lo-fi"],.desk.dev .group[data-group="OTT"]{width:calc((100% - 6 * var(--g)) * 4 / 23)}
+.desk.dev .group[data-group="Drive"]{width:calc((100% - 6 * var(--g)) * 2.7 / 23)}   /* a short name: room for Modulation's */
+.desk.dev .group[data-group="Modulation"]{width:calc((100% - 6 * var(--g)) * 3.3 / 23)}
+.desk.dev .group[data-kind="fx"] .knobs{justify-content:flex-start}
+.desk.dev .group[data-group="Output"] .sectool.da,.desk.dev .group[data-group="Output"] .sectool.db{display:none}
+.desk.dev .group[data-group="Output"] .knobs{flex-wrap:nowrap;justify-content:center}
+.desk.dev .group[data-group="Output"] .kn{width:46px} .desk.dev .group[data-group="Output"] .knob{width:34px;height:34px}
+.desk.dev .group h2{margin:0 0 3px;font-size:.85rem}
+.desk.dev .group h2 .lock{width:20px;height:20px}
+.desk.dev .fxsw{min-height:20px;padding:0 8px;font-size:.72rem}
+.desk.dev .group[data-kind="fx"]{padding-left:6px;padding-right:6px}
+.desk.dev .group[data-kind="fx"] h2{gap:2px}
+.desk.dev .group[data-kind="fx"] h2 .lock{width:17px;margin-left:1px}
+.desk.dev .group[data-kind="fx"] .fxsw{margin-left:auto;padding:0 6px}
+.desk.dev .knobs{max-width:none;gap:2px 0}
+.desk.dev .kn{width:54px}
+.desk.dev .knob{width:40px;height:40px;margin:1px 0}
+.desk.dev .kname{font-size:.7rem}
+.desk.dev .kval{font-size:.7rem;min-height:1.2em}
+.desk.dev .kab,.desk.dev .group[data-kind] .kab{font-size:.6rem;min-height:1.25em;flex-wrap:nowrap;white-space:nowrap;overflow:hidden;max-width:54px}
+.desk.dev .kwrap .icons{bottom:-6px;transform:translateX(-50%) scale(.8)}
+.desk.dev .viz{height:38px;max-width:none;margin:1px 0 4px}
+.desk.dev .wt{gap:5px}
+.desk.dev .wtcard{padding:3px 4px;gap:1px}
+.desk.dev .wtcard canvas{height:26px}
+.desk.dev .wtlabel{font-size:.68rem;min-height:20px}
+.desk.dev .group[data-kind="osc"] .wt{margin-bottom:3px}
+.desk.dev .smpsel,.desk.dev .swb{min-height:20px;font-size:.68rem}
+.desk.dev .swb{padding:0 5px}
+.desk.dev .swrow{margin-top:2px;gap:3px 8px;font-size:.72rem}
+.desk.dev .swrow .seg button{min-height:20px;padding:0 6px;font-size:.7rem}
+.desk.dev .group[data-group="Filter"] .gbody{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.desk.dev .sub + .sub{margin-top:0}
+.desk.dev .subh{display:none}
+.desk.dev .group[data-group="Output"] .knobs{justify-content:center}
 /* bottom panel: randomize row and morph slider share a line */
-.desk .kb{position:static}
-.desk .kb .wrap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:16px;align-items:center}
-.desk .rbar{padding:4px 0}
-.desk .kb .morph{padding:0}
-.desk .panes{grid-column:1 / -1}
-.desk .kbbar{grid-row:1;grid-column:3}
-.desk .kbbar{padding:2px 0 4px}
-.desk .panes{margin-bottom:6px}
-.desk .keys,.desk .seqpane{height:100px}
-.desk .lanes{grid-template-rows:repeat(3,22px)} .desk .lanes canvas{height:22px}
+.desk.dev .kb{position:static}
+.desk.dev .kbbar{padding:2px 0 4px}
+.desk.dev .panes{margin-bottom:6px}
+.desk.dev .keys,.desk.dev .seqpane{height:100px}
+.desk.dev .lanes{grid-template-rows:repeat(3,22px)} .desk.dev .lanes canvas{height:22px}
 /* oscillators: engine knobs, then Level, Pan, Bypass, six to a row */
-.desk .group[data-kind="osc"] .knobs{justify-content:flex-start}
-.desk .seqright{flex-direction:row;align-items:center}
-.desk .lanes{flex:1 1 auto;min-width:0}
-.desk .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
-.desk .seqctl button{min-height:26px;padding:1px 8px;font-size:.8rem}
+.desk.dev .group[data-kind="osc"] .knobs{justify-content:flex-start}
+.desk.dev .seqright{flex-direction:row;align-items:center}
+.desk.dev .lanes{flex:1 1 auto;min-width:0}
+.desk.dev .seqctl{flex:0 0 auto;flex-direction:column;align-items:stretch}
+.desk.dev .seqctl button{min-height:26px;padding:1px 8px;font-size:.8rem}
 /* ---------- Basic view on desktop: tiles with larger knobs, sized by their key controls ---------- */
-.desk #app{position:relative}
-.desk .kb{position:relative;z-index:25}
+.desk.dev #app{position:relative}
+.desk.dev .kb{position:relative;z-index:25}
 .desk.dev:not(.full) .group:not(.open) .kn{width:62px}
 .desk.dev:not(.full) .group:not(.open) .knob{width:48px;height:48px}
 .desk.dev:not(.full) .group:not(.open) .kname,.desk.dev:not(.full) .group:not(.open) .kval{font-size:.78rem}
@@ -359,59 +382,82 @@ body.desk{overflow:hidden;height:100vh}
 .desk.dev:not(.full) .group[data-kind="fx"]{width:calc((100% - 6 * var(--g)) * 3 / 18.3)}
 .desk.dev:not(.full) :is(.group[data-group="Drive"],.group[data-group="Formant"],.group[data-group="OTT"]){width:calc((100% - 6 * var(--g)) * 2.1 / 18.3)}
 /* the overlay sits over the sections, inside the scaled design */
-.desk .ovlback{bottom:0}
-.desk .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
-.desk .group.open .gdone{min-height:24px;font-size:.78rem}
+.desk.dev .ovlback{bottom:0}
+.desk.dev .group.open .gcard{position:absolute;left:50%;right:auto;bottom:auto;top:56px;transform:translateX(-50%);width:max-content;min-width:380px;max-width:1300px;max-height:620px;padding:10px 14px}
+.desk.dev .group.open .gdone{min-height:24px;font-size:.78rem}
 /* developer view: the sections scroll inside the window (the bottom panel stays put); the player's cards sit in the middle row */
 .desk.dev main{overflow:auto}
 .desk.dev .group[data-group="Sound"],.desk.dev .group[data-group="Sequence"]{width:calc((100% - 3 * var(--g)) * 3 / 12)}
 /* rows: the five oscillators; Sound, Voice, Filter, Amp envelope, Output; the seven effects; Sequence last */
 .desk.dev .group:not([data-kind="osc"]){order:1} .desk.dev .group[data-kind="fx"]{order:2} .desk.dev .group[data-group="Sequence"]{order:3}
+/* the family's tracked uppercase labels are too wide for the developer view's small knobs */
+.dev .kname{letter-spacing:.02em;text-transform:none;font-size:.72rem}
+.dev .group h2{letter-spacing:.06em}
 /* ---------- the player's view (body without .dev, see ui/overlay.js) ----------
-   Only the Sound card (the four macros) and the Sequence card. Larger knobs, no padlocks or links. */
+   The wave display and morph above; the Sound card (the four macros) and the Sequence card as panels like the
+   family's (Orbital's instrument card). Larger knobs, no padlocks or links. */
 body:not(.dev) main .group:not([data-group="Sound"]):not([data-group="Sequence"]){display:none}
-body:not(.dev) .view{display:none}
 body:not(.dev) .kwrap .icons{display:none}
 body:not(.dev) .group .more{display:none}
 .group[data-group="Sound"] .gname,.group[data-group="Sequence"] .gname{cursor:default}
+body:not(.dev) main .group{padding:0;margin:0 0 10px}
+body:not(.dev) main .gcard{background:var(--surface);border:1px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:12px 12px 10px}
+body:not(.dev) main .group h2{display:flex;align-items:center;gap:8px;margin:0 0 8px}
+body:not(.dev) main .group h2::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--mc)}
 .qscale{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}
-.qscale .lbl{font-weight:600;font-size:.92rem;margin-right:2px}
+.qscale .lbl{font-weight:600;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:2px}
 .qscale select{min-height:32px}
-/* desktop: the two cards side by side, centered, with large knobs */
-.desk:not(.dev) main{justify-content:center;align-content:center;gap:24px}
-.desk:not(.dev) .group[data-group="Sound"],.desk:not(.dev) .group[data-group="Sequence"]{width:auto;flex:0 0 auto;padding:14px 22px 12px}
-.desk:not(.dev) .group h2{font-size:1.05rem;margin-bottom:8px}
-.desk:not(.dev) main .kn{width:150px}
-.desk:not(.dev) main .knob{width:124px;height:124px;margin:6px 0}
-.desk:not(.dev) main .kname{font-size:1.1rem}
-.desk:not(.dev) main .kval{font-size:1.05rem}
-.desk:not(.dev) main .kab{font-size:.9rem;max-width:150px}
-.desk:not(.dev) main .knobs{gap:8px 10px}
-.desk:not(.dev) .qscale{margin-top:14px}
-.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:150px}
-.desk:not(.dev) .lanes{grid-template-rows:repeat(3,36px)} .desk:not(.dev) .lanes canvas{height:36px}
+/* the developer view keeps one Wavetable (2026-11-10): the other oscillators are silent and hidden */
+.group[data-kind="osc"]:not([data-slot="0"]){display:none}
 /* phones: four macros across, even at 375 px */
 body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs,body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
 body:not(.dev):not(.desk) main .kn{width:auto}
-body:not(.dev) #rndLinked{display:none}   /* linked knobs belong to the developer view */
+/* desktop (plugin): designed at 1280 x 800 and scaled. Header, dice, wave display and morph on the left; the two cards on
+   the right; the bottom panel below */
+.desk:not(.dev) #app{display:grid;grid-template-columns:minmax(0,1fr) 520px;grid-template-rows:minmax(0,1fr) auto;column-gap:16px;padding:0 16px}
+.desk:not(.dev) .top{grid-column:1;grid-row:1;display:flex;flex-direction:column;min-height:0}
+.desk:not(.dev) .top .wrap{max-width:none;width:100%;margin:0;padding:0;display:flex;flex-direction:column;flex:1;min-height:0}
+.desk:not(.dev) .scopebox{flex:1;min-height:0;display:flex}
+.desk:not(.dev) #scope{height:auto;flex:1;min-height:0}
+.desk:not(.dev) main{grid-column:2;grid-row:1;max-width:none;margin:0;padding:62px 0 0;display:flex;flex-direction:column;gap:12px;align-content:stretch;overflow:hidden}
+.desk:not(.dev) main .group{margin:0}
+.desk:not(.dev) main .knobs{display:grid;grid-template-columns:repeat(4,1fr);max-width:none;gap:4px}
+.desk:not(.dev) main .kn{width:auto}
+.desk:not(.dev) main .knob{width:96px;height:96px;margin:4px 0}
+.desk:not(.dev) main .kval{font-size:.9rem}
+.desk:not(.dev) .kb{grid-column:1 / -1;grid-row:2}
+.desk:not(.dev) .kb .wrap{max-width:none;padding:0}
+.desk:not(.dev) .keys,.desk:not(.dev) .seqpane{height:140px}
+.desk:not(.dev) .lanes{grid-template-rows:repeat(3,34px)} .desk:not(.dev) .lanes canvas{height:34px}
+.desk:not(.dev) .foot{display:none}
+.desk:not(.dev) #app{margin:0 auto;overflow:hidden}
+.desk:not(.dev) .kb{position:static}
+.desk:not(.dev) .kbbar{padding:6px 0}
+.desk:not(.dev) .panes{margin-bottom:12px}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="capg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--cap-hi)"/><stop offset="1" style="stop-color:var(--cap-lo)"/></linearGradient></defs></svg>
 <div id="app">
 <header class="top">
   <div class="wrap">
     <div class="titlebar">
-      <h1>Diptych <span>morph synth</span></h1>
-      <button id="audioBtn" class="attn" type="button">Tap to start audio</button>
+      <h1 class="wordmark">Diptych</h1>
+      <span class="hctl">
+        <button type="button" id="hplay" class="key icon" aria-label="Play"></button>
+        <span class="key bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag up or down, or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120"><b id="bpmVal">120</b><small>BPM</small></span>
+        <button type="button" id="undo" class="key icon" aria-label="Undo" disabled></button>
+        <button type="button" id="redo" class="key icon" aria-label="Redo" disabled></button>
+      </span>
+      <span class="seg view" role="group" aria-label="View"><button type="button" class="key" id="viewBasic">Basic</button><button type="button" class="key" id="viewFull">Full</button></span>
     </div>
-    <div class="morphfoot">
-      <div class="btns">
-        <button type="button" id="copyAB">Copy A to B</button>
-        <button type="button" id="copyBA">Copy B to A</button>
-        <button type="button" id="swap">Swap</button>
-        <button type="button" id="resetAll">Reset patch</button>
-        <span class="seg view" role="group" aria-label="View"><button type="button" id="viewBasic">Basic</button><button type="button" id="viewFull">Full</button></span>
-      </div>
+    <div class="dicerow" role="group" aria-label="Randomize">
+      <div class="dice" id="diceSound" data-what="sound" role="slider" tabindex="0" aria-label="Randomize the sound: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sound <i class="dtarget"></i></span></div>
+      <div class="dice" id="diceSeq" data-what="seq" role="slider" tabindex="0" aria-label="Randomize the sequence: slide further for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="dtile"></span><span class="dlab">Sequence <i class="dtarget"></i></span></div>
+    </div>
+    <div class="scopebox">
+      <canvas id="scope" aria-label="Wave display: side A, the sound you hear now, and side B"></canvas>
+      <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
     </div>
   </div>
 </header>
@@ -425,41 +471,26 @@ body:not(.dev) #rndLinked{display:none}   /* linked knobs belong to the develope
 
 <div class="kb" id="kb">
   <div class="wrap">
-    <div class="rbar" role="group" aria-label="Randomize">
-      <span class="rgrp" role="group" aria-label="Randomize sound"><span class="rlab">Sound</span>
-        <button type="button" id="rndA" class="ra" aria-label="Randomize sound, side A">A</button><button type="button" id="rndLinked" aria-label="Randomize linked knobs">Link</button><button type="button" id="rndAll" aria-label="Randomize all of the sound">All</button><button type="button" id="rndB" class="rb" aria-label="Randomize sound, side B">B</button></span>
-      <span class="rgrp" role="group" aria-label="Randomize sequence"><span class="rlab"><span class="long">Sequence</span><span class="short">Seq</span></span>
-        <button type="button" id="rsA" class="ra" aria-label="Randomize sequence A">A</button><button type="button" id="rsBoth" aria-label="Randomize both sequences">Both</button><button type="button" id="rsB" class="rb" aria-label="Randomize sequence B">B</button></span>
-      <button type="button" id="undo" class="undo" aria-label="Undo" disabled>Undo</button>
-    </div>
-    <div class="morph">
-      <span class="letter a" aria-hidden="true">A</span>
+    <div class="morphrow">
+      <button type="button" class="key letter a" data-focus="A" aria-pressed="false" aria-label="Edit side A only (tap again to morph)">A</button>
       <input class="morph-slider" id="morph" type="range" min="0" max="1000" step="1" value="0" aria-label="Morph between A and B">
-      <span class="letter b" aria-hidden="true">B</span>
+      <button type="button" class="key letter b" data-focus="B" aria-pressed="false" aria-label="Edit side B only (tap again to morph)">B</button>
     </div>
     <div class="kbbar">
       <span class="seg" role="group" aria-label="Bottom panel">
-        <button type="button" id="pmKeys" aria-pressed="true">Keys</button><button type="button" id="pmSeq" aria-pressed="false">Seq</button>
+        <button type="button" class="key" id="pmKeys" aria-pressed="true">Keys</button><button type="button" class="key" id="pmSeq" aria-pressed="false">Seq</button>
       </span>
       <span class="spacer"></span>
       <span class="ctl" id="kctl">
-        <button type="button" id="octDown" aria-label="Octave down">−</button>
+        <button type="button" class="key" id="octDown" aria-label="Octave down">−</button>
         <span class="oct" id="octLabel">C3</span>
-        <button type="button" id="octUp" aria-label="Octave up">+</button>
-        <button type="button" id="monoBtn" class="monobtn"></button>
-        <button type="button" id="latch" aria-pressed="false">Latch</button>
+        <button type="button" class="key" id="octUp" aria-label="Octave up">+</button>
+        <button type="button" id="monoBtn" class="key monobtn"></button>
+        <button type="button" class="key" id="latch" aria-pressed="false">Latch</button>
       </span>
       <span class="ctl" id="sctl" hidden>
-        <button type="button" id="monoBtn2" class="monobtn"></button>
-        <button type="button" id="play" class="playbtn" aria-label="Play"></button>
-        <span class="bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120">
-          <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true">
-            <circle cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="75 200" transform="rotate(135 20 20)" fill="none" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
-            <circle id="bpmArc" cx="20" cy="20" r="15" pathLength="100" stroke-dasharray="0 200" transform="rotate(135 20 20)" fill="none" stroke="var(--mc)" stroke-width="4" stroke-linecap="round"/>
-            <line id="bpmPtr" x1="20" y1="20" x2="20" y2="9" stroke="var(--ink)" stroke-width="2.4" stroke-linecap="round"/>
-          </svg>
-          <span class="bpmtxt"><b id="bpmVal">120</b> bpm</span>
-        </span>
+        <button type="button" id="monoBtn2" class="key monobtn"></button>
+        <button type="button" id="play" class="key playbtn" aria-label="Play"></button>
       </span>
     </div>
     <div class="panes">
@@ -467,7 +498,7 @@ body:not(.dev) #rndLinked{display:none}   /* linked knobs belong to the develope
         <div class="pane" id="keysPane"><div class="keys" id="keys"></div></div>
         <div class="pane seqpane" id="seqPane" inert>
           <div class="knobs" id="seqKnob"></div>
-          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" id="pmWalk">Walk</button><button type="button" id="pmSwap">Swap</button></div>
+          <div class="seg vseg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></div>
           <div class="seqright">
             <div class="lanes">
               <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
@@ -475,8 +506,8 @@ body:not(.dev) #rndLinked{display:none}   /* linked knobs belong to the develope
               <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
             </div>
             <div class="seqctl">
-              <button type="button" id="seqAB" aria-label="Copy sequence A to B">A→B</button><button type="button" id="seqBA" aria-label="Copy sequence B to A">B→A</button>
-              <button type="button" id="seqEdit" aria-label="Edit sequences">Edit</button>
+              <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A→B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B→A</button>
+              <button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
             </div>
           </div>
         </div>
@@ -2218,7 +2249,7 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORE, JSON.stringify({ ...state, ver: STORE_VER, ids: DEFS.map(d => d.id),
+      localStorage.setItem(STORE, JSON.stringify({ ...state, morph: typeof savedMorph === 'function' ? savedMorph() : state.morph, ver: STORE_VER, ids: DEFS.map(d => d.id),
         tables: tables.map(t => ({ A: { name: t.A.name, frames: t.A.frames.map(enc) }, B: { name: t.B.name, frames: t.B.frames.map(enc) } })) }));
     } catch (e) {}
   }, 400);
@@ -2282,7 +2313,7 @@ function sendAll() {   // runs during startup, before ready is set
 // (notably iOS) can drop back to a suspended or "interrupted" state later.
 // Every tap, click and key press therefore tries to wake the audio up again.
 function kick() {
-  if (!ctx || userMuted) return;
+  if (!ctx) return;
   if (ctx.state !== 'running') {
     try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, ctx.sampleRate); s.connect(ctx.destination); s.start(0); } catch (e) {}
     ctx.resume().then(updateAudioBtn, () => {});
@@ -2344,19 +2375,14 @@ registerProcessor('morph-engine', MorphProcessor);`;
   return starting;
 }
 function engineInfo(t) { document.getElementById('engineInfo').textContent = t; }
-let userMuted = false;
+/* The audio button only appears while audio is off ("Tap to start audio", over the wave display); there is no mute
+   (owner, 2026-11-10). */
 const audioBtn = document.getElementById('audioBtn');
 function updateAudioBtn() {
-  const off = !ready || !ctx || (ctx.state !== 'running' && !userMuted);
-  audioBtn.textContent = off ? 'Tap to start audio' : userMuted ? 'Unmute' : 'Mute';
-  audioBtn.classList.toggle('attn', off);
+  const off = !ready || !ctx || ctx.state !== 'running';
+  audioBtn.hidden = !off;
 }
-audioBtn.addEventListener('click', () => {
-  if (!ready || ctx.state !== 'running' && !userMuted) { ensureAudio(); kick(); return; }
-  userMuted = !userMuted;
-  if (userMuted) { send({ type:'panic' }); ctx.suspend(); } else ctx.resume();
-  updateAudioBtn();
-});
+audioBtn.addEventListener('click', () => { ensureAudio(); kick(); });
 ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'click', 'keydown'].forEach(t =>
   document.addEventListener(t, () => ensureAudio(), { capture:true, passive:true }));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
@@ -2389,6 +2415,7 @@ const knobSVG = (d, i) => `<svg viewBox="0 0 80 80" aria-hidden="false">
   <circle class="arcA" id="arcA${i}" cx="40" cy="40" r="${R}" pathLength="100" transform="rotate(135 40 40)" fill="none" stroke-width="6" stroke-linecap="round"/>
   <circle class="arcB" id="arcB${i}" cx="40" cy="40" r="${R}" pathLength="100" transform="rotate(135 40 40)" fill="none" stroke-width="6" stroke-linecap="round"/>
   <circle class="cap" cx="40" cy="40" r="21"/>
+  <line class="ptr" id="ptr${i}" x1="40" y1="25" x2="40" y2="31"/>
   <path class="glyph" id="gl${i}"/>
   <circle class="gdot" id="gd${i}" r="2"/>
   <g class="ctr" id="c${i}" tabindex="0" role="slider" aria-label="${d.label} morph curve" aria-valuemin="-100" aria-valuemax="100">
@@ -2451,7 +2478,12 @@ DEFS.forEach((d, i) => {
 
 const $ = id => document.getElementById(id);
 const valText = (i, x) => FMT[DEFS[i].key](MorphEngine.denorm(DEFS[i], x));
-const editing = {};   // i -> 'A' | 'B' | 'C' while a knob is being dragged
+const editing = {};
+/* Side focus (DESIGN.md section 15, built 2026-11-10): A | Morph | B. In A or B every knob shows and edits only that
+   side, in its color; the morph sits at that side and the slider rests; Morph brings the morph back exactly as it was.
+   Linked and single-side knobs are unaffected (they hold one value). Curves are edited in Morph. */
+let focus = 'M', focusMem = 0;
+const focusSide = i => (focus !== 'M' && !isLinked(i) ? focus : null);   // i -> 'A' | 'B' | 'C' while a knob is being dragged
 
 function setArc(el, from, to) {
   const s = Math.min(from, to), l = Math.abs(to - from);
@@ -2471,8 +2503,9 @@ function updateKnob(i) {
   $('hB' + i).setAttribute('transform', `translate(${bx.toFixed(2)} ${by.toFixed(2)})`);
   $('hBc' + i).setAttribute('r', Math.abs(a - b) < 0.035 ? 3 : 5.5);   // stacked handles stay visible
   $('now' + i).setAttribute('cx', nx.toFixed(2)); $('now' + i).setAttribute('cy', ny.toFixed(2));
+  // the cap's pointer shows the value heard (or the focused side's)
   // Linked (or single-side) parameters don't morph: one handle, one value, no curve
-  const linked = isLinked(i), kn = $('k' + i);
+  const linked = isLinked(i), kn = $('k' + i), F = focusSide(i);
   kn.classList.toggle('kl-A', d.single === 'A'); kn.classList.toggle('kl-B', d.single === 'B'); kn.classList.toggle('kl-L', linked && !d.single);
   $('now' + i).setAttribute('r', linked || d.seq ? 0 : 3.4);
   $('hB' + i).style.display = linked ? 'none' : '';
@@ -2480,6 +2513,17 @@ function updateKnob(i) {
   $('c' + i).setAttribute('tabindex', linked || d.seq ? -1 : 0);
   $('gd' + i).setAttribute('r', linked || d.seq ? 0 : 2);
   if (linked) { setArc($('arcA' + i), 0, a); setArc($('arcB' + i), a, a); }
+  // side focus: only that side's value, one handle in its color, no curve
+  kn.classList.toggle('kf-A', F === 'A'); kn.classList.toggle('kf-B', F === 'B');
+  if (F) {
+    const x = state[F][i], [fx, fy] = pt(x);
+    setArc($('arcA' + i), 0, x); setArc($('arcB' + i), x, x);
+    $('h' + F + i).setAttribute('transform', `translate(${fx.toFixed(2)} ${fy.toFixed(2)})`);
+    $('h' + (F === 'A' ? 'B' : 'A') + i).style.display = 'none';
+    $('h' + F + i).style.display = '';
+    $('hBc' + i).setAttribute('r', 5.5);
+    $('now' + i).setAttribute('r', 0); $('gd' + i).setAttribute('r', 0); $('c' + i).setAttribute('tabindex', -1);
+  } else if (!linked) $('hA' + i).style.display = '';
 
   // center glyph: the morph curve drawn in an 18×18 box
   const x0 = 31, y0 = 49, S = 18, m = state.morph;
@@ -2503,12 +2547,18 @@ function updateKnob(i) {
     for (let k = 0; k <= 20; k++) { const t = k / 20; path += (k ? 'L' : 'M') + (x0 + t * S).toFixed(2) + ' ' + (y0 - MorphEngine.bend(t, c) * S).toFixed(2); }
     gy = MorphEngine.bend(m, c);
   }
-  $('gl' + i).setAttribute('d', linked || d.seq ? '' : path);
+  $('gl' + i).setAttribute('d', linked || d.seq || F ? '' : path);
+  { const x = F ? state[F][i] : linked || d.seq ? a : r, an = ang(x);
+    $('ptr' + i).setAttribute('x1', (CX + 13.5 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y1', (CX + 13.5 * Math.sin(an)).toFixed(2));
+    $('ptr' + i).setAttribute('x2', (CX + 19 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y2', (CX + 19 * Math.sin(an)).toFixed(2)); }
   $('gd' + i).setAttribute('cx', (x0 + m * S).toFixed(2)); $('gd' + i).setAttribute('cy', (y0 - gy * S).toFixed(2));
 
   // text
   const v = $('v' + i), ed = editing[i];
-  if (linked) {
+  if (F) {
+    v.className = 'kval ' + F.toLowerCase(); v.textContent = valText(i, state[F][i]);
+    $('va' + i).textContent = F === 'A' ? 'A' : ''; $('vb' + i).textContent = F === 'B' ? 'B' : ''; $('va' + i).classList.remove('muted');
+  } else if (linked) {
     v.className = 'kval'; v.textContent = valText(i, a);
     $('va' + i).textContent = d.single === 'A' ? 'Side A' : linked && !d.single ? 'Linked' : '';
     $('vb' + i).textContent = d.single === 'B' ? 'Side B' : '';
@@ -2559,14 +2609,15 @@ function setCurve(i, c) {
 /* ---------- knob pointer interaction ---------- */
 function bindKnob(i) {
   const el = $('k' + i), d = DEFS[i];
-  let pid = null, mode = null, sx = 0, sy = 0, sv = 0, lastTap = 0, lastMode = null;
+  let pid = null, mode = null, sx = 0, sy = 0, sv = 0, lastTap = 0, lastMode = null, fresh = false;
   const targetEl = md => md === 'C' ? $('c' + i) : $('h' + md + i);
 
   el.addEventListener('pointerdown', e => {
     e.preventDefault();
     const rc = el.getBoundingClientRect();
     const x = (e.clientX - rc.left) / rc.width * 80 - CX, y = (e.clientY - rc.top) / rc.height * 80 - CX;
-    if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
+    if (focusSide(i)) mode = focusSide(i);   // side focus: the whole knob drags that side's value
+    else if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
     else if (Math.hypot(x, y) < 22 && !d.seq) mode = 'C';
     else {
       let rel = (Math.atan2(y, x) * 180 / Math.PI - 135 + 720) % 360;
@@ -2581,12 +2632,12 @@ function bindKnob(i) {
     }
     const now = performance.now();
     if (now - lastTap < 300 && mode === lastMode) {
-      if (mode === 'C') setCurve(i, 0); else setParam(mode, i, defaultNorm(DEFS[i].single || mode, i));
+      pushUndo(); if (mode === 'C') setCurve(i, 0); else setParam(mode, i, defaultNorm(DEFS[i].single || mode, i));
       lastTap = 0; mode = null; return;
     }
     lastTap = now; lastMode = mode;
     pid = e.pointerId; el.setPointerCapture(pid);
-    sx = e.clientX; sy = e.clientY;
+    sx = e.clientX; sy = e.clientY; fresh = true;
     sv = mode === 'C' ? state.C[i] : state[mode][i];
     editing[i] = mode; el.classList.add('dragging');
     targetEl(mode).classList.add('active');
@@ -2596,6 +2647,7 @@ function bindKnob(i) {
   el.addEventListener('pointermove', e => {
     if (e.pointerId !== pid) return;
     const delta = ((sy - e.clientY) + (e.clientX - sx) * 0.5) / (e.shiftKey ? 900 : 200);
+    if (fresh && Math.abs(delta) > 0.002) { fresh = false; pushUndo(); }   // one undo step per drag
     if (mode === 'C') setCurve(i, sv + delta * 2);
     else setParam(mode, i, quant(d, clamp(sv + delta)));
   });
@@ -2811,7 +2863,7 @@ function drawWaves() {
         $('nmA' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'A')); $('nmB' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'B'));
       }
     }
-    drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
+    drawScopeSoon(); drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
   });
 }
 function updateBlendUI() {}
@@ -2833,24 +2885,55 @@ morphEl.addEventListener('input', () => {
   if (ready) send({ type:'morph', v: state.morph });
   save();
 });
+/* ---------- side focus: A | Morph | B (see knobs.js) ---------- */
+function setFocus(f) {
+  if (f === focus) return;
+  if (focus === 'M') focusMem = state.morph;
+  focus = f;
+  state.morph = f === 'A' ? 0 : f === 'B' ? 1 : focusMem;
+  morphEl.disabled = f !== 'M';
+  document.body.dataset.sidefocus = f;
+  document.querySelectorAll('[data-focus]').forEach(b => b.setAttribute('aria-pressed', b.dataset.focus === f));
+  updateMorphUI();
+  DEFS.forEach((d, i) => updateKnob(i));
+  if (ready) send({ type:'morph', v: state.morph });
+  drawLanes();
+  if (typeof updateDiceTarget === 'function') updateDiceTarget();
+}
+// tap A or B to edit only that side; tap it again (or the other) to come back to the morph or switch sides
+document.querySelectorAll('[data-focus]').forEach(b => b.addEventListener('click', () => setFocus(focus === b.dataset.focus ? 'M' : b.dataset.focus)));
+const savedMorph = () => (focus === 'M' ? state.morph : focusMem);
+document.body.dataset.sidefocus = 'M';
 /* ---------- undo ---------- */
 const undoStack = [];
 const cloneTables = () => tables.map(t => ({ A: cloneTable(t.A), B: cloneTable(t.B) }));
 function snapshot() {
-  return { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: state.morph, spectral: state.spectral, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
+  return { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: typeof savedMorph === 'function' ? savedMorph() : state.morph, spectral: state.spectral, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
            oscOn: state.oscOn.slice(), fxOn: state.fxOn.slice(), smp: JSON.parse(JSON.stringify(state.smp)),
            tables: cloneTables(), seq: JSON.parse(JSON.stringify(state.seq)) };
 }
-function pushUndo() { undoStack.push(snapshot()); if (undoStack.length > 30) undoStack.shift(); $('undo').disabled = false; }
-$('undo').addEventListener('click', () => {
-  const s = undoStack.pop(); if (!s) return;
+/* Undo and redo (30 levels). Everything that changes the sound or the sequences pushes a step: randomizing, knob
+   gestures (one step per drag), sequence edits. A new change clears the redo list. */
+const redoStack = [];
+const ICON_UNDO = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4.5 4 8l3.5 3.5"/><path d="M4.5 8H12a4 4 0 0 1 0 8H8.5"/></svg>';
+const ICON_REDO = '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 16 8l-3.5 3.5"/><path d="M15.5 8H8a4 4 0 0 0 0 8h3.5"/></svg>';
+$('undo').innerHTML = ICON_UNDO; $('redo').innerHTML = ICON_REDO;
+const updateUndoUI = () => { $('undo').disabled = !undoStack.length; $('redo').disabled = !redoStack.length; };
+function pushUndo() { undoStack.push(snapshot()); if (undoStack.length > 30) undoStack.shift(); redoStack.length = 0; updateUndoUI(); }
+function restore(s) {
   applyBulk(() => {
     Object.assign(state, { A: s.A, B: s.B, C: s.C, morph: s.morph, spectral: s.spectral, links: s.links, linkMem: s.linkMem,
       oscOn: s.oscOn, fxOn: s.fxOn, smp: s.smp, seq: s.seq });
     s.tables.forEach((t, k) => { tables[k] = t; });
+    if (typeof focus !== 'undefined' && focus !== 'M') { focusMem = s.morph; state.morph = focus === 'A' ? 0 : 1; }   // side focus keeps its side
   });
-  $('undo').disabled = !undoStack.length;
+}
+$('undo').addEventListener('click', () => { const s = undoStack.pop(); if (!s) return; redoStack.push(snapshot()); restore(s); updateUndoUI(); });
+document.addEventListener('keydown', e => {
+  if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z' || e.target.closest('input,select,textarea')) return;
+  e.preventDefault(); $(e.shiftKey ? 'redo' : 'undo').click();
 });
+$('redo').addEventListener('click', () => { const s = redoStack.pop(); if (!s) return; undoStack.push(snapshot()); restore(s); updateUndoUI(); });
 function bulk(fn) { pushUndo(); applyBulk(fn); }
 function applyBulk(fn) {
   fn(); analyzeAll(); resolveSamples(); updateIcons(); updateSamplerUI(); updateFxUI(); refreshAll(); updateBlendUI(); seqCache = null; drawLanes(); syncScaleUI();
@@ -2859,28 +2942,16 @@ function applyBulk(fn) {
   if (ed.classList.contains('open')) { edFrame = Math.min(edFrame, tables[edSlot][edSide].frames.length - 1); if (tool === 'harm') loadHarm(); renderStrip(); drawEditor(); }
   save();
 }
-// Copy covers the sound only: sequences, their Density, Speed and Octave, and the Pattern knob stay as they are
-const copySound = (from, to) => bulk(() => {
-  const keepIx = DEFS.map((d, i) => i).filter(i => DEFS[i].group === 'Sequencer' || DEFS[i].seq), keep = keepIx.map(i => state[to][i]);
-  state[to] = state[from].slice(); keepIx.forEach((i, k) => { state[to][i] = keep[k]; });
-  tables.forEach(t => { t[to] = cloneTable(t[from]); });
-  state.smp[to] = { ...state.smp[from] };
-});
-$('copyAB').addEventListener('click', () => copySound('A', 'B'));
-$('copyBA').addEventListener('click', () => copySound('B', 'A'));
-$('swap').addEventListener('click', () => bulk(() => {
-  let t = state.A; state.A = state.B; state.B = t; state.C = state.C.map(c => -c);
-  tables.forEach(p => { const x = p.A; p.A = p.B; p.B = x; });
-  t = state.smp.A; state.smp.A = state.smp.B; state.smp.B = t;
-  t = state.seq.A; state.seq.A = state.seq.B; state.seq.B = t;
-}));
-$('resetAll').addEventListener('click', () => bulk(() => {
-  state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
-  state.spectral = true; state.links = DEFAULT_LINKS(); state.linkMem = {};
-  state.oscOn = DEFAULT_OSCON(); state.fxOn = DEFAULT_FXON(); state.smp = DEFAULT_SMP();
-  DEFAULT_TABLES().forEach((t, k) => { tables[k] = t; });
-  state.seq = defaultSeqs();
-}));
+// Reset the patch to its defaults (used by the developer view and tests; the player's view has no Reset since 2026-11-10)
+function resetPatch() {
+  bulk(() => {
+    state.A = DEFS.map((_, i) => defaultNorm('A', i)); state.B = DEFS.map((_, i) => defaultNorm('B', i)); state.C = DEFS.map(() => 0);
+    state.spectral = true; state.links = DEFAULT_LINKS(); state.linkMem = {};
+    state.oscOn = DEFAULT_OSCON(); state.fxOn = DEFAULT_FXON(); state.smp = DEFAULT_SMP();
+    DEFAULT_TABLES().forEach((t, k) => { tables[k] = t; });
+    state.seq = defaultSeqs();
+  });
+}
 /* ---------- randomize ----------
    Values are drawn from musically useful ranges rather than the full range
    of each knob, so results are usually playable. */
@@ -2949,20 +3020,15 @@ const RND = {
   ottout: () => 0,
 };
 const TABLE_CHOICES = Object.keys(PRESETS).filter(n => n !== 'Sine');
-/* What each side hears (2026-11-06; owner: the first oscillator needn't be a Wavetable). The player never sees the
-   oscillators: each side picks a lead engine, Wavetable 45% (either of the two), FM 30%, Sampler 25%; then a Sub
-   comes in under it 30% of the time, and a second layer (one of the other engines) 30% of the time. */
-const LEADS = [['wt', 0.45], ['fm', 0.3], ['smp', 0.25]], SUB_ODDS = 0.3, LAYER_ODDS = 0.3;
-const OSC_ON = [0.25, 0.25, 0.3, 0.3, 0.35];   // only for oscGuard's last resort: rough share each oscillator is heard
+/* What each side hears (2026-11-10, owner: "back to a single wavetable engine; the morphing often sounds too much like
+   crossfading", because the levels of different engines changed across the morph). Every side hears Wavetable 1 only,
+   so the morph is always one wavetable's spectral blend from table A to table B. The other oscillators stay in the engine
+   (silent at Level 0, no CPU) for the developer view; the randomizer never turns them on. */
+const LEAD_SLOT = 0;
+const OSC_ON = [1, 0, 0, 0, 0];   // oscGuard's last resort: only Wavetable 1
 function pickOscs(side) {
-  const lv = s => oi(s, 'olevel'), on = new Set();
-  let r = rnd(), lead = LEADS[0][0];
-  for (const [t, p] of LEADS) { if (r < p) { lead = t; break; } r -= p; }
-  const slotOf = t => (t === 'wt' ? WT_SLOTS[Math.floor(rnd() * WT_SLOTS.length)] : t === 'fm' ? FM_SLOT : SMP_SLOT);
-  on.add(slotOf(lead));
-  if (rnd() < SUB_ODDS) on.add(SUB_SLOT);
-  if (rnd() < LAYER_ODDS) { const others = [0, 1, SMP_SLOT, FM_SLOT].filter(s => !on.has(s)); on.add(others[Math.floor(rnd() * others.length)]); }
-  OSC_KIND.forEach((_, s) => { if (isFree(lv(s))) state[side][lv(s)] = on.has(s) ? norm(DEFS[lv(s)], 0.5 + rnd() * 0.4) : 0; });
+  const lv = s => oi(s, 'olevel');
+  OSC_KIND.forEach((_, s) => { if (isFree(lv(s))) state[side][lv(s)] = s === LEAD_SLOT ? norm(DEFS[lv(s)], 0.5 + rnd() * 0.4) : 0; });
 }
 /* FM guardrails (2026-11-06): FM sounds good in a narrow part of its range, so a side's FM patch is never fully random.
    It comes from one of eight archetypes (electric piano, bell, bass, brass, pluck, organ, glass, growl), each with its
@@ -3226,8 +3292,6 @@ function randomizeSide(side, g, raw) {
   }
   if (!raw) { levelMatch(side); sineGuard(side); loudnessGuard(side); }
 }
-$('rndA').addEventListener('click', () => bulk(() => randomizeSide('A')));
-$('rndB').addEventListener('click', () => bulk(() => randomizeSide('B')));
 function randomizeLinked(g, raw) {   // linked knobs only: one new value shared by both sides
   DEFS.forEach((d, i) => { if (inGroup(d, g) && state.links[d.id] && !d.single && !isLocked(d)) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, 'A'); });
 }
@@ -3237,8 +3301,6 @@ function randomizeAll(g, raw) {
   state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts || d.seq ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
 }
-$('rndLinked').addEventListener('click', () => bulk(() => randomizeLinked()));
-$('rndAll').addEventListener('click', () => bulk(() => randomizeAll()));
 /* ---------- lock / link icons ---------- */
 function updateIcons() {
   document.querySelectorAll('[data-seclock]').forEach(b => {
@@ -3544,6 +3606,248 @@ smpFile.addEventListener('change', async () => {
   } catch (err) { note.textContent = 'That file could not be read as audio.'; }
 });
 updateSamplerUI();
+/* =====================================================================
+   SCOPE: the wave display (2026-11-10)
+   One picture of the sound: side A's wave on the left, side B's on the
+   right, and between them, large, the wave you hear at the current morph.
+   The middle wave is what the engine plays (Wavetable 1's blend, after the
+   Harmonics control and the filter, with the four macros applied), and the
+   effects each leave a fitting mark on it, scaled by how much of them is heard:
+     Drive       the wave is shaped by the same kind of curve (soft clip, then folding)
+     Formant     the harmonics near the vowel's resonances are lifted
+     Modulation  ghost copies sway around the wave at the modulation rate
+     Delay       echoes trail off to the right, smaller with each repeat (ping-pong alternates them)
+     Reverb      a glow around the line, wider with size, stronger with mix
+     Lo-fi       steps in level (Character), sample-and-hold (Codec), a wobble (Wow, Flutter), specks (Noise)
+     OTT         the wave is squashed toward full height and the line thickens
+   Time-based marks (Modulation, Wow, Flutter, Noise) animate while something can be heard.
+   ===================================================================== */
+const scopeEl = $('scope');
+// the macros, run exactly as the engine runs them (MorphEngine.applyMacros) on the values at the current morph
+const MAC = { I: IX, defs: DEFS };
+MAC.macros = MorphEngine.prototype.buildMacros.call(MAC);
+MAC.cur = new Float64Array(DEFS.length); MAC.val = new Float64Array(DEFS.length);
+function heardValues() {
+  for (let i = 0; i < DEFS.length; i++) { MAC.cur[i] = resolveNorm(i); MAC.val[i] = MorphEngine.denorm(DEFS[i], MAC.cur[i]); }
+  MorphEngine.prototype.applyMacros.call(MAC);
+  return key => MAC.val[IX[key]];
+}
+const SC = { re: new Float32Array(513), im: new Float32Array(513), n: 256 };
+// the wave heard now: Wavetable 1's blend at this morph, Harmonics, then the filter's response at middle C
+function scopeWave(v, side) {
+  const s = 0;
+  MorphEngine.frameAt(spec[s].A, state.A[oi(s, 'posA')], true, W.fa[0], W.fa[1]);
+  MorphEngine.frameAt(spec[s].B, state.A[oi(s, 'posB')], true, W.fb[0], W.fb[1]);
+  const t = side === 'A' ? 0 : side === 'B' ? 1 : resolveNorm(oi(s, 'wave'));
+  MorphEngine.interp(W.fa[0], W.fa[1], W.fb[0], W.fb[1], t, true, SC.re, SC.im);
+  if (!side) {
+    WtBank.simplify(SC.re, SC.im, v('harm'));
+    const f0 = 261.6, fc = Math.min(21600, Math.max(20, v('cutoff') * Math.pow(2, v('envamt') * 5 * Math.max(0.3, v('fsus')))));
+    const vow = v('fvowel'), fmix = fxHeard('formant') ? v('fmix') : 0, fq = [700 + 500 * vow, 1200 + 1000 * (1 - vow), 2600];
+    for (let h = 1; h <= 64; h++) {
+      let g = Math.sqrt(filterMag2(f0 * h, fc, v('reso'), v('mode')));
+      if (fmix > 0) { const f = f0 * h; let p = 0; for (const c of fq) p = Math.max(p, Math.exp(-(((f - c) / (c * 0.18)) ** 2))); g *= 1 + fmix * (0.5 + v('freso') * 2.5) * p - fmix * 0.4; }
+      SC.re[h] *= g; SC.im[h] *= g;
+    }
+  }
+  const out = new Float32Array(SC.n);
+  MorphEngine.synth(SC.re, SC.im, 64, SC.n, out, W.sR, W.sI);
+  let pk = 1e-6; for (const x of out) pk = Math.max(pk, Math.abs(x));
+  return { w: out, pk };
+}
+// is an effect switched on and not at rest at this morph? (its On/Off and its rest settings, as the engine judges it)
+const fxHeard = t => { const s = FX_KIND.indexOf(t); return state.fxOn[s] && Object.entries(MorphEngine.FX_CLASSES[t].REST).some(([k, v0]) => MAC.val[IX[k]] !== v0); };
+function fxMarks(v) {
+  const on = t => fxHeard(t);
+  return {
+    drive: on('drive') ? v('dmix') * (0.2 + v('drive')) : 0, dshape: v('dshape'),
+    mod: on('mod') ? v('mmix') * (0.3 + 0.7 * v('mdepth')) : 0, mrate: v('mrate'),
+    delay: on('delay') ? v('dlmix') : 0, dlfb: v('dlfb'), dlpp: v('dlpp'),
+    reverb: on('reverb') ? v('rvmix') : 0, rvsize: v('rvsize'),
+    crush: on('lofi') ? v('lchar') : 0, codec: on('lofi') ? v('lcodec') : 0, wow: on('lofi') ? Math.max(v('lwow'), v('lflut')) : 0, noise: on('lofi') ? v('lnmix') : 0,
+    ott: on('ott') ? v('ottdepth') : 0,
+  };
+}
+let scopeT = 0, scopeAnim = 0, scopeQueued = false;
+function drawScope(now) {
+  const c = prep(scopeEl); if (!c) return;
+  const v = heardValues(), fx = fxMarks(v), g = c.g, H = c.h, Wd = c.w;
+  const colA = css('--a'), colB = css('--b'), colM = mixColor(state.morph), ink = css('--ink');
+  const side = Math.min(Wd * 0.2, H * 1.4), gap = Math.max(8, Wd * 0.02), mid0 = side + gap, midW = Wd - 2 * (side + gap);
+  const t = (now || performance.now()) / 1000;
+  // side panels: each side's own wave, plain
+  const small = (wave, x0, col, label, active) => {
+    const m = H / 2, amp = H * 0.32 / wave.pk;
+    g.globalAlpha = active ? 1 : 0.55; g.strokeStyle = col; g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath();
+    for (let i = 0; i <= SC.n; i++) { const x = x0 + i / SC.n * side, y = m - wave.w[i % SC.n] * amp; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.stroke(); g.globalAlpha = 1;
+    g.fillStyle = col; g.font = '600 12px ' + css('--font-ui'); g.textAlign = 'center'; g.fillText(label, x0 + side / 2, H - 6);
+  };
+  small(scopeWave(v, 'A'), 0, colA, 'A', focus !== 'B');
+  small(scopeWave(v, 'B'), Wd - side, colB, 'B', focus !== 'A');
+  // the wave heard now, with the effects' marks
+  const { w, pk } = scopeWave(v);
+  const n = SC.n, m = H / 2, amp = (H / 2 - 10) / pk;
+  const shape = (x0) => {
+    let y = x0;
+    if (fx.ott > 0) y = Math.sign(y) * Math.pow(Math.abs(y), 1 - 0.6 * fx.ott);
+    if (fx.drive > 0) {
+      const k = 1 + 6 * fx.drive, sat = Math.tanh(k * y) / Math.tanh(k);
+      const fold = Math.sin(y * (1 + 3 * fx.drive) * Math.PI / 2);
+      y = y + (sat - y) * Math.min(1, fx.drive * 1.5); y = y + (fold - y) * fx.dshape * fx.drive;
+    }
+    if (fx.crush > 0.02) { const steps = Math.round(2 + 30 * (1 - fx.crush) ** 2); y = Math.round(y * steps) / steps; }
+    return y;
+  };
+  const yAt = (i, ph) => {
+    let j = i;
+    if (fx.codec > 0.02) { const hold = 1 + Math.round(fx.codec * 10); j = Math.floor(i / hold) * hold; }
+    const xs = (((j + ph) % n) + n) % n, k = Math.floor(xs), f = xs - k;
+    const s = w[k] + (w[(k + 1) % n] - w[k]) * f;
+    return shape(s / pk) * pk;
+  };
+  const wob = fx.wow > 0 ? fx.wow * 6 * Math.sin(t * 2.1) + fx.wow * 2 * Math.sin(t * 9.7) : 0;
+  const path = (ph, scale, dx, dy) => {
+    g.beginPath();
+    for (let i = 0; i <= n; i++) { const x = mid0 + dx + i / n * midW, y = m + dy - yAt(i, ph + wob) * amp * scale; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+  };
+  g.save();
+  g.beginPath(); g.rect(mid0 - gap / 2, 0, midW + gap, H); g.clip();
+  g.strokeStyle = css('--line'); g.lineWidth = 1; g.beginPath(); g.moveTo(mid0, m); g.lineTo(mid0 + midW, m); g.stroke();
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  // delay: echoes trailing right, smaller each time
+  if (fx.delay > 0.01) {
+    const reps = 1 + Math.round(fx.dlfb * 5);
+    for (let r = reps; r >= 1; r--) {
+      const a = fx.delay * Math.pow(0.35 + fx.dlfb * 0.55, r);
+      g.globalAlpha = Math.min(0.9, a * 1.6); g.strokeStyle = colM; g.lineWidth = 1.5;
+      path(0, Math.pow(0.7, r), r * midW * 0.07, (r % 2 ? -1 : 1) * fx.dlpp * H * 0.06 * r);
+      g.stroke();
+    }
+  }
+  // modulation: ghost copies swaying around the wave
+  if (fx.mod > 0.01) {
+    const sway = Math.sin(t * Math.PI * 2 * Math.min(fx.mrate, 3)) * fx.mod * 10;
+    for (const k of [-1, 1]) { g.globalAlpha = 0.35 * Math.min(1, fx.mod * 1.5); g.strokeStyle = colM; g.lineWidth = 2; path(k * sway, 1 - 0.04 * k, 0, 0); g.stroke(); }
+  }
+  // reverb: a glow around the line
+  g.globalAlpha = 1;
+  if (fx.reverb > 0.01) { g.shadowColor = colM; g.shadowBlur = 6 + 30 * fx.rvsize * Math.min(1, fx.reverb * 1.5); }
+  g.strokeStyle = colM; g.lineWidth = 3 + 3 * fx.ott;
+  path(0, 1, 0, 0); g.stroke();
+  if (fx.reverb > 0.01) { g.globalAlpha = Math.min(0.6, fx.reverb); g.lineWidth = 8 + 16 * fx.rvsize; g.globalAlpha *= 0.25; g.stroke(); }
+  g.shadowBlur = 0; g.globalAlpha = 1;
+  // lo-fi noise: specks around the line
+  if (fx.noise > 0.01) {
+    g.fillStyle = ink; const cnt = Math.round(fx.noise * 260);
+    for (let k = 0; k < cnt; k++) {
+      const r1 = Math.abs(Math.sin(k * 12.9898 + Math.floor(t * 12) * 78.233)) % 1, r2 = Math.abs(Math.sin(k * 4.1414 + Math.floor(t * 12) * 3.7)) % 1;
+      g.globalAlpha = 0.25 + 0.4 * r2; g.fillRect(mid0 + r1 * midW, m + (r2 - 0.5) * H * 0.9, 1.6, 1.6);
+    }
+    g.globalAlpha = 1;
+  }
+  g.restore();
+  return fx.mod > 0.01 || fx.wow > 0.01 || fx.noise > 0.01;
+}
+// draw now (next frame); while a moving mark is on screen, keep animating at about 30 frames a second
+function drawScopeSoon() {
+  if (scopeQueued) return; scopeQueued = true;
+  requestAnimationFrame(now => { scopeQueued = false; const moving = drawScope(now); if (moving && !scopeAnim) scopeLoop(); });
+}
+function scopeLoop() {
+  let last = 0;
+  const step = now => {
+    if (document.hidden) { scopeAnim = 0; return; }
+    if (now - last > 33) { last = now; if (!drawScope(now)) { scopeAnim = 0; return; } }
+    scopeAnim = requestAnimationFrame(step);
+  };
+  scopeAnim = requestAnimationFrame(step);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) drawScopeSoon(); });
+/* =====================================================================
+   DICE SLIDERS (2026-11-10, from the family: Orbital, Pixy, Heather)
+   Touch the track and let go: the further right, the bigger the change (the die
+   sits under your finger and turns as it travels). As in Orbital, each value
+   moves 0.35 + 0.65 x strength of the way toward a fresh roll, so the far end
+   is a whole new sound. The die springs back with a tumble. What they act on follows the side focus: in A or B only that
+   side changes, in Morph both do (and a full sequence roll picks a new scale).
+   Keys: Enter or Space rolls at 50%, 1 to 9 at 10% to 90%, 0 at 100%.
+   ===================================================================== */
+const PIPS = { 1: [[1, 1]], 2: [[0, 0], [2, 2]], 3: [[0, 0], [1, 1], [2, 2]], 4: [[0, 0], [2, 0], [0, 2], [2, 2]], 5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]], 6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]] };
+const dieFace = n => `<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">${PIPS[n].map(([x, y]) => `<circle cx="${4.5 + x * 5.5}" cy="${4.5 + y * 5.5}" r="1.9" fill="currentColor"/>`).join('')}</svg>`;
+/* Sound: the shaped randomizer runs for the target side(s), then every value moves only `amt` of the way from where it
+   was toward the new roll (stepped values round, switches flip with chance amt), and each wavetable is replaced with
+   chance amt. The guards (level match, sine and loudness guards) run again on the result. */
+function rollSound(s) {
+  const amt = 0.35 + 0.65 * s;
+  const sides = focus === 'M' ? ['A', 'B'] : [focus];
+  const old = { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), t: tables.map(t => ({ A: t.A, B: t.B })), smp: { ...state.smp } };
+  if (sides.length === 2) randomizeAll(); else randomizeSide(sides[0]);
+  if (amt >= 0.98) return;
+  for (const k of sides) {
+    DEFS.forEach((d, i) => {
+      const o = old[k][i], n = state[k][i];
+      if (o === n) return;
+      state[k][i] = d.opts ? (rnd() < amt ? n : o) : quant(d, o + (n - o) * amt);
+    });
+    tables.forEach((t, s) => { if (rnd() >= amt) t[k] = old.t[s][k]; });
+    if (rnd() >= amt) state.smp[k] = old.smp[k];
+    levelMatch(k); sineGuard(k); loudnessGuard(k);
+  }
+  if (sides.length === 2) state.C = state.C.map((c, i) => old.C[i] + (c - old.C[i]) * amt);
+}
+/* Sequence: a full roll at the far end (as before: new rate, generator, rhythm, density, speed and octave; in Morph also a
+   new shared scale). Below that the pattern keeps its rate and length, and each note is re-rolled with chance amt (a new
+   melody in the scale), with rests and velocities shuffled in proportion. */
+function rollSeq(amt) {
+  const sides = focus === 'M' ? ['A', 'B'] : [focus];
+  if (amt >= 0.9) { if (sides.length === 2) randSeqs(); else randSeqSide(sides[0]); return; }
+  for (const k of sides) {
+    const q = state.seq[k], fresh = cloneSeq(q);
+    randNotes(fresh);
+    q.steps.forEach((st, i) => {
+      if (rnd() < amt) st.note = fresh.steps[i].note;
+      if (rnd() < amt * 0.35) st.on = !st.on;
+      if (rnd() < amt) st.vel = clamp(st.vel + (rnd() * 2 - 1) * 0.5 * amt);
+    });
+    shapeRandom(q);
+  }
+}
+document.querySelectorAll('.dice').forEach(el => {
+  const tile = el.querySelector('.dtile'), what = el.dataset.what;
+  el.insertAdjacentHTML('afterbegin', '<span class="dfill"></span>');
+  const fill = el.querySelector('.dfill');
+  let face = 5, pid = null, s = 0;
+  tile.innerHTML = dieFace(face);
+  const dieW = () => tile.offsetWidth || 30, travel = () => Math.max(1, el.clientWidth - dieW() - 4);
+  // the die sits where you touch and turns as it travels (1.25 turns over the whole track); the track fills behind it
+  const place = x => {
+    tile.style.transform = `translateX(${x * travel()}px)`;
+    tile.firstChild.style.transform = `rotate(${x * 450}deg)`;
+    fill.style.width = x > 0 ? x * travel() + dieW() / 2 + 2 + 'px' : '0';
+    el.setAttribute('aria-valuenow', Math.round(x * 100));
+  };
+  const fromX = cx => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, (cx - r.left - 2 - dieW() / 2) / travel())); };
+  const roll = a => {
+    bulk(() => (what === 'seq' ? rollSeq(a) : rollSound(a)));
+    el.classList.remove('drag'); place(0);
+    el.classList.remove('roll'); void el.offsetWidth; el.classList.add('roll');
+    let n = 0; const spin = setInterval(() => { face = 1 + Math.floor(rnd() * 6); tile.innerHTML = dieFace(face); if (++n >= 5) clearInterval(spin); }, 90);
+    setTimeout(() => el.classList.remove('roll'), 600);
+  };
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('drag'); s = fromX(e.clientX); place(s); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === pid) { s = fromX(e.clientX); place(s); } });
+  el.addEventListener('pointerup', e => { if (e.pointerId !== pid) return; pid = null; s = fromX(e.clientX); if (s > 0.01) roll(s); else { el.classList.remove('drag'); place(0); } });
+  el.addEventListener('pointercancel', e => { if (e.pointerId !== pid) return; pid = null; el.classList.remove('drag'); place(0); });
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); roll(0.5); }
+    else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); roll(+e.key / 10); }
+    else if (e.key === '0') { e.preventDefault(); roll(1); }
+  });
+});
+// what the dice act on, shown on each slider: A, B, or A+B (follows the side focus)
+function updateDiceTarget() { document.querySelectorAll('.dtarget').forEach(t => { t.textContent = focus === 'M' ? 'A+B' : focus; }); }
+updateDiceTarget();
 /* =====================================================================
    BASIC VIEW AND SECTION OVERLAYS
    Basic view: every section shows its key controls (BASIC in knobs.js) in a
@@ -3932,19 +4236,14 @@ const ICON_PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="
 const ICON_STOP = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>';
 function setPlaying(on) {
   seqPlaying = on;
-  $('play').innerHTML = on ? ICON_STOP : ICON_PLAY;
-  $('play').setAttribute('aria-label', on ? 'Stop' : 'Play');
-  $('play').classList.toggle('playing', on);
+  ['play', 'hplay'].forEach(id => { $(id).innerHTML = on ? ICON_STOP : ICON_PLAY; $(id).setAttribute('aria-label', on ? 'Stop' : 'Play'); $(id).classList.toggle('playing', on); });
   if (on) { sendSeq(); post({ type:'seqPlay', on:true }); }
   else { if (ready) send({ type:'seqPlay', on:false }); seqPos = null; drawLanes(); }
 }
 $('play').addEventListener('click', () => setPlaying(!seqPlaying));
-function drawBpmKnob() {
-  const x = (state.bpm - 50) / 150;
-  $('bpmArc').setAttribute('stroke-dasharray', `${(75 * x).toFixed(2)} 200`);
-  $('bpmPtr').setAttribute('transform', `rotate(${-135 + 270 * x} 20 20)`);
-}
-function setBpm(v) { state.bpm = Math.max(50, Math.min(200, Math.round(v))); $('bpmVal').textContent = state.bpm; $('bpmBox').setAttribute('aria-valuenow', state.bpm); drawBpmKnob(); if (ready) send({ type:'bpm', v: state.bpm }); save(); }
+// the header's play button plays the sequencer from anywhere (and shows its pane)
+$('hplay').addEventListener('click', () => { if (seqPlaying) { setPlaying(false); return; } if (panel !== 'seq') setPanel('seq', true); setPlaying(true); });
+function setBpm(v) { state.bpm = Math.max(50, Math.min(200, Math.round(v))); $('bpmVal').textContent = state.bpm; $('bpmBox').setAttribute('aria-valuenow', state.bpm); if (ready) send({ type:'bpm', v: state.bpm }); save(); }
 function holdRepeat(el, fn) {
   let t1 = null, t2 = null;
   const stop = () => { clearTimeout(t1); clearInterval(t2); };
@@ -3953,9 +4252,9 @@ function holdRepeat(el, fn) {
 }
 { // drag the tempo readout up/down or sideways
   const el = $('bpmBox'); let pid = null, x0 = 0, y0 = 0, b0 = 0;
-  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); x0 = e.clientX; y0 = e.clientY; b0 = state.bpm; });
-  el.addEventListener('pointermove', e => { if (e.pointerId === pid) setBpm(b0 + ((e.clientX - x0) - (e.clientY - y0)) / 3); });
-  ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { pid = null; }));
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); x0 = e.clientX; y0 = e.clientY; b0 = state.bpm; el.classList.add('drag'); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === pid) setBpm(b0 + (y0 - e.clientY) / 3); });
+  ['pointerup', 'pointercancel'].forEach(t => el.addEventListener(t, () => { pid = null; el.classList.remove('drag'); }));
   el.addEventListener('keydown', e => { const d = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -1 : 0; if (d) { e.preventDefault(); setBpm(state.bpm + d * (e.shiftKey ? 10 : 1)); } });
 }
 function onReport(d) {
@@ -4184,9 +4483,6 @@ function randSpeedOct(q) {
 }
 function fullSeqRandom(q) { fixSeq(q); randRate(q); roomForNotes(q); randArpSettings(); genFromControls(q); randRhythm(q); randVel(q); setSeqDensity(q, highDensity()); randSpeedOct(q); shapeRandom(q); }
 function randSeqSide(k) { fullSeqRandom(state.seq[k]); }
-$('rsA').addEventListener('click', () => bulk(() => randSeqSide('A')));
-$('rsB').addEventListener('click', () => bulk(() => randSeqSide('B')));
-$('rsBoth').addEventListener('click', () => bulk(() => randSeqs()));
 $('rzVel').addEventListener('click', () => editSeq(randVel));
 function randRate(s) { s.rate = Math.floor(Math.random() * RATES.length); fitSlots(s, true); }
 $('rzRate').addEventListener('click', () => editSeq(randRate));
@@ -4292,8 +4588,8 @@ velCv.addEventListener('pointerdown', e => { e.preventDefault(); velCv.setPointe
 velCv.addEventListener('pointermove', e => { if (velDrag === e.pointerId) velAt(e); });
 ['pointerup', 'pointercancel'].forEach(t => velCv.addEventListener(t, () => { velDrag = null; }));
 
-$('bpmVal').textContent = state.bpm; drawBpmKnob();
-$('play').innerHTML = ICON_PLAY; $('play').setAttribute('aria-label', 'Play');
+$('bpmVal').textContent = state.bpm;
+['play', 'hplay'].forEach(id => { $(id).innerHTML = ICON_PLAY; $(id).setAttribute('aria-label', 'Play'); });
 updateWalkUI();
 setPanel('seq', true);   // the sequencer is the starting view
 

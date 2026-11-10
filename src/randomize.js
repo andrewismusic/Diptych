@@ -66,20 +66,15 @@ const RND = {
   ottout: () => 0,
 };
 const TABLE_CHOICES = Object.keys(PRESETS).filter(n => n !== 'Sine');
-/* What each side hears (2026-11-06; owner: the first oscillator needn't be a Wavetable). The player never sees the
-   oscillators: each side picks a lead engine, Wavetable 45% (either of the two), FM 30%, Sampler 25%; then a Sub
-   comes in under it 30% of the time, and a second layer (one of the other engines) 30% of the time. */
-const LEADS = [['wt', 0.45], ['fm', 0.3], ['smp', 0.25]], SUB_ODDS = 0.3, LAYER_ODDS = 0.3;
-const OSC_ON = [0.25, 0.25, 0.3, 0.3, 0.35];   // only for oscGuard's last resort: rough share each oscillator is heard
+/* What each side hears (2026-11-10, owner: "back to a single wavetable engine; the morphing often sounds too much like
+   crossfading", because the levels of different engines changed across the morph). Every side hears Wavetable 1 only,
+   so the morph is always one wavetable's spectral blend from table A to table B. The other oscillators stay in the engine
+   (silent at Level 0, no CPU) for the developer view; the randomizer never turns them on. */
+const LEAD_SLOT = 0;
+const OSC_ON = [1, 0, 0, 0, 0];   // oscGuard's last resort: only Wavetable 1
 function pickOscs(side) {
-  const lv = s => oi(s, 'olevel'), on = new Set();
-  let r = rnd(), lead = LEADS[0][0];
-  for (const [t, p] of LEADS) { if (r < p) { lead = t; break; } r -= p; }
-  const slotOf = t => (t === 'wt' ? WT_SLOTS[Math.floor(rnd() * WT_SLOTS.length)] : t === 'fm' ? FM_SLOT : SMP_SLOT);
-  on.add(slotOf(lead));
-  if (rnd() < SUB_ODDS) on.add(SUB_SLOT);
-  if (rnd() < LAYER_ODDS) { const others = [0, 1, SMP_SLOT, FM_SLOT].filter(s => !on.has(s)); on.add(others[Math.floor(rnd() * others.length)]); }
-  OSC_KIND.forEach((_, s) => { if (isFree(lv(s))) state[side][lv(s)] = on.has(s) ? norm(DEFS[lv(s)], 0.5 + rnd() * 0.4) : 0; });
+  const lv = s => oi(s, 'olevel');
+  OSC_KIND.forEach((_, s) => { if (isFree(lv(s))) state[side][lv(s)] = s === LEAD_SLOT ? norm(DEFS[lv(s)], 0.5 + rnd() * 0.4) : 0; });
 }
 /* FM guardrails (2026-11-06): FM sounds good in a narrow part of its range, so a side's FM patch is never fully random.
    It comes from one of eight archetypes (electric piano, bell, bass, brass, pluck, organ, glass, growl), each with its
@@ -343,8 +338,6 @@ function randomizeSide(side, g, raw) {
   }
   if (!raw) { levelMatch(side); sineGuard(side); loudnessGuard(side); }
 }
-$('rndA').addEventListener('click', () => bulk(() => randomizeSide('A')));
-$('rndB').addEventListener('click', () => bulk(() => randomizeSide('B')));
 function randomizeLinked(g, raw) {   // linked knobs only: one new value shared by both sides
   DEFS.forEach((d, i) => { if (inGroup(d, g) && state.links[d.id] && !d.single && !isLocked(d)) state.A[i] = state.B[i] = raw ? rvRaw(d) : rv(d, 'A'); });
 }
@@ -354,5 +347,3 @@ function randomizeAll(g, raw) {
   state.C = DEFS.map((d, i) => (!inGroup(d, g) || isLocked(d) || isLinked(i) || d.opts || d.seq ? state.C[i] : rnd() < 0.5 ? 0 : (rnd() * 2 - 1) * 0.7));
   if (!raw) ['A', 'B'].forEach(side => { sineGuard(side); loudnessGuard(side); });   // again, now that linked knobs (Pitch) have moved too
 }
-$('rndLinked').addEventListener('click', () => bulk(() => randomizeLinked()));
-$('rndAll').addEventListener('click', () => bulk(() => randomizeAll()));

@@ -76,7 +76,7 @@ function save() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORE, JSON.stringify({ ...state, ver: STORE_VER, ids: DEFS.map(d => d.id),
+      localStorage.setItem(STORE, JSON.stringify({ ...state, morph: typeof savedMorph === 'function' ? savedMorph() : state.morph, ver: STORE_VER, ids: DEFS.map(d => d.id),
         tables: tables.map(t => ({ A: { name: t.A.name, frames: t.A.frames.map(enc) }, B: { name: t.B.name, frames: t.B.frames.map(enc) } })) }));
     } catch (e) {}
   }, 400);

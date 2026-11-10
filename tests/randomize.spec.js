@@ -39,16 +39,8 @@ test.describe('Randomize all (shaped)', () => {
   const near = (x, want, tol) => { expect(x).toBeGreaterThan(want - tol); expect(x).toBeLessThan(want + tol); };
 
   test('locked parameters never change', () => { expect([...new Set(S.flatMap(r => r.lockedChanged))]).toEqual([]); });
-  test('each side picks a lead engine (Wavetable 45%, FM 30%, Sampler 25%), Sub 30%, a second layer 30%; always at least one', () => {
-    const sides = perSide(), heard = (v, s) => v.olevel[s] > 0;
-    for (const v of sides) expect(v.olevel.some(x => x > 0)).toBe(true);
-    // lead plus a share of the layers: Wavetable 45% + 70% x 30% x about 0.4, FM 30% + 70% x 30% x about 0.3, Sampler 25% + about 0.08
-    near(share(sides, v => heard(v, 0) || heard(v, 1)), 0.54, 0.07);
-    near(share(sides, v => heard(v, 4)), 0.37, 0.07);
-    near(share(sides, v => heard(v, 3)), 0.33, 0.07);
-    near(share(sides, v => heard(v, 2)), 0.3, 0.06);
-    // the first oscillator is no longer the usual one (owner, 2026-11-06): Wavetable 1 is heard on well under half the sides
-    expect(share(sides, v => heard(v, 0))).toBeLessThan(0.4);
+  test('every side hears Wavetable 1 and nothing else (single wavetable engine, 2026-11-10)', () => {
+    for (const v of perSide()) expect(v.olevel.map(x => x > 0)).toEqual([true, false, false, false, false]);
   });
   test('level match: whichever oscillators a side hears, together they sit at one sawtooth\'s level', () => {
     const m = S.flatMap(r => r.mixDb), free = m.filter(x => !x.clamped);
@@ -56,7 +48,6 @@ test.describe('Randomize all (shaped)', () => {
     expect(free.length / m.length).toBeGreaterThan(0.7);
     for (const x of free) expect(Math.abs(x.db)).toBeLessThan(0.01);
     for (const x of m) expect(x.db).toBeLessThan(0.01);   // a Level at 100% can leave a quiet sample short, never over
-    near(share(m, x => x.n > 1), 0.51, 0.07);             // more than one oscillator on about half the sides (1 - 0.7 x 0.7)
   });
   test('each side hears about 2.3 effects on average', () => {
     const n = S.flatMap(r => r.heard), mean = n.reduce((a, b) => a + b, 0) / n.length;

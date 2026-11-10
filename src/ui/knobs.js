@@ -26,6 +26,7 @@ const knobSVG = (d, i) => `<svg viewBox="0 0 80 80" aria-hidden="false">
   <circle class="arcA" id="arcA${i}" cx="40" cy="40" r="${R}" pathLength="100" transform="rotate(135 40 40)" fill="none" stroke-width="6" stroke-linecap="round"/>
   <circle class="arcB" id="arcB${i}" cx="40" cy="40" r="${R}" pathLength="100" transform="rotate(135 40 40)" fill="none" stroke-width="6" stroke-linecap="round"/>
   <circle class="cap" cx="40" cy="40" r="21"/>
+  <line class="ptr" id="ptr${i}" x1="40" y1="25" x2="40" y2="31"/>
   <path class="glyph" id="gl${i}"/>
   <circle class="gdot" id="gd${i}" r="2"/>
   <g class="ctr" id="c${i}" tabindex="0" role="slider" aria-label="${d.label} morph curve" aria-valuemin="-100" aria-valuemax="100">
@@ -88,7 +89,12 @@ DEFS.forEach((d, i) => {
 
 const $ = id => document.getElementById(id);
 const valText = (i, x) => FMT[DEFS[i].key](MorphEngine.denorm(DEFS[i], x));
-const editing = {};   // i -> 'A' | 'B' | 'C' while a knob is being dragged
+const editing = {};
+/* Side focus (DESIGN.md section 15, built 2026-11-10): A | Morph | B. In A or B every knob shows and edits only that
+   side, in its color; the morph sits at that side and the slider rests; Morph brings the morph back exactly as it was.
+   Linked and single-side knobs are unaffected (they hold one value). Curves are edited in Morph. */
+let focus = 'M', focusMem = 0;
+const focusSide = i => (focus !== 'M' && !isLinked(i) ? focus : null);   // i -> 'A' | 'B' | 'C' while a knob is being dragged
 
 function setArc(el, from, to) {
   const s = Math.min(from, to), l = Math.abs(to - from);
@@ -108,8 +114,9 @@ function updateKnob(i) {
   $('hB' + i).setAttribute('transform', `translate(${bx.toFixed(2)} ${by.toFixed(2)})`);
   $('hBc' + i).setAttribute('r', Math.abs(a - b) < 0.035 ? 3 : 5.5);   // stacked handles stay visible
   $('now' + i).setAttribute('cx', nx.toFixed(2)); $('now' + i).setAttribute('cy', ny.toFixed(2));
+  // the cap's pointer shows the value heard (or the focused side's)
   // Linked (or single-side) parameters don't morph: one handle, one value, no curve
-  const linked = isLinked(i), kn = $('k' + i);
+  const linked = isLinked(i), kn = $('k' + i), F = focusSide(i);
   kn.classList.toggle('kl-A', d.single === 'A'); kn.classList.toggle('kl-B', d.single === 'B'); kn.classList.toggle('kl-L', linked && !d.single);
   $('now' + i).setAttribute('r', linked || d.seq ? 0 : 3.4);
   $('hB' + i).style.display = linked ? 'none' : '';
@@ -117,6 +124,17 @@ function updateKnob(i) {
   $('c' + i).setAttribute('tabindex', linked || d.seq ? -1 : 0);
   $('gd' + i).setAttribute('r', linked || d.seq ? 0 : 2);
   if (linked) { setArc($('arcA' + i), 0, a); setArc($('arcB' + i), a, a); }
+  // side focus: only that side's value, one handle in its color, no curve
+  kn.classList.toggle('kf-A', F === 'A'); kn.classList.toggle('kf-B', F === 'B');
+  if (F) {
+    const x = state[F][i], [fx, fy] = pt(x);
+    setArc($('arcA' + i), 0, x); setArc($('arcB' + i), x, x);
+    $('h' + F + i).setAttribute('transform', `translate(${fx.toFixed(2)} ${fy.toFixed(2)})`);
+    $('h' + (F === 'A' ? 'B' : 'A') + i).style.display = 'none';
+    $('h' + F + i).style.display = '';
+    $('hBc' + i).setAttribute('r', 5.5);
+    $('now' + i).setAttribute('r', 0); $('gd' + i).setAttribute('r', 0); $('c' + i).setAttribute('tabindex', -1);
+  } else if (!linked) $('hA' + i).style.display = '';
 
   // center glyph: the morph curve drawn in an 18×18 box
   const x0 = 31, y0 = 49, S = 18, m = state.morph;
@@ -140,12 +158,18 @@ function updateKnob(i) {
     for (let k = 0; k <= 20; k++) { const t = k / 20; path += (k ? 'L' : 'M') + (x0 + t * S).toFixed(2) + ' ' + (y0 - MorphEngine.bend(t, c) * S).toFixed(2); }
     gy = MorphEngine.bend(m, c);
   }
-  $('gl' + i).setAttribute('d', linked || d.seq ? '' : path);
+  $('gl' + i).setAttribute('d', linked || d.seq || F ? '' : path);
+  { const x = F ? state[F][i] : linked || d.seq ? a : r, an = ang(x);
+    $('ptr' + i).setAttribute('x1', (CX + 13.5 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y1', (CX + 13.5 * Math.sin(an)).toFixed(2));
+    $('ptr' + i).setAttribute('x2', (CX + 19 * Math.cos(an)).toFixed(2)); $('ptr' + i).setAttribute('y2', (CX + 19 * Math.sin(an)).toFixed(2)); }
   $('gd' + i).setAttribute('cx', (x0 + m * S).toFixed(2)); $('gd' + i).setAttribute('cy', (y0 - gy * S).toFixed(2));
 
   // text
   const v = $('v' + i), ed = editing[i];
-  if (linked) {
+  if (F) {
+    v.className = 'kval ' + F.toLowerCase(); v.textContent = valText(i, state[F][i]);
+    $('va' + i).textContent = F === 'A' ? 'A' : ''; $('vb' + i).textContent = F === 'B' ? 'B' : ''; $('va' + i).classList.remove('muted');
+  } else if (linked) {
     v.className = 'kval'; v.textContent = valText(i, a);
     $('va' + i).textContent = d.single === 'A' ? 'Side A' : linked && !d.single ? 'Linked' : '';
     $('vb' + i).textContent = d.single === 'B' ? 'Side B' : '';
@@ -196,14 +220,15 @@ function setCurve(i, c) {
 /* ---------- knob pointer interaction ---------- */
 function bindKnob(i) {
   const el = $('k' + i), d = DEFS[i];
-  let pid = null, mode = null, sx = 0, sy = 0, sv = 0, lastTap = 0, lastMode = null;
+  let pid = null, mode = null, sx = 0, sy = 0, sv = 0, lastTap = 0, lastMode = null, fresh = false;
   const targetEl = md => md === 'C' ? $('c' + i) : $('h' + md + i);
 
   el.addEventListener('pointerdown', e => {
     e.preventDefault();
     const rc = el.getBoundingClientRect();
     const x = (e.clientX - rc.left) / rc.width * 80 - CX, y = (e.clientY - rc.top) / rc.height * 80 - CX;
-    if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
+    if (focusSide(i)) mode = focusSide(i);   // side focus: the whole knob drags that side's value
+    else if (isLinked(i)) mode = 'A';   // linked: the whole knob drags the single value
     else if (Math.hypot(x, y) < 22 && !d.seq) mode = 'C';
     else {
       let rel = (Math.atan2(y, x) * 180 / Math.PI - 135 + 720) % 360;
@@ -218,12 +243,12 @@ function bindKnob(i) {
     }
     const now = performance.now();
     if (now - lastTap < 300 && mode === lastMode) {
-      if (mode === 'C') setCurve(i, 0); else setParam(mode, i, defaultNorm(DEFS[i].single || mode, i));
+      pushUndo(); if (mode === 'C') setCurve(i, 0); else setParam(mode, i, defaultNorm(DEFS[i].single || mode, i));
       lastTap = 0; mode = null; return;
     }
     lastTap = now; lastMode = mode;
     pid = e.pointerId; el.setPointerCapture(pid);
-    sx = e.clientX; sy = e.clientY;
+    sx = e.clientX; sy = e.clientY; fresh = true;
     sv = mode === 'C' ? state.C[i] : state[mode][i];
     editing[i] = mode; el.classList.add('dragging');
     targetEl(mode).classList.add('active');
@@ -233,6 +258,7 @@ function bindKnob(i) {
   el.addEventListener('pointermove', e => {
     if (e.pointerId !== pid) return;
     const delta = ((sy - e.clientY) + (e.clientX - sx) * 0.5) / (e.shiftKey ? 900 : 200);
+    if (fresh && Math.abs(delta) > 0.002) { fresh = false; pushUndo(); }   // one undo step per drag
     if (mode === 'C') setCurve(i, sv + delta * 2);
     else setParam(mode, i, quant(d, clamp(sv + delta)));
   });
