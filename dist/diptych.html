@@ -43,18 +43,25 @@ body{
   font-size:15px;line-height:1.35;font-variant-numeric:tabular-nums;
   -webkit-tap-highlight-color:transparent;
 }
-/* keycap buttons: a raised cap with a solid shadow underneath; pressed (on) is the family yellow */
-button,select{
+/* keys (2026-11-10, Touchy's 3D block): a flat face with an outline and a solid side made of four stacked 1px shadows,
+   down and to the right. A press sinks the key into its side (4px, for at least 90 ms, ui/settings.js); a key that is
+   on fills with the family yellow but stays level with its neighbours (owner: held keys looking offset read as a mistake). */
+:root{--k:#7D879B}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--k:#3E4A66} }
+:root[data-theme="dark"]{--k:#3E4A66}
+button,select,.key{
   font:inherit;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);
-  background:linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);border-radius:10px;
-  padding:6px 10px;cursor:pointer;min-height:36px;box-shadow:0 4px 0 var(--shadow);margin-bottom:4px;
-  transition:transform .07s,box-shadow .07s,background-color .12s;touch-action:manipulation;
+  background:var(--cap-hi);border:1.5px solid var(--k);border-radius:10px;
+  padding:6px 10px;cursor:pointer;min-height:36px;margin:0 4px 4px 0;
+  box-shadow:1px 1px 0 var(--k),2px 2px 0 var(--k),3px 3px 0 var(--k),4px 4px 0 var(--k);
+  transition:transform 70ms ease-out,box-shadow 70ms ease-out,background-color .12s;touch-action:manipulation;
 }
 select{text-transform:none;letter-spacing:0;font-size:.85rem}
-button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--shadow)}
+button.down,.key.down{transform:translate(4px,4px);box-shadow:0 0 0 var(--k)}
 button:focus-visible,select:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
-button[aria-pressed="true"]{background:var(--hold);color:var(--on-ink);border-color:transparent;transform:translateY(3px);box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--hold)}
+button[aria-pressed="true"]{background:var(--hold);color:var(--on-ink)}
 button:disabled{opacity:.35;cursor:default}
+@media (prefers-reduced-motion:reduce){ button,select,.key{transition:none} }
 .wrap{max-width:780px;margin:0 auto;padding:0 14px}
 .seg{display:inline-flex;gap:4px}
 /* ---------- top: wordmark, transport, undo/redo, dice, wave display, morph ---------- */
@@ -66,11 +73,12 @@ button:disabled{opacity:.35;cursor:default}
 #hplay.playing{background:var(--mc);border-color:var(--mc);color:#fff}
 /* tempo: a keycap you drag up or down */
 .bpm{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;height:40px;min-width:54px;padding:0 6px;margin-bottom:4px;
-  background:linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);border-radius:10px;box-shadow:0 4px 0 var(--shadow);
+  background:var(--cap-hi);border:1.5px solid var(--k);border-radius:10px;box-shadow:1px 1px 0 var(--k),2px 2px 0 var(--k),3px 3px 0 var(--k),4px 4px 0 var(--k);
   touch-action:none;cursor:ns-resize;user-select:none;-webkit-user-select:none;line-height:1}
 .bpm b{font:700 15px/1 var(--font-mono)}
 .bpm small{font:600 8px/1 var(--font-ui);letter-spacing:.16em;color:var(--muted);margin-top:2px}
-.bpm.drag,.bpm:focus-visible{box-shadow:0 1px 0 var(--shadow),0 0 0 2px var(--hold);transform:translateY(3px);outline:none}
+.bpm.drag{background:var(--hold);color:var(--on-ink)} .bpm.drag small{color:var(--on-ink)}
+.bpm:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
 .view{display:none}
 body.dev .view{display:inline-flex}
 /* dice sliders (Orbital's, standing up): six tracks in one row under two headings. Touch and let go: higher, bigger
@@ -120,10 +128,16 @@ body.dev .view{display:inline-flex}
 .morph-slider{position:relative;height:44px;border-radius:10px;border:1.5px solid var(--edge);touch-action:none;cursor:pointer;box-shadow:inset 0 2px 0 rgba(0,0,0,.18);margin-bottom:4px}
 .morph-slider .glim{position:absolute;left:0;right:0;bottom:0;height:calc(100% + 26px);width:100%;pointer-events:none;border-radius:10px}
 .morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
-.mcap{position:absolute;top:1px;bottom:1px;left:0;width:78px;min-height:0;padding:0;margin:0;font-family:var(--font-head);font-size:.7rem;letter-spacing:.14em;z-index:2}
-.morph-slider.drag .mcap{cursor:grabbing}
+.mcap{position:absolute;top:2px;bottom:6px;left:0;width:78px;min-height:0;padding:0;margin:0;font-family:var(--font-head);font-size:.7rem;letter-spacing:.14em;z-index:2}
+.morph-slider.drag .mcap{cursor:grabbing;transform:translate(4px,4px);box-shadow:0 0 0 var(--k)}
 .morph-slider.rest .glim{opacity:.45}
 .morph-slider.rest .mcap{color:var(--muted)}
+@media (max-width:480px){
+  .wordmark{font-size:1.05rem;letter-spacing:.14em}
+  .hctl{gap:3px}
+  .key.icon{width:36px;min-width:36px;height:38px}
+  .bpm{min-width:48px;height:38px}
+}
 /* ---------- groups + knobs ---------- */
 main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
 .group{flex:1 1 100%;padding:12px 0 6px}
@@ -211,6 +225,8 @@ body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
 .group.open .gname .more{display:none}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
+/* icon-like buttons stay flat (no key side) */
+.lock,.wtlabel .ac,.gname{box-shadow:none!important;margin:0;border:0}
 /* ---------- wavetable panel ---------- */
 .wt{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .wtcard{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:8px;background:var(--surface);border:1px solid var(--line);text-align:left;min-width:0;min-height:0;font-weight:400}
@@ -3975,7 +3991,7 @@ const SCHEMES = [   // [name, A light, B light, A dark, B dark]
   ['Sky & coral', '#0E8FC2', '#E0503A', '#53C6F2', '#FF7F66'],
   ['Ink & rose', '#3B4A6B', '#C2416B', '#9DB0D8', '#FF8FB4'],
 ];
-const COG = '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+const COG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M10.3 2.8h3.4l.5 2.6 1.6.9 2.5-.9 1.7 2.9-2 1.8v1.8l2 1.8-1.7 2.9-2.5-.9-1.6.9-.5 2.6h-3.4l-.5-2.6-1.6-.9-2.5.9-1.7-2.9 2-1.8v-1.8l-2-1.8 1.7-2.9 2.5.9 1.6-.9z"/><circle cx="12" cy="12" r="3"/></svg>';   // Pixy's
 $('setBtn').innerHTML = COG;
 const pref = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -4003,6 +4019,14 @@ $('setBtn').addEventListener('click', openSettings);
 $('setDone').addEventListener('click', closeSettings);
 $('settings').addEventListener('click', e => { if (e.target === $('settings')) closeSettings(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('settings').hidden) closeSettings(); });
+
+/* Touchy's press: a key sinks into its side on pointerdown and stays down for at least 90 ms, so a quick tap still shows */
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('button, .key'); if (!b || b.disabled || b.closest('.knob, .dicetrack') || b.classList.contains('lock') || b.classList.contains('gname')) return;
+  b.classList.add('down'); const t0 = performance.now();
+  const up = () => { document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up); setTimeout(() => b.classList.remove('down'), Math.max(0, 90 - (performance.now() - t0))); };
+  document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+}, true);
 /* =====================================================================
    BASIC VIEW AND SECTION OVERLAYS
    Basic view: every section shows its key controls (BASIC in knobs.js) in a

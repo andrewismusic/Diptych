@@ -85,3 +85,5 @@ body:not(.full) .group:not(.open) :is(.adv,.tools){display:none}
 .group.open .gname .more{display:none}
 .sub + .sub{margin-top:10px}
 .subh{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
+/* icon-like buttons stay flat (no key side) */
+.lock,.wtlabel .ac,.gname{box-shadow:none!important;margin:0;border:0}

@@ -33,17 +33,24 @@ body{
   font-size:15px;line-height:1.35;font-variant-numeric:tabular-nums;
   -webkit-tap-highlight-color:transparent;
 }
-/* keycap buttons: a raised cap with a solid shadow underneath; pressed (on) is the family yellow */
-button,select{
+/* keys (2026-11-10, Touchy's 3D block): a flat face with an outline and a solid side made of four stacked 1px shadows,
+   down and to the right. A press sinks the key into its side (4px, for at least 90 ms, ui/settings.js); a key that is
+   on fills with the family yellow but stays level with its neighbours (owner: held keys looking offset read as a mistake). */
+:root{--k:#7D879B}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--k:#3E4A66} }
+:root[data-theme="dark"]{--k:#3E4A66}
+button,select,.key{
   font:inherit;font-weight:600;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);
-  background:linear-gradient(180deg,var(--cap-hi),var(--cap-lo));border:1.5px solid var(--edge);border-radius:10px;
-  padding:6px 10px;cursor:pointer;min-height:36px;box-shadow:0 4px 0 var(--shadow);margin-bottom:4px;
-  transition:transform .07s,box-shadow .07s,background-color .12s;touch-action:manipulation;
+  background:var(--cap-hi);border:1.5px solid var(--k);border-radius:10px;
+  padding:6px 10px;cursor:pointer;min-height:36px;margin:0 4px 4px 0;
+  box-shadow:1px 1px 0 var(--k),2px 2px 0 var(--k),3px 3px 0 var(--k),4px 4px 0 var(--k);
+  transition:transform 70ms ease-out,box-shadow 70ms ease-out,background-color .12s;touch-action:manipulation;
 }
 select{text-transform:none;letter-spacing:0;font-size:.85rem}
-button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--shadow)}
+button.down,.key.down{transform:translate(4px,4px);box-shadow:0 0 0 var(--k)}
 button:focus-visible,select:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
-button[aria-pressed="true"]{background:var(--hold);color:var(--on-ink);border-color:transparent;transform:translateY(3px);box-shadow:0 1px 0 var(--shadow),0 0 14px -2px var(--hold)}
+button[aria-pressed="true"]{background:var(--hold);color:var(--on-ink)}
 button:disabled{opacity:.35;cursor:default}
+@media (prefers-reduced-motion:reduce){ button,select,.key{transition:none} }
 .wrap{max-width:780px;margin:0 auto;padding:0 14px}
 .seg{display:inline-flex;gap:4px}
