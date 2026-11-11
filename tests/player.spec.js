@@ -107,7 +107,7 @@ test('the MORPH cap brings back the morph view; Settings change the colours and 
   await page.click('#setBtn');
   await expect(page.locator('#settings')).toBeVisible();
   await page.click('[data-scheme="1"]');
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#C2183F');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#0092B5');
   await page.click('#monoPill');
   expect(await page.evaluate(() => state.mono)).toBe(true);
   await page.click('#setDone');
@@ -146,4 +146,66 @@ test('the header\'s Everything die rolls every part and both sequences; hold MOR
   await page.evaluate(() => { holdingMorph = true; document.querySelector('[data-focus="B"]').click(); holdingMorph = false; });
   expect(await page.evaluate(() => [state.morph, focus, Math.abs(state.B[IX.mbright] - resolveNorm(IX.mbright))])).toEqual([1, 'M', 0]);
   expect(await page.evaluate(() => state.B[IX.mbright])).toBeCloseTo(heard, 9);
+});
+
+test('a die rolls as it is pulled, keeps where you let go (one undo step), and back at the start draws new paths', async ({ page }) => {
+  await openSynth(page, { dev: false });
+  const box = await page.locator('.dicetrack[data-what="synth"][data-side="M"]').boundingBox();
+  const x = box.x + box.width / 2, y0 = box.y + box.height - 14, at = f => y0 - (box.height - 28) * f;
+  const pos = () => page.evaluate(() => state.A[oi(0, 'posA')]);
+  const p0 = await pos(), u0 = await page.evaluate(() => undoStack.length);
+  await page.mouse.move(x, y0); await page.mouse.down();
+  const hx = () => page.evaluate(() => dieHeld.x);
+  await page.mouse.move(x, at(0.4), { steps: 3 }); await page.waitForTimeout(80); const p4 = await pos(), x4 = await hx();
+  await page.mouse.move(x, at(0.8), { steps: 3 }); await page.waitForTimeout(80); const p8 = await pos(), x8 = await hx();
+  expect((p8 - p0) / x8).toBeCloseTo((p4 - p0) / x4, 5);   // the same path, further along it
+  await page.mouse.move(x, y0 + 6, { steps: 3 }); await page.waitForTimeout(80);
+  expect(await pos()).toBe(p0);                                        // back at the start: nothing changed
+  await page.mouse.move(x, at(0.8), { steps: 3 }); await page.waitForTimeout(80);
+  expect(await pos()).not.toBe(p8);                                    // a new path
+  await page.mouse.up();
+  expect(await page.evaluate(() => undoStack.length)).toBe(u0 + 1);
+  await page.click('#undo');
+  expect(await pos()).toBe(p0);
+});
+
+test('hold a die and tap a knob: only that knob rolls', async ({ page }) => {
+  await openSynth(page, { dev: false });
+  const before = await page.evaluate(() => [state.A.slice(), state.B.slice()]);
+  const box = await page.locator('.dicetrack[data-what="filt"][data-side="A"]').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height - 14); await page.mouse.down();
+  await page.evaluate(() => $('k' + IX.reso).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7 })));
+  await page.mouse.up();
+  const changed = await page.evaluate(b => DEFS.map((d, i) => (state.A[i] !== b[0][i] ? 'A:' + d.id : state.B[i] !== b[1][i] ? 'B:' + d.id : null)).filter(Boolean), before);
+  expect(changed).toEqual(['A:reso']);
+});
+
+test('presets: save, load and a random one; the Play panel\'s hexagons, in key or chromatic', async ({ page }) => {
+  await openSynth(page, { dev: false, storage: {} });
+  await page.click('#presetBtn');
+  await page.fill('#preName', 'First'); await page.click('#preSave');
+  const first = await page.evaluate(() => state.A[IX.cutoff]);
+  await page.evaluate(() => bulk(() => randomizeAll()));
+  await page.fill('#preName', 'Second'); await page.click('#preSave');
+  await page.click('[data-pre="0"]');
+  expect(await page.evaluate(() => state.A[IX.cutoff])).toBe(first);
+  await page.click('#preRandom');
+  expect(await page.evaluate(() => lastPreset)).toBe(1);   // never the one just loaded, when there is a choice
+  await page.click('#preDone');
+  await page.click('[data-kb="hex"]');
+  const inKey = await page.evaluate(() => [...document.querySelectorAll('.hexcell')].every(c => !c.classList.contains('out')));
+  await page.evaluate(() => { kbChrom = true; buildKeys(); });
+  const chrom = await page.evaluate(() => { const pcs = new Set(SCALES[state.seq.A.scale].map(x => (x + state.seq.A.root) % 12));
+    return [...document.querySelectorAll('.hexcell')].every(c => c.classList.contains('out') === !pcs.has(((base() + +c.dataset.off) % 12 + 12) % 12)); });
+  expect([inKey, chrom]).toEqual([true, true]);
+});
+
+test('the lanes keep their size on a 3x screen', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  await openSynth(page, { dev: false });
+  await page.locator('[data-tab="seq"]').tap();
+  const h = () => page.evaluate(() => ['lnA', 'lnL', 'lnB'].map(id => Math.round($(id).getBoundingClientRect().height)));
+  const a = await h(); await page.evaluate(() => { for (let k = 0; k < 5; k++) drawLanes(); }); await page.waitForTimeout(100); const b = await h();
+  expect(b).toEqual(a); expect(Math.max(...a) - Math.min(...a)).toBeLessThanOrEqual(1);
+  await page.close();
 });

@@ -18,7 +18,7 @@ function updateMorphUI() {
 function setMorph(m) {
   state.morph = clamp(m);
   updateMorphUI();
-  DEFS.forEach((d, i) => updateKnob(i));
+  updateKnobs();
   if (ready) send({ type:'morph', v: state.morph });
   save();
 }
@@ -72,7 +72,7 @@ function drawGlim(now) {
 }
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 function glimLoop(now) {
-  if (!document.hidden && now - glimLast > 33) { glimLast = now; drawGlim(reduceMotion.matches ? 0 : now); }
+  if (!document.hidden && now - glimLast > 33) { glimLast = now; drawGlim(reduceMotion.matches ? 0 : now); if (typeof animatePanels === 'function') animatePanels(now); }
   requestAnimationFrame(glimLoop);
 }
 requestAnimationFrame(glimLoop);
@@ -86,7 +86,7 @@ function setFocus(f) {
   document.body.dataset.sidefocus = f;
   document.querySelectorAll('[data-focus]').forEach(b => b.setAttribute('aria-pressed', b.dataset.focus === f));
   updateMorphUI();
-  DEFS.forEach((d, i) => updateKnob(i));
+  updateKnobs();
   if (ready) send({ type:'morph', v: state.morph });
   drawLanes();
 }

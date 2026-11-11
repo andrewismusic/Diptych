@@ -63,6 +63,7 @@ function drawEnvPanel() {
     if (s === 2) { g.globalAlpha = 0.14; g.fillStyle = cols[2]; g.lineTo(c.w - pad, yOf(0)); g.lineTo(pad, yOf(0)); g.closePath(); g.fill(); }
   }
   c.g.globalAlpha = 1;
+  if (notesMoving()) { const e = sets[2], p = envPos(e.aatk, e.adec, e.asus, e.arel, hold); if (!p.done && p.t <= T) playDot(c.g, pad + p.t / T * (c.w - 2 * pad), yOf(p.v), cols[2]); }
   c.g.fillStyle = mixColor(state.morph); c.g.font = `500 11px ${css('--font-mono')}`; c.g.textAlign = 'right';
   c.g.fillText(time(sets[2].aatk + sets[2].adec + sets[2].arel), c.w - pad, 14);
 }
@@ -96,4 +97,33 @@ function drawFiltPanel() {
     g.beginPath(); path.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
   }
   g.globalAlpha = 1;
+  if (notesMoving()) { const e = sets[2], p = envPos(e.fatk, e.fdec, e.fsus, e.frel, hold); if (!p.done && p.t <= T) playDot(g, pad + 22 + p.t / T * (c.w - 2 * pad - 22), yOf(e.cutoff * Math.pow(2, e.envamt * 5 * p.v)), cols[2]); }
 }
+
+/* ---------- the panels move with the notes (2026-11-11) ----------
+   The engine reports each note-on and note-off. While a note sounds (and through its release), a dot travels along the
+   Amp and Filt pictures as the envelope plays it, and the waves on Synth and FX swell and fade with the amp envelope;
+   idle, they show the whole wave. Drawn about 30 times a second from the morph slider's loop, only while something moves. */
+const NOTE = { on: false, t0: -1e9, tOff: -1e9, last: -1e9 };
+function noteSeen(on) { const t = performance.now(); if (on) { NOTE.t0 = t; NOTE.on = true; } else { NOTE.on = false; NOTE.tOff = t; } NOTE.last = t; }
+// where a note is on an envelope picture: the picture's time (attack, decay, the held part, release) and the level there
+function envPos(a, d, s, r, hold) {
+  const now = performance.now(), el = (now - NOTE.t0) / 1000;
+  const lvl = t => (t < a ? t / a : s + (1 - s) * Math.exp(-5 * (t - a) / d));
+  if (NOTE.on) { const t = Math.min(el, a + d + hold); return { t, v: t < a ? t / a : lvl(Math.min(t, a + d * 3)) }; }
+  const held = Math.max(0, (NOTE.tOff - NOTE.t0) / 1000), rel = (now - NOTE.tOff) / 1000, v0 = lvl(Math.min(held, a + d * 3));
+  return { t: a + d + hold + rel, v: v0 * Math.exp(-6.9 * rel / r), done: rel > r * 1.2 };
+}
+function scopeGain() {
+  if (NOTE.last < 0) return 1;
+  const e = heardAt(state.morph), p = envPos(e.aatk, e.adec, e.asus, e.arel, 0);
+  if (!NOTE.on && p.done) return Math.min(1, 0.1 + (performance.now() - NOTE.tOff) / 1000 - e.arel * 1.2);   // back to the whole wave
+  return 0.1 + 0.9 * p.v;
+}
+const notesMoving = () => NOTE.on || performance.now() - NOTE.tOff < 6000;
+function animatePanels(now) {
+  if (!notesMoving()) return;
+  drawEnvPanel(); drawFiltPanel(); drawScope(now);
+}
+// a dot on a picture's "now" line
+function playDot(g, x, y, col) { g.fillStyle = col; g.beginPath(); g.arc(x, y, 5, 0, 6.2832); g.fill(); g.strokeStyle = css('--surface'); g.lineWidth = 2; g.stroke(); }

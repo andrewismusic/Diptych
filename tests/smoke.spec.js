@@ -182,7 +182,7 @@ test.describe('phone', () => {
     // the Play panel: three octave rows of piano, or the scale grid, with the roots lit
     await page.locator('[data-tab="play"]').tap();
     expect(await page.evaluate(() => [document.querySelectorAll('#keys .krow').length, document.querySelectorAll('#keys .white').length])).toEqual([3, 21]);
-    await page.locator('#kbMode').tap();
+    await page.locator('[data-kb="grid"]').tap();
     const g = await page.evaluate(() => { const cells = [...document.querySelectorAll('#keys .cell')], root = state.seq.A.root;
       return { n: cells.length, roots: cells.filter(c => c.classList.contains('root')).every(c => ((base() + +c.dataset.off) % 12) === root), size: cells[0].getBoundingClientRect().width }; });
     expect(g.n).toBeGreaterThanOrEqual(15); expect(g.roots).toBe(true); expect(g.size).toBeGreaterThan(40);

@@ -31,6 +31,7 @@ function holdRepeat(el, fn) {
 function onReport(d) {
   if (d.type === 'pos' && seqPlaying) { seqPos = d.pos; seqLoop = d.loop; drawLanesSoon(); }
   else if (d.type === 'ott') onOtt(d);
+  else if (d.type === 'non' || d.type === 'noff') noteSeen(d.type === 'non');
 }
 // mono / poly for playing the keys (the sequencer is always one note at a time), in Settings since 2026-11-10
 function updateMonoUI() { setPill($('monoPill'), state.mono ? 1 : 0); }

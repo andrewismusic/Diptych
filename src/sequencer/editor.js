@@ -2,8 +2,6 @@
 const sq = $('sq'), roll = $('roll'), velCv = $('velCv');
 let sqSide = 'A', rollDrag = null;
 $('sqRate').innerHTML = RATES.map((r, i) => `<option value="${i}">${r[0]}</option>`).join('');
-$('sqRoot').innerHTML = NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('');
-$('sqScale').innerHTML = Object.keys(SCALES).map(n => `<option>${n}</option>`).join('');
 $('sqChord').innerHTML = Object.keys(CHORDS).map(n => `<option>${n}</option>`).join('');
 $('sqMode').innerHTML = MODES.map(n => `<option>${n}</option>`).join('');
 const cur = () => state.seq[sqSide];
@@ -22,20 +20,19 @@ function syncSeqControls() {
   const s = cur(); fixSeq(s);
   const dn = Math.round(seqDensity(s) * 100); $('sqDens').value = dn; $('sqDensVal').textContent = dn + '%';
   setPill($('sqSide'), sqSide === 'A' ? 0 : 1);
-  $('sqRate').value = s.rate; $('sqRoot').value = s.root; $('sqScale').value = s.scale;
+  $('sqRate').value = s.rate;
   $('sqLen').textContent = s.n16;
   $('sqOther').textContent = `Copy to ${sqSide === 'A' ? 'B' : 'A'}`;
 }
 // the shared Scale (root and type) sits at the top left of the Seq panel, and again in the Play panel, where it decides
 // the notes of the grid and which keys are roots (2026-11-11)
 const scaleSel = p => `<span class="qscale"><span class="lbl">Key</span><select id="${p}Root" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="${p}Scale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select></span>`;
-$('pSeqTop').insertAdjacentHTML('afterbegin', scaleSel('q'));
-$('pScaleBox').insertAdjacentHTML('afterbegin', scaleSel('k'));
+$('hKey').insertAdjacentHTML('afterbegin', scaleSel('q'));   // the Key sits in the header, beside the Everything die (2026-11-11)
 function syncScaleUI() {
-  for (const p of ['q', 'k']) { $(p + 'Root').value = state.seq.A.root; $(p + 'Scale').value = state.seq.A.scale; }
+  for (const p of ['q']) { $(p + 'Root').value = state.seq.A.root; $(p + 'Scale').value = state.seq.A.scale; }
   if (typeof buildKeys === 'function') buildKeys();
 }
-for (const p of ['q', 'k']) {
+for (const p of ['q']) {
   $(p + 'Root').addEventListener('change', () => { pushUndo(); setScale(+$(p + 'Root').value, state.seq.A.scale); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
   $(p + 'Scale').addEventListener('change', () => { pushUndo(); setScale(state.seq.A.root, $(p + 'Scale').value); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
 }
@@ -48,8 +45,6 @@ $('sqRate').addEventListener('change', () => editSeq(s => { s.rate = +$('sqRate'
 function setScale(root, scale) {   // shared by both sides
   ['A', 'B'].forEach(k => { const q = state.seq[k]; q.root = root; q.scale = scale; snapToScale(q); });
 }
-$('sqRoot').addEventListener('change', () => editSeq(() => setScale(+$('sqRoot').value, cur().scale)));
-$('sqScale').addEventListener('change', () => editSeq(() => setScale(cur().root, $('sqScale').value)));
 $('sqLenDn').addEventListener('click', () => editSeq(s => { if (s.n16 > 1) { s.n16--; fitSlots(s); } }));
 $('sqLenUp').addEventListener('click', () => editSeq(s => { if (s.n16 < MAXSTEPS) { s.n16++; fitSlots(s); } }));
 ['pointerdown', 'keydown'].forEach(t => $('sqDens').addEventListener(t, () => pushUndo()));

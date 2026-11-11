@@ -90,7 +90,7 @@ body{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
 .top,.kb{background:transparent}
 body.vivid{background:var(--mc)}
 body.vivid .wordmark{color:#fff}
-.vivid .panel,.vivid .sheetcard{--surface:color-mix(in oklch,var(--mc) 32%,#0A0C14);--well:rgba(0,0,0,.3);--ink:#ECEFF8;--muted:#B9C0D4;--line:rgba(255,255,255,.14);
+:root:not([data-theme="light"]) .vivid .panel,:root:not([data-theme="light"]) .vivid .sheetcard{--surface:color-mix(in oklch,var(--mc) 32%,#0A0C14);--well:rgba(0,0,0,.3);--ink:#ECEFF8;--muted:#B9C0D4;--line:rgba(255,255,255,.14);
   --edge:rgba(0,0,0,.45);--shadow:rgba(0,0,0,.35);--cap-hi:color-mix(in oklch,var(--mc) 22%,#1A1F2E);--k:rgba(0,0,0,.55);color:var(--ink)}
 .vivid .tab[aria-selected="false"],.vivid .kb .key:not([aria-pressed="true"]),.vivid .top .key:not([aria-pressed="true"]),.vivid .mcap{--cap-hi:color-mix(in oklch,var(--mc) 22%,#1A1F2E);--ink:#ECEFF8;--k:rgba(0,0,0,.5);color:#ECEFF8}
 /* values that belong to what you hear now take the morph colour */
@@ -125,16 +125,79 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
 .pill span{display:flex;align-items:center;padding:4px 11px;font-size:.7rem}
 .pill span + span{border-left:1.5px solid var(--k)}
 .pill span.on{background:var(--hold);color:var(--on-ink)}
-/* the header's Everything die (five pips), a level track */
-.titlebar{flex-wrap:wrap}
-.alldie{flex:1 1 160px;display:flex;min-width:140px;max-width:420px;order:2}
-.dicetrack.horiz{width:100%;height:36px}
-.dicetrack.horiz .fill{top:0;bottom:0;left:0;right:auto;width:0;height:auto;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
-.dicetrack.horiz .die{left:0;top:1px;bottom:auto;transition:left .5s cubic-bezier(.3,.9,.3,1.1),transform .07s,filter .07s}
-.dicetrack.horiz .dlab{position:absolute;right:10px;top:0;bottom:0;display:flex;align-items:center;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);pointer-events:none;z-index:1}
-.dicetrack.horiz.dragging .dlab{color:var(--on-ink)}
-.titlebar .hctl{order:3} .titlebar .view{order:4}
-@media (max-width:640px){ .alldie{order:5;flex-basis:100%;max-width:none} }
-.dicetrack.horiz.dragging .fill{transition:none}
+
 body:not(.dev) .view{display:none!important}
 .setrow .pill{align-self:flex-start}
+
+/* ===== 2026-11-11, fifth pass ===== */
+/* one size for every key and pill: 36 px tall, .72rem labels (tabs, pills and buttons alike) */
+button,select,.key{font-size:.72rem}
+button,.key,.pill{min-height:36px}
+.pill span{font-size:.72rem;padding:4px 12px}
+.tab{font-size:.72rem;letter-spacing:.04em}
+.key.send{font-size:.72rem}
+select{font-size:.8rem}
+/* header, second row: the Everything die (short, five pips), the Key, presets */
+.hrow2{display:flex;align-items:center;gap:8px;padding:0 0 8px}
+.alldie{flex:0 0 auto;display:flex}
+.dicetrack.horiz{width:118px;height:36px}
+.dicetrack.horiz .fill{top:0;bottom:0;left:0;right:auto;width:0;height:auto;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
+.dicetrack.horiz .die{left:0;top:1px;bottom:auto;transition:left .5s cubic-bezier(.3,.9,.3,1.1),transform .07s,filter .07s}
+.dicetrack.horiz.dragging .die,.dicetrack.horiz.dragging .fill{transition:none}   /* follow the finger exactly while held */
+.hkey{flex:1;min-width:0;display:flex}
+.hkey .qscale{min-width:0}
+.hkey .qscale select:last-child{min-width:0;flex:1}
+.desk .hrow2{padding:0 0 10px}
+/* morph row: the slot is as tall as the A and B keys and its bottom meets theirs (the keys' faces sit up on their 4px
+   side; the slot is where a face goes when pressed, 4px lower). In A or B view the MORPH block grows to fill it, as tall
+   as the A and B keys. */
+.morphrow{align-items:start}
+.morph-slider{height:44px;margin:4px 0 0 0}
+.mcap{transition:transform 70ms ease-out,box-shadow 70ms ease-out,left .28s cubic-bezier(.3,.9,.3,1.05),width .28s cubic-bezier(.3,.9,.3,1.05)}
+.morph-slider.drag .mcap{transition:transform 70ms ease-out,box-shadow 70ms ease-out}
+.morph-slider.rest .mcap{transform:translate(-4px,-4px)!important;box-shadow:1px 1px 0 var(--k),2px 2px 0 var(--k),3px 3px 0 var(--k),4px 4px 0 var(--k)!important;width:calc(100% + 0px)}
+/* lanes: each canvas sits in its own box, so a high-density screen can't stretch the last lane */
+.pviz .lane{position:relative;min-height:0;height:100%}
+.pviz .lane canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:6px;background:var(--surface)}
+/* Vivid in the light theme: the page is the colour heard now; panels and keys stay light, tinted a little */
+:root[data-theme="light"] .vivid .panel,:root[data-theme="light"] .vivid .sheetcard{--surface:color-mix(in oklch,var(--mc) 10%,#F7F8FB);--well:color-mix(in oklch,var(--mc) 12%,#E3E7EE)}
+@media (prefers-color-scheme: light){ :root:not([data-theme]) .vivid .panel,:root:not([data-theme]) .vivid .sheetcard{--surface:color-mix(in oklch,var(--mc) 10%,#F7F8FB);--well:color-mix(in oklch,var(--mc) 12%,#E3E7EE);--ink:#101521;--muted:#556076;--line:#C3CAD6;--edge:#A9B3C3;--shadow:#A9B1C0;--cap-hi:#FFFFFF;--k:#7D879B;color:#101521} }
+:root[data-theme="light"] .vivid .tab[aria-selected="false"],:root[data-theme="light"] .vivid .kb .key:not([aria-pressed="true"]),:root[data-theme="light"] .vivid .top .key:not([aria-pressed="true"]),:root[data-theme="light"] .vivid .mcap{--cap-hi:#FFFFFF;--ink:#101521;--k:#7D879B;color:#101521}
+@media (prefers-color-scheme: light){ :root:not([data-theme]) .vivid .tab[aria-selected="false"],:root:not([data-theme]) .vivid .kb .key:not([aria-pressed="true"]),:root:not([data-theme]) .vivid .top .key:not([aria-pressed="true"]),:root:not([data-theme]) .vivid .mcap{--cap-hi:#FFFFFF;--ink:#101521;--k:#7D879B;color:#101521} }
+/* colour schemes: short, uniform, not stretched */
+.schemes{display:flex;flex-wrap:wrap;gap:8px}
+.scheme{width:150px;flex:0 0 auto;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem}
+/* the Play panel's three layouts */
+.kbmodes{display:inline-flex;gap:4px}
+.cell.out{opacity:.45}
+.keys.hex{display:block;position:relative}
+.hexcell{position:absolute;display:flex;align-items:center;justify-content:center;background:var(--k);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.hexcell::before{content:'';position:absolute;inset:1.5px;background:var(--cap-hi);clip-path:inherit}
+.hexcell span{position:relative;font-family:var(--font-mono);font-size:.6rem;color:var(--muted);pointer-events:none}
+.hexcell.root::before{background:color-mix(in srgb,var(--mc) 30%,var(--cap-hi))}
+.hexcell.root span{color:var(--ink);font-weight:700}
+.hexcell.on::before{background:var(--hold)}
+.hexcell.out{opacity:.45}
+.letter{font-size:1.15rem!important}
+.knob.rolled{animation:knobroll .45s ease-out}
+@keyframes knobroll{0%{rotate:0deg}30%{rotate:-10deg;scale:1.06}60%{rotate:6deg}100%{rotate:0deg;scale:1}}
+/* presets sheet */
+.presave{display:flex;gap:6px;align-items:center}
+.presave input{flex:1;min-width:0;font:inherit;font-size:.9rem;min-height:36px;padding:4px 10px;border:1.5px solid var(--k);border-radius:10px;background:var(--well);color:var(--ink)}
+.prelist{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
+.preitem{display:flex;gap:6px}
+.preitem .preload{flex:1;text-align:left;text-transform:none;letter-spacing:0;font-size:.85rem}
+.preitem.cur .preload{background:var(--hold);color:var(--on-ink)}
+/* the sequence editor leaves the header in view */
+.ed{top:var(--toph,0px)}
+/* desktop: the header is one row (wordmark, Everything die, Key, presets, then the transport and settings) */
+.desk:not(.dev) .top .wrap{display:flex;align-items:center;gap:12px}
+.desk:not(.dev) .titlebar{display:contents}
+.desk:not(.dev) .wordmark{order:0} .desk:not(.dev) .hrow2{order:1;flex:1;padding:6px 0} .desk:not(.dev) .hctl{order:2}
+.desk:not(.dev) .hkey{flex:0 1 auto}
+.pfoot .spacer{flex:1}
+.desk:not(.dev) .panel[data-panel="seq"] .pviz{min-height:84px}
+.desk:not(.dev) .panel[data-panel="seq"]{position:relative}
+.desk:not(.dev) .panel[data-panel="seq"] .knobs{padding-right:64px}
+.desk:not(.dev) .panel[data-panel="seq"] .pfoot{position:absolute;right:10px;bottom:10px}
+.vivid .letter.a:not([aria-pressed="true"]){color:var(--a)!important} .vivid .letter.b:not([aria-pressed="true"]){color:var(--b)!important}

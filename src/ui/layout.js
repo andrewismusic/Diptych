@@ -15,7 +15,9 @@ function applyLayout() {
   app.style.width = desk ? dw + 'px' : ''; app.style.height = desk ? dh + 'px' : '';
   app.style.zoom = desk ? Math.min(innerWidth / dw, innerHeight / dh) : '';
   document.documentElement.style.setProperty('--kbh', $('kb').getBoundingClientRect().height + 'px');   // the editors leave the bottom panel visible
+  document.documentElement.style.setProperty('--toph', document.querySelector('.top').getBoundingClientRect().bottom + 'px');   // and the header (2026-11-11)
   drawWaves();
 }
 let layoutTimer = null;
 window.addEventListener('resize', () => { clearTimeout(layoutTimer); layoutTimer = setTimeout(applyLayout, 120); });
+new ResizeObserver(() => document.documentElement.style.setProperty('--toph', document.querySelector('.top').getBoundingClientRect().bottom + 'px')).observe(document.querySelector('.top'));

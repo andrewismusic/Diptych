@@ -71,7 +71,7 @@ function drawWaveOn(cv, withFx, now) {
   const t = (now || performance.now()) / 1000;
   // the wave heard now, with the effects' marks
   const { w, pk } = scopeWave(v);
-  const n = SC.n, m = H / 2, amp = (H / 2 - 10) / pk;
+  const n = SC.n, m = H / 2, amp = (H / 2 - 10) / pk * scopeGain();
   const shape = (x0) => {
     let y = x0;
     if (fx.ott > 0) y = Math.sign(y) * Math.pow(Math.abs(y), 1 - 0.6 * fx.ott);

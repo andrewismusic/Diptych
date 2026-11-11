@@ -192,7 +192,14 @@ function updateKnob(i) {
   hB.setAttribute('aria-valuenow', Math.round(b * 100)); hB.setAttribute('aria-valuetext', valText(i, b));
   cc.setAttribute('aria-valuenow', Math.round(c * 100)); cc.setAttribute('aria-valuetext', fmtCurve(c));
 }
-function refreshAll() { DEFS.forEach((d, i) => updateKnob(i)); updateMorphUI(); }
+/* Latency (2026-11-11): the player's view only shows the knobs in the panels, so only those are redrawn when the morph
+   or a whole patch changes (the developer view redraws every knob). Redrawing all of them on every move of the morph
+   slider was most of the work on a phone. */
+let liveCache = null;
+const liveKnobs = () => (typeof devView !== 'undefined' && devView ? DEFS.map((_, i) => i)
+  : liveCache || (liveCache = DEFS.map((d, i) => i).filter(i => !DEFS[i].opts && $('k' + i) && $('k' + i).closest('#panels'))));
+function updateKnobs() { for (const i of liveKnobs()) updateKnob(i); }
+function refreshAll() { updateKnobs(); updateMorphUI(); }
 function setParam(side, i, x) {
   x = clamp(x);
   if (isLinked(i)) {   // linked or single-side: both sides always hold the same value

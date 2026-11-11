@@ -262,6 +262,7 @@ class MorphEngine {
     v.pitch = this.val[this.I.glide] > 0.0005 && this.lastPitch >= 0 ? this.lastPitch : note;
   }
   noteOn(note, vel) {
+    if (this.reports.length < 64) this.reports.push({ type:'non', note });   // for the panels' animations (2026-11-11)
     if (this.mono) {   // one voice, last note wins; releasing it falls back to a key still held
       this.stack = this.stack.filter(n => n !== note); this.stack.push(note);
       for (let k = 1; k < 8; k++) if (this.voices[k].active) { this.voices[k].aSt = 3; this.voices[k].fSt = 3; }
@@ -334,6 +335,7 @@ class MorphEngine {
     if (++this.repCount >= 64) { this.repCount = 0; this.reports.push({ type:'pos', pos: this.spos, loop: S.loop }); }
   }
   noteOff(note) {
+    if (this.reports.length < 64) this.reports.push({ type:'noff', note });
     if (this.mono) {
       const top = this.stack[this.stack.length - 1], v = this.voices[0];
       this.stack = this.stack.filter(n => n !== note);

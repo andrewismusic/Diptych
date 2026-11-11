@@ -62,6 +62,73 @@ function rollSeq(side, amt) {
     shapeRandom(q);
   }
 }
+/* ---------- live dice (2026-11-11) ----------
+   Pulling a die already rolls: when you touch it, a full roll of its part is worked out once (the target: a random path),
+   and as the die travels every value moves that far from where it was toward the target (switches and wavetables flip
+   once the die passes their own random point; sequence notes likewise, step by step, and the far end takes the whole new
+   pattern). You see the knobs move and hear it as it goes; let go wherever you like it. Back at the start, nothing has
+   changed and the paths are drawn again, so the next pull goes somewhere else. Letting go keeps it, as one undo step. */
+const cloneT = () => tables.map(t => ({ A: t.A, B: t.B }));
+const keepState = () => ({ A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), t: cloneT(), smp: JSON.parse(JSON.stringify(state.smp)), seq: JSON.parse(JSON.stringify(state.seq)) });
+function putState(k) {
+  state.A = k.A.slice(); state.B = k.B.slice(); state.C = k.C.slice(); state.smp = JSON.parse(JSON.stringify(k.smp)); state.seq = JSON.parse(JSON.stringify(k.seq));
+  k.t.forEach((t, j) => { tables[j].A = t.A; tables[j].B = t.B; });
+}
+function makePath(what, side) {
+  const base = keepState(), undo = snapshot();
+  if (what === 'all') rollAll(1); else if (what === 'seq') rollSeq(side, 1); else rollPart(what, side, 1);
+  const full = keepState();
+  putState(base);
+  let part = null;   // sequences below the far end: a new melody in the same rhythm grid, step by step
+  if (what === 'seq' || what === 'all') {
+    rollSeq(side === 'M' || what === 'all' ? 'M' : side, 0.6); part = JSON.parse(JSON.stringify(state.seq)); putState(base);
+  }
+  const u = DEFS.map(() => rnd()), ut = tables.map(() => ({ A: rnd(), B: rnd() })), us = rnd();
+  const useq = { A: state.seq.A.steps.map(() => rnd()), B: state.seq.B.steps.map(() => rnd()) };
+  analyzeAll();   // the spectra back to the tables now in place
+  return { base, undo, full, part, u, ut, us, useq, what, last: { t: cloneT(), smp: JSON.stringify(state.smp) } };
+}
+// the state at amount x (0 to 1) along the path
+function pathAt(P, x) {
+  const { base, full } = P;
+  if (P.what !== 'seq') {
+    for (const k of ['A', 'B']) for (let i = 0; i < DEFS.length; i++) {
+      const o = base[k][i], n = full[k][i];
+      state[k][i] = o === n ? o : DEFS[i].opts || DEFS[i].curve === 'int' && DEFS[i].snap ? (x > P.u[i] ? n : o) : quant(DEFS[i], o + (n - o) * x);
+    }
+    for (let i = 0; i < DEFS.length; i++) state.C[i] = base.C[i] + (full.C[i] - base.C[i]) * x;
+    tables.forEach((t, j) => { for (const k of ['A', 'B']) t[k] = x > P.ut[j][k] ? full.t[j][k] : base.t[j][k]; });
+    state.smp = x > P.us ? JSON.parse(JSON.stringify(full.smp)) : JSON.parse(JSON.stringify(base.smp));
+  }
+  if (P.what === 'seq' || P.what === 'all') {
+    if (x >= 0.85) {
+      state.seq = JSON.parse(JSON.stringify(full.seq));
+      for (const k of ['A', 'B']) for (const key of ['sqdens', 'sqspeed', 'sqoct']) state[k][IX[key]] = full[k][IX[key]];
+    } else {
+      state.seq = JSON.parse(JSON.stringify(base.seq));
+      for (const k of ['A', 'B']) {
+        const q = state.seq[k], pq = P.part[k];
+        q.steps.forEach((st, i) => { if (pq.steps[i] && x / 0.85 > P.useq[k][i]) { st.note = pq.steps[i].note; st.on = pq.steps[i].on; st.vel = pq.steps[i].vel; } });
+        if (P.what === 'seq') for (const key of ['sqdens', 'sqspeed', 'sqoct']) state[k][IX[key]] = base[k][IX[key]];
+      }
+    }
+  }
+}
+// show and play the state now, cheaply: knobs in view, the pictures, the engine (tables and samples only when they changed)
+function liveShow(P) {
+  syncPair(); updateKnobs(); updateMorphUI();
+  const changed = []; tables.forEach((t, j) => { for (const k of ['A', 'B']) if (t[k] !== P.last.t[j][k]) changed.push([j, k]); });
+  changed.forEach(([j, k]) => { analyzeTable(j, k); P.last.t[j][k] = tables[j][k]; });
+  const smpNow = JSON.stringify(state.smp), smpChanged = smpNow !== P.last.smp; P.last.smp = smpNow;
+  if (smpChanged) resolveSamples();
+  seqCache = null; drawLanes(); syncScaleUI(); refreshSeqKnobs();
+  if (ready) { sendState(); changed.forEach(([j, k]) => postTable(j, k)); if (smpChanged) { postSample('A'); postSample('B'); } sendSeq(); }
+}
+function commitPath(P) {
+  undoStack.push(P.undo); if (undoStack.length > 30) undoStack.shift(); redoStack.length = 0; updateUndoUI();
+  applyBulk(() => {});
+}
+let dieHeld = null;   // the die being held: { what, side, x, P, used }
 document.querySelectorAll('.dicetrack').forEach(el => {
   const die = el.querySelector('.die'), face = die.firstChild, fill = el.querySelector('.fill'), what = el.dataset.what, side = el.dataset.side;
   let pid = null;
@@ -75,19 +142,59 @@ document.querySelectorAll('.dicetrack').forEach(el => {
     el.setAttribute('aria-valuenow', Math.round(x * 100));
   };
   const fromY = (cy, cx) => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, (horiz ? cx - r.left - dieH() / 2 : r.bottom - cy - dieH() / 2) / travel())); };
-  const roll = a => {
-    bulk(() => (what === 'all' ? rollAll(a) : what === 'seq' ? rollSeq(side, a) : rollPart(what, side, a)));
-    el.classList.remove('dragging'); place(0);
-    die.classList.remove('rolled'); void die.offsetWidth; die.classList.add('rolled');
+  const settle = () => { el.classList.remove('dragging'); place(0); die.classList.remove('rolled'); void die.offsetWidth; die.classList.add('rolled'); };
+  let raf = 0, pendingX = 0;
+  const live = x => {   // at most once a frame
+    pendingX = x; if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0; const H = dieHeld; if (!H || H.used) return;
+      if (pendingX <= 0.01) { if (H.x > 0.01) { putState(H.P.base); liveShow(H.P); } H.P = makePath(what, side); H.x = 0; return; }   // back at the start: new paths
+      H.x = pendingX; pathAt(H.P, pendingX); liveShow(H.P);
+    });
   };
-  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('dragging'); place(fromY(e.clientY, e.clientX)); });
-  el.addEventListener('pointermove', e => { if (e.pointerId === pid) place(fromY(e.clientY, e.clientX)); });
-  el.addEventListener('pointerup', e => { if (e.pointerId !== pid) return; pid = null; const x = fromY(e.clientY, e.clientX); if (x > 0.01) roll(x); else { el.classList.remove('dragging'); place(0); } });
-  el.addEventListener('pointercancel', e => { if (e.pointerId !== pid) return; pid = null; el.classList.remove('dragging'); place(0); });
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('dragging');
+    dieHeld = { what, side, x: 0, P: makePath(what, side), used: false };
+    const x = fromY(e.clientY, e.clientX); place(x); live(x);
+  });
+  el.addEventListener('pointermove', e => { if (e.pointerId !== pid) return; const x = fromY(e.clientY, e.clientX); place(x); live(x); });
+  const end = cancel => e => {
+    if (e.pointerId !== pid) return; pid = null;
+    cancelAnimationFrame(raf); raf = 0;
+    const H = dieHeld; dieHeld = null;
+    if (!H) { settle(); return; }
+    if (H.used) { settle(); return; }   // a knob was rolled while the die was held: nothing else changes
+    const x = cancel ? 0 : fromY(e.clientY, e.clientX);
+    if (x > 0.01) { pathAt(H.P, x); commitPath(H.P); settle(); }
+    else { putState(H.P.base); liveShow(H.P); el.classList.remove('dragging'); place(0); }
+  };
+  el.addEventListener('pointerup', end(false)); el.addEventListener('pointercancel', end(true));
   el.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); roll(0.5); }
-    else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); roll(+e.key / 10); }
-    else if (e.key === '0') { e.preventDefault(); roll(1); }
+    const x = e.key === 'Enter' || e.key === ' ' ? 0.5 : /^[1-9]$/.test(e.key) ? +e.key / 10 : e.key === '0' ? 1 : null;
+    if (x === null) return;
+    e.preventDefault(); const P = makePath(what, side); pathAt(P, x); commitPath(P); settle();
   });
   place(0);
 });
+/* Hold a die and tap a knob (2026-11-11, as in Pixy and Orbital): only that knob rolls, as far as the die is pulled (half
+   way if it is at the start), and nothing else changes when you let go of the die. It rolls the die's side (A, B or both;
+   the Everything die both); with a side focused, that side. */
+document.addEventListener('pointerdown', e => {
+  const H = dieHeld; if (!H) return;
+  const kn = e.target.closest('.knob'); if (!kn) return;
+  const i = +kn.id.slice(1), d = DEFS[i]; if (!d) return;
+  e.preventDefault(); e.stopPropagation();
+  if (!H.used && H.x > 0.01) { putState(H.P.base); liveShow(H.P); }
+  H.used = true;
+  const amt = 0.35 + 0.65 * (H.x > 0.05 ? H.x : 0.5);
+  const sides = focus !== 'M' ? [focus] : H.side === 'M' ? ['A', 'B'] : [H.side];
+  bulk(() => {
+    for (const k of isLinked(i) ? ['A'] : sides) {
+      const cur = state[k][i], to = RND[d.key] && !['mbright', 'mfx', 'mwet'].includes(d.key) ? rv(d, k) : rnd();   // the macros start at 50% on a roll, but a tapped one moves
+      const x = quant(d, clamp(cur + (to - cur) * amt));
+      if (d.pair) { const p = oi(0, k === 'A' ? 'posA' : 'posB'); state.A[p] = state.B[p] = x; }
+      if (isLinked(i)) { state.A[i] = state.B[i] = x; } else state[k][i] = x;
+    }
+  });
+  kn.classList.remove('rolled'); void kn.offsetWidth; kn.classList.add('rolled');
+}, true);

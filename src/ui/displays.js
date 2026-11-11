@@ -143,6 +143,7 @@ function drawWaves() {
   requestAnimationFrame(() => {
     wavesQueued = false;
     const sp = state.spectral;
+    if (typeof devView !== 'undefined' && !devView) { drawScopeSoon(); drawEnvPanel(); drawFiltPanel(); drawLanes(); return; }   // the player's view: only the panels' pictures
     for (let s = 0; s < NOSC; s++) {
       const t = OSC_KIND[s];
       // a side where this oscillator is at Level 0 shows its card dimmed
