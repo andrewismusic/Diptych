@@ -46,16 +46,14 @@ function resetPatch() {
     state.seq = defaultSeqs();
   });
 }
-/* Set A / Set B (2026-11-10, DESIGN.md section 15 "capture the midpoint"): what you hear at the current morph becomes
+/* Capture (hold MORPH and tap A or B, 2026-11-11; it was Set A / Set B, 2026-11-10, DESIGN.md section 15 "capture the midpoint"): what you hear at the current morph becomes
    side A (or B). Every morphing value takes the value heard now (Wave included, so a side can hold a blend of the two
    tables); each side's own settings (table positions, the sequencer's) and the Pattern knob stay. The morph then moves to
    that end, so the sound doesn't change: the sweet spot is now the slider's destination. */
-function captureSound(side) {
-  bulk(() => {
+function captureSound(side, noUndo) {
+  (noUndo ? applyBulk : bulk)(() => {
     const heard = DEFS.map((d, i) => resolveNorm(i));
     DEFS.forEach((d, i) => { if (!d.single && !d.seq && !d.pair && d.group !== 'Sequencer' && !isLinked(i)) state[side][i] = heard[i]; });
     if (focus === 'M') state.morph = side === 'A' ? 0 : 1;
   });
 }
-$('sendA').addEventListener('click', () => captureSound('A'));
-$('sendB').addEventListener('click', () => captureSound('B'));

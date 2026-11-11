@@ -73,16 +73,17 @@ test('Set A captures what you hear: same values, morph moved to A; Set B on the 
   await openSynth(page, { dev: false });
   await page.evaluate(() => { state.morph = 0.4; updateMorphUI(); });
   const heard = await page.evaluate(() => DEFS.map((d, i) => (d.single || d.seq || d.pair || d.group === 'Sequencer' || isLinked(i) ? null : resolveNorm(i))));
-  await page.click('#sendA');
+  await page.click('[data-focus="A"]', { modifiers: ['Shift'] });   // Shift-click A (or hold MORPH and tap A): capture into A
   const after = await page.evaluate(() => ({ morph: state.morph, now: DEFS.map((d, i) => resolveNorm(i)) }));
   expect(after.morph).toBe(0);
   heard.forEach((v, i) => { if (v !== null) expect(Math.abs(after.now[i] - v)).toBeLessThan(1e-9); });
-  // the pattern heard at the Pattern knob's value becomes sequence B, played at the B end
+  // the same gesture captures the sequence heard at the Pattern knob's value, played at that end
   const notesNow = await page.evaluate(() => { state.A[IX.pattern] = 0; state.B[IX.pattern] = 1; state.morph = 0.5; updateMorphUI(); seqCache = null;
     const s = buildSeq(), mm = resolveNorm(IX.pattern); return s.events.map(e => MorphEngine.seqEval(e, mm, state.walk, s.scale)).filter(Boolean).map(r => r.note); });
-  await page.click('#patB');
+  await page.click('[data-focus="B"]', { modifiers: ['Shift'] });
   const notesB = await page.evaluate(() => { seqCache = null; const s = buildSeq(); return s.events.map(e => MorphEngine.seqEval(e, 1, state.walk, s.scale)).filter(Boolean).map(r => r.note); });
   expect(notesB.slice(0, 8)).toEqual(notesNow.slice(0, 8));
+  expect(await page.evaluate(() => [focus, state.morph])).toEqual(['M', 1]);
   await page.click('#undo');
 });
 
@@ -106,8 +107,8 @@ test('the MORPH cap brings back the morph view; Settings change the colours and 
   await page.click('#setBtn');
   await expect(page.locator('#settings')).toBeVisible();
   await page.click('[data-scheme="1"]');
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#14A386');
-  await page.click('#monoBtn');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#C2183F');
+  await page.click('#monoPill');
   expect(await page.evaluate(() => state.mono)).toBe(true);
   await page.click('#setDone');
   await expect(page.locator('#settings')).toBeHidden();
@@ -115,7 +116,7 @@ test('the MORPH cap brings back the morph view; Settings change the colours and 
 
 test('each panel\'s dice roll only their part: Envelope, FX and Sound leave the rest alone', async ({ page }) => {
   await openSynth(page, { dev: false });
-  for (const part of ['env', 'fx', 'sound']) {
+  for (const part of ['amp', 'filt', 'fx', 'synth']) {
     const r = await page.evaluate(part => {
       const A0 = state.A.slice(), B0 = state.B.slice(), seq0 = JSON.stringify(state.seq), t0 = tables[0].A;
       bulk(() => rollPart(part, 'M', 1));
@@ -126,6 +127,23 @@ test('each panel\'s dice roll only their part: Envelope, FX and Sound leave the 
     expect(r.outside).toEqual([]);
     expect(r.inside).toBeGreaterThan(0);
     expect(r.seq).toBe(true);
-    if (part !== 'sound') expect(r.table).toBe(true);
+    if (part !== 'synth') expect(r.table).toBe(true);
   }
+});
+
+test('the header\'s Everything die rolls every part and both sequences; hold MORPH and tap B captures into B', async ({ page }) => {
+  await openSynth(page, { dev: false });
+  const r = await page.evaluate(() => {
+    const A0 = state.A.slice(), seq0 = JSON.stringify(state.seq);
+    bulk(() => rollAll(1));
+    const parts = ['synth', 'amp', 'filt', 'fx'].map(p => DEFS.some((d, i) => PART[p](d) && state.A[i] !== A0[i]));
+    return { parts, seq: JSON.stringify(state.seq) !== seq0, faces: document.querySelector('.alldie .face').children.length };
+  });
+  expect(r).toEqual({ parts: [true, true, true, true], seq: true, faces: 5 });
+  // hold the MORPH cap (one pointer) and tap B (another)
+  await page.evaluate(() => { state.morph = 0.6; updateMorphUI(); });
+  const heard = await page.evaluate(() => resolveNorm(IX.mbright));
+  await page.evaluate(() => { holdingMorph = true; document.querySelector('[data-focus="B"]').click(); holdingMorph = false; });
+  expect(await page.evaluate(() => [state.morph, focus, Math.abs(state.B[IX.mbright] - resolveNorm(IX.mbright))])).toEqual([1, 'M', 0]);
+  expect(await page.evaluate(() => state.B[IX.mbright])).toBeCloseTo(heard, 9);
 });

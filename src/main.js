@@ -1,5 +1,5 @@
 
-labelOct();
+buildKeys();
 updateIcons();
 applyLayout();
 refreshAll();

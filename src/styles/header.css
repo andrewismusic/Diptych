@@ -78,3 +78,11 @@ body.dev .view{display:inline-flex}
   .key.icon{width:36px;min-width:36px;height:38px}
   .bpm{min-width:48px;height:38px}
 }
+
+/* a side focused: the slot becomes one big MORPH key; touching it anywhere comes back to the morph */
+.morph-slider.rest{background:transparent;box-shadow:none;border-color:transparent}
+.morph-slider.rest::after,.morph-slider.rest .glim{display:none}
+.morph-slider.rest .mcap{left:0!important;width:100%;color:var(--ink)}
+/* hold MORPH and tap A or B: the key flashes as it takes what you hear */
+.letter.caught{animation:caught .5s ease-out}
+@keyframes caught{0%{background:var(--hold)}100%{}}

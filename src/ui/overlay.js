@@ -55,11 +55,10 @@ try { fullView = localStorage.getItem('diptych-view') === 'full'; } catch (e) {}
 function setView(full) {
   closeOverlay();
   fullView = full; document.body.classList.toggle('full', full);
-  $('viewBasic').setAttribute('aria-pressed', !full); $('viewFull').setAttribute('aria-pressed', full);
+  setPill($('viewPill'), full ? 1 : 0);
   try { localStorage.setItem('diptych-view', full ? 'full' : 'basic'); } catch (e) {}
   if (typeof applyLayout === 'function') applyLayout();
 }
-$('viewBasic').addEventListener('click', () => setView(false));
-$('viewFull').addEventListener('click', () => setView(true));
+$('viewPill').addEventListener('click', () => setView(!fullView));
 document.body.classList.toggle('full', fullView && devView);
-$('viewBasic').setAttribute('aria-pressed', !fullView); $('viewFull').setAttribute('aria-pressed', fullView);
+setPill($('viewPill'), fullView ? 1 : 0);

@@ -4,14 +4,12 @@
    morph passes between them) and Mono / Poly for the keys. Per browser
    conveniences, kept in localStorage, not part of the patch.
    ===================================================================== */
-const SCHEMES = [   // [name, A light, B light, A dark, B dark] (2026-11-11 set)
-  ['Blue & pink', '#4F6FE0', '#E3308F', '#7F9BFF', '#FF5AAE'],
-  ['Aquamarine & baby pink', '#14A386', '#DE6A9E', '#5FE3C6', '#FFB3D1'],
-  ['Indigo & yellow', '#4B3FC4', '#B48600', '#8C80FF', '#FFD84D'],
-  ['Cyan & ruby', '#0092B5', '#C2183F', '#3FD7F2', '#FF4D73'],
-  ['Emerald & topaz', '#108A55', '#C46A12', '#3FD68F', '#FFB45A'],
-  ['Azure & gold', '#1F6FD6', '#A87A00', '#5AA8FF', '#F2C94C'],
-  ['Sky & coral', '#0E8FC2', '#E0503A', '#53C6F2', '#FF7F66'],
+const SCHEMES = [   // [name, A light, B light, A dark, B dark] (2026-11-11: blue & pink, ruby & cyan, indigo & emerald, aquamarine & baby pink, sky & coral)
+  ['Twin Flame', '#4F6FE0', '#E3308F', '#7F9BFF', '#FF5AAE'],
+  ['Garnet Tide', '#C2183F', '#0092B5', '#FF4D73', '#3FD7F2'],
+  ['Night Garden', '#4B3FC4', '#108A55', '#8C80FF', '#3FD68F'],
+  ['Sea Glass Blush', '#14A386', '#DE6A9E', '#5FE3C6', '#FFB3D1'],
+  ['Harbour Dusk', '#0E8FC2', '#E0503A', '#53C6F2', '#FF7F66'],
 ];
 /* the cog, drawn evenly: eight identical teeth around a ring, and the hole in the middle */
 const COG = (() => {
@@ -26,7 +24,7 @@ const COG = (() => {
 $('setBtn').innerHTML = COG;
 const pref = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
-let bgPref = pref('diptych-bg', 'subtle'), themePref = pref('diptych-theme', 'auto'), schemeIx = Math.max(0, Math.min(SCHEMES.length - 1, +pref('diptych-scheme', '0') || 0));
+let bgPref = pref('diptych-bg', 'subtle'), themePref = pref('diptych-theme', 'auto'), schemeIx = Math.max(0, Math.min(SCHEMES.length - 1, +pref('diptych-scheme2', '0') || 0));
 const darkMQ = matchMedia('(prefers-color-scheme: dark)');
 const isDark = () => (themePref === 'auto' ? darkMQ.matches : themePref === 'dark');
 function applyTheme() {
@@ -34,17 +32,17 @@ function applyTheme() {
   if (themePref === 'auto') delete root.dataset.theme; else root.dataset.theme = themePref;
   const sc = SCHEMES[schemeIx], dk = isDark();
   root.style.setProperty('--a', dk ? sc[3] : sc[1]); root.style.setProperty('--b', dk ? sc[4] : sc[2]);
-  document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', b.dataset.themeSet === themePref));
+  setPill($('themePill'), ['auto', 'light', 'dark'].indexOf(themePref));
   document.body.classList.toggle('vivid', bgPref === 'vivid');
-  document.querySelectorAll('[data-bg-set]').forEach(b => b.setAttribute('aria-pressed', b.dataset.bgSet === bgPref));
+  setPill($('bgPill'), bgPref === 'vivid' ? 1 : 0);
   document.querySelectorAll('[data-scheme]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.scheme === schemeIx));
   if (typeof glimColor !== 'undefined') glimColor = null;
   drawWaves();
 }
 $('schemes').innerHTML = SCHEMES.map(([n, a, b], k) => `<button type="button" class="key scheme" data-scheme="${k}" aria-label="${n}"><i style="background:linear-gradient(90deg,${a},${b})"></i><span>${n}</span></button>`).join('');
-document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('click', () => { themePref = b.dataset.themeSet; setPref('diptych-theme', themePref); applyTheme(); }));
-document.querySelectorAll('[data-scheme]').forEach(b => b.addEventListener('click', () => { schemeIx = +b.dataset.scheme; setPref('diptych-scheme', String(schemeIx)); applyTheme(); }));
-document.querySelectorAll('[data-bg-set]').forEach(b => b.addEventListener('click', () => { bgPref = b.dataset.bgSet; setPref('diptych-bg', bgPref); applyTheme(); }));
+$('themePill').addEventListener('click', () => { themePref = ['light', 'dark', 'auto'][['auto', 'light', 'dark'].indexOf(themePref)]; setPref('diptych-theme', themePref); applyTheme(); });   // Auto, Light, Dark in turn
+document.querySelectorAll('[data-scheme]').forEach(b => b.addEventListener('click', () => { schemeIx = +b.dataset.scheme; setPref('diptych-scheme2', String(schemeIx)); applyTheme(); }));
+$('bgPill').addEventListener('click', () => { bgPref = bgPref === 'vivid' ? 'subtle' : 'vivid'; setPref('diptych-bg', bgPref); applyTheme(); });
 darkMQ.addEventListener('change', applyTheme);
 applyTheme();
 const openSettings = () => { $('settings').hidden = false; $('setDone').focus({ preventScroll: true }); };

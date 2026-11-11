@@ -10,55 +10,79 @@ body:not(.dev) .kwrap .icons{display:none}
 .qscale select{min-height:32px}
 /* the developer view keeps one Wavetable (2026-11-10): the other oscillators are silent and hidden */
 .group[data-kind="osc"]:not([data-slot="0"]){display:none}
-/* tabs */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0 14px 8px;max-width:780px;margin:0 auto;width:100%}
-.tab{min-height:34px;font-size:.68rem;padding:4px 2px;letter-spacing:.08em}
+/* tabs: Synth, Amp, Filt, FX, Seq, Play */
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:0 14px 8px;max-width:780px;margin:0 auto;width:100%}
+.tab{min-height:34px;font-size:.66rem;padding:4px 0;letter-spacing:.06em}
 .tab[aria-selected="true"]{background:var(--hold);color:var(--on-ink)}
-/* panels */
+/* panels: controls top left, dice top right (the same place on every tab), the picture the full width, knobs below */
 .panels{position:relative;max-width:780px;margin:0 auto;width:100%;padding:0 14px}
-.panel{background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 0 var(--shadow);padding:10px 12px 10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.panel{background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 0 var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0}
 body:not(.desk) .panel:not(.on){display:none}
+.ptop{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.pctl{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.pctl2{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
 .ph{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--font-ui);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
 .ph::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--mc)}
-.prow{display:flex;gap:10px;align-items:stretch;min-height:0}
-.pviz{flex:1;min-width:0;min-height:96px;background:var(--well);border-radius:12px;box-shadow:inset 0 2px 0 rgba(0,0,0,.1);padding:6px;display:flex;flex-direction:column}
-.pviz canvas{display:block;width:100%;flex:1;min-height:110px}
-.pviz.lanes{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:repeat(3,1fr);gap:4px 6px;align-items:center}
-.pviz.lanes canvas{min-height:0;height:100%;border-radius:6px;background:var(--surface)}
+.pviz{flex:1;min-height:110px;min-width:0;background:var(--well);border-radius:12px;box-shadow:inset 0 2px 0 rgba(0,0,0,.1);padding:6px;display:flex;flex-direction:column}
+.pviz canvas{display:block;width:100%;flex:1;min-height:0}
+.pviz .lanes{flex:1;min-height:0;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:repeat(3,minmax(0,1fr));gap:4px 6px;align-items:stretch;margin:0}
+.pviz .lanes .ln{align-self:center}
+.pviz .lanes canvas{height:100%;min-height:0;border-radius:6px;background:var(--surface)}
 .ln.now{color:var(--mc)}
-.dbox{align-self:flex-start;display:flex;gap:6px;padding:8px 8px 6px;border:1.5px solid var(--edge);border-radius:12px;background:color-mix(in srgb,var(--surface) 60%,var(--well));align-items:flex-start}
-.dbox .dicetrack{height:96px}
+.pfoot{display:flex;align-items:center;gap:6px}
+.dbox{flex:0 0 auto;display:flex;gap:6px;padding:8px 8px 6px;border:1.5px solid var(--edge);border-radius:12px;background:color-mix(in srgb,var(--surface) 60%,var(--well));align-items:flex-start}
+.dbox .dicetrack{height:84px}
 .panel .knobs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);max-width:none;gap:4px;justify-items:center}
 .panel .kn{width:auto;min-width:0}
-.panel .knob{width:70px;height:70px}
-#pSeqCtl .seqrow:first-child{margin-top:0}
-#audioBtn{position:absolute;left:50%;top:52px;transform:translate(-50%,0);z-index:5;white-space:nowrap}
+.panel .knob{width:66px;height:66px}
+.qscale{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:6px}
+.qscale .lbl{font-weight:600;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.qscale select{min-height:32px;max-width:9.5em}
+.octbox{display:inline-flex;align-items:center;gap:4px}
+.octbox .key{min-width:34px;padding:4px}
+.oct{font-family:var(--font-mono);font-weight:700;font-size:.8rem;min-width:2.4em;text-align:center}
+#audioBtn{position:absolute;left:50%;top:60px;transform:translate(-50%,0);z-index:5;white-space:nowrap}
 #audioBtn[hidden]{display:none}
-/* phones: the app fills the window and only the panel area scrolls (if a panel is taller than the room) */
+/* the Play panel: three octave rows of piano, or the grid */
+.panel[data-panel="play"] .pviz{padding:6px}
+.keys{flex:1;display:flex;flex-direction:column;gap:5px;min-height:0;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.krow{position:relative;flex:1;display:flex;min-height:0}
+.krow .white{flex:1}
+.krow .black{width:calc(100% / 7 * .6);height:60%}
+.white.root{background:color-mix(in srgb,var(--mc) 26%,var(--key))}
+.black.root{background:color-mix(in srgb,var(--mc) 70%,var(--keyb))}
+.keys.grid{display:grid;gap:4px}
+.cell{border-radius:8px;background:var(--cap-hi);border:1.5px solid var(--k);box-shadow:2px 2px 0 var(--k);display:flex;align-items:flex-end;justify-content:flex-start;padding:3px 5px}
+.cell span,.white span{pointer-events:none}
+.cell span{font-family:var(--font-mono);font-size:.6rem;color:var(--muted)}
+.cell.root{background:color-mix(in srgb,var(--mc) 30%,var(--cap-hi));border-color:var(--mc)}
+.cell.root span{color:var(--ink);font-weight:700}
+.cell.on,.white.on,.black.on{background:var(--hold)!important}
+/* phones: the app fills the window and only a panel taller than the room scrolls */
 body:not(.desk):not(.dev){height:100dvh;overflow:hidden}
 body:not(.desk):not(.dev) #app{display:flex;flex-direction:column;height:100dvh}
 body:not(.desk):not(.dev) .panels{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:8px}
 body:not(.desk):not(.dev) .panel.on{flex:1}
-body:not(.desk):not(.dev) .panel.on .prow{flex:1}
 body:not(.desk):not(.dev) .kb{position:static}
 body:not(.desk):not(.dev) .foot{display:none}
-/* desktop (plugin): designed at 1280 x 800 and scaled; all four panels in a 2 x 2 grid; no tabs */
+/* desktop (plugin): designed at 1280 x 800 and scaled; all six panels in a 3 x 2 grid; no tabs */
 .desk .tabs{display:none}
 .desk:not(.dev) #app{display:grid;grid-template-rows:auto minmax(0,1fr) auto;margin:0 auto;overflow:hidden;padding:0 16px}
 .desk:not(.dev) .top .wrap,.desk:not(.dev) .kb .wrap{max-width:none;padding:0}
-.desk:not(.dev) .panels{max-width:none;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,.86fr) minmax(0,1.14fr);gap:14px;min-height:0}
-.desk:not(.dev) .panel .prow{flex:1}
-.desk:not(.dev) .panel{overflow:hidden}
-.desk:not(.dev) .panel[data-panel="seq"] .knob{width:58px;height:58px}
-.desk:not(.dev) .panel[data-panel="seq"] .kab{display:none}
+.desk:not(.dev) .panels{max-width:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px;min-height:0}
+.desk:not(.dev) .panel{overflow:hidden;padding:8px 10px;gap:6px}
+.desk:not(.dev) .panel .knob{width:56px;height:56px}
+.desk:not(.dev) .panel .kab{display:none}
+.desk:not(.dev) .dbox .dicetrack{height:58px}
+.desk:not(.dev) .pviz{min-height:0}
+.desk:not(.dev) .dbox{padding:6px 6px 4px}
 .desk:not(.dev) .kb{position:static}
 .desk:not(.dev) .foot{display:none}
-.desk .dbox .dicetrack{height:84px}
-.desk:not(.dev) .panel .knob{width:62px;height:62px}
 /* developer view on desktop: the panels in one row above the sections */
 .desk.dev #app{grid-template-rows:auto 250px minmax(0,1fr) auto}
-.desk.dev .panels{max-width:none;padding:0 12px 6px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;min-height:0}
-.desk.dev .panel .knob{width:46px;height:46px} .desk.dev .dbox .dicetrack{height:72px} .desk.dev .pviz canvas{min-height:60px}
+.desk.dev .panels{max-width:none;padding:0 12px 6px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;min-height:0}
+.desk.dev .panel{overflow:hidden}
+.desk.dev .panel .knob{width:42px;height:42px} .desk.dev .dbox .dicetrack{height:60px}
 
 /* the page takes the colour heard now (as the wave and the slider do): a tint (Subtle) or the colour itself (Vivid,
    with the panels darker, in the morph's colour) */
@@ -75,10 +99,8 @@ body.vivid .wordmark{color:#fff}
 .seqrow{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
 .seqrow .spacer,.kbbar .spacer{flex:1}
 .key.send{font-size:.7rem;padding:4px 9px}
-/* bottom panel: the morph row, then Set A / Keys / Set B; Keys opens the keyboard drawer */
-.kbbar{display:flex;align-items:center;gap:6px;padding:4px 0 8px}
-.keysdrawer[hidden]{display:none}
-.keysdrawer .keys{margin-bottom:10px}
+/* bottom panel: only the morph row, with no line above it */
+.kb{border-top:0!important;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 /* settings sheet */
 .sheet{position:fixed;inset:0;z-index:40;background:rgba(5,7,12,.45);display:flex;align-items:flex-end;justify-content:center}
 .sheet[hidden]{display:none}
@@ -97,3 +119,22 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
 .desk:not(.dev) .panel[data-panel="seq"] .dicetrack{height:70px}
 .desk:not(.dev) .panel[data-panel="seq"] .seqrow,.desk:not(.dev) .panel[data-panel="seq"] .qscale{margin-top:2px}
 .vivid .letter.a:not([aria-pressed="true"]){color:var(--a)} .vivid .letter.b:not([aria-pressed="true"]){color:var(--b)}
+
+/* pills: a two- or three-way choice as one pill with dividing lines; it presses as one key; only the side that is on is yellow */
+.pill{display:inline-flex;padding:0;overflow:hidden;gap:0;align-items:stretch;min-height:34px}
+.pill span{display:flex;align-items:center;padding:4px 11px;font-size:.7rem}
+.pill span + span{border-left:1.5px solid var(--k)}
+.pill span.on{background:var(--hold);color:var(--on-ink)}
+/* the header's Everything die (five pips), a level track */
+.titlebar{flex-wrap:wrap}
+.alldie{flex:1 1 160px;display:flex;min-width:140px;max-width:420px;order:2}
+.dicetrack.horiz{width:100%;height:36px}
+.dicetrack.horiz .fill{top:0;bottom:0;left:0;right:auto;width:0;height:auto;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
+.dicetrack.horiz .die{left:0;top:1px;bottom:auto;transition:left .5s cubic-bezier(.3,.9,.3,1.1),transform .07s,filter .07s}
+.dicetrack.horiz .dlab{position:absolute;right:10px;top:0;bottom:0;display:flex;align-items:center;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);pointer-events:none;z-index:1}
+.dicetrack.horiz.dragging .dlab{color:var(--on-ink)}
+.titlebar .hctl{order:3} .titlebar .view{order:4}
+@media (max-width:640px){ .alldie{order:5;flex-basis:100%;max-width:none} }
+.dicetrack.horiz.dragging .fill{transition:none}
+body:not(.dev) .view{display:none!important}
+.setrow .pill{align-self:flex-start}

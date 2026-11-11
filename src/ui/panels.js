@@ -1,26 +1,30 @@
 /* =====================================================================
    PANELS (2026-11-11)
-   The player's view is four panels, each with its picture, its dice and
-   its knobs: Sound (the wave; Brightness, Position), Envelope (the amp
-   envelope; Envelope), FX (the wave with the effects' marks; FX intensity,
-   FX wet), Sequence (the lanes; Pattern, Density, Speed, Octave, and the
-   sequencer's controls). On a phone one shows at a time, picked with the
-   tabs (remembered per browser); on desktop all four show at once.
-   Each panel's dice (A, B, Both) roll only that panel's part (ui/dice.js).
+   The player's view is six panels: Synth (the wave; Brightness, Position),
+   Amp (the amp envelope; Envelope), Filt (the cutoff over a held note;
+   Cutoff, Resonance, Env amount), FX (the wave with the effects' marks; FX
+   intensity, FX wet), Seq (the lanes; Pattern, Density, Speed, Octave, Scale,
+   Walk / Swap, Edit) and Play (the keyboard or the grid). Each panel's
+   controls sit top left and its dice (A 1, B 2, Both 3: one and two make
+   three) top right, in the same place on every tab; its picture runs the
+   full width below. On a phone one panel shows at a time, chosen with the
+   tabs (remembered per browser); on desktop all six show at once.
    ===================================================================== */
-const DIE_CAPS = { A: 'A', B: 'B', M: 'Both' };
+const DIE_CAPS = { A: 'A', B: 'B', M: 'Both' }, DIE_FACE = { A: 1, B: 2, M: 3 };
 document.querySelectorAll('.dbox').forEach(box => {
-  const scope = box.dataset.scope, faces = box.dataset.faces.split(',').map(Number);
-  const name = { sound: 'the sound', env: 'the envelope', fx: 'the effects', seq: 'the sequence' }[scope];
-  box.innerHTML = ['A', 'B', 'M'].map((side, k) => `<div class="dcol"><div class="dicetrack" data-what="${scope}" data-side="${side}" data-face="${faces[k]}" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize ${name}, ${side === 'M' ? 'both sides' : 'side ' + side}: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face">${'<i></i>'.repeat(faces[k])}</div></div></div><span class="dcap${side === 'A' ? ' a' : side === 'B' ? ' b' : ''}">${DIE_CAPS[side]}</span></div>`).join('');
+  const scope = box.dataset.scope;
+  const name = { synth: 'the synth', amp: 'the amp envelope', filt: 'the filter', fx: 'the effects', seq: 'the sequence' }[scope];
+  box.innerHTML = ['A', 'B', 'M'].map(side => `<div class="dcol"><div class="dicetrack" data-what="${scope}" data-side="${side}" data-face="${DIE_FACE[side]}" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize ${name}, ${side === 'M' ? 'both sides' : 'side ' + side}: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face">${'<i></i>'.repeat(DIE_FACE[side])}</div></div></div><span class="dcap${side === 'A' ? ' a' : side === 'B' ? ' b' : ''}">${DIE_CAPS[side]}</span></div>`).join('');
 });
-let curTab = 'sound';
-try { const t = localStorage.getItem('diptych-tab'); if (['sound', 'env', 'fx', 'seq'].includes(t)) curTab = t; } catch (e) {}
+const TABS = ['synth', 'amp', 'filt', 'fx', 'seq', 'play'];
+let curTab = 'synth';
+try { const t = localStorage.getItem('diptych-tab'); if (TABS.includes(t)) curTab = t; } catch (e) {}
 function setTab(t) {
   curTab = t;
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.dataset.panel === t));
   try { localStorage.setItem('diptych-tab', t); } catch (e) {}
+  if (typeof buildKeys === 'function' && t === 'play') requestAnimationFrame(buildKeys);
   drawWaves();
 }
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
@@ -34,7 +38,7 @@ function heardAt(m) {
     MAC.val[i] = MorphEngine.denorm(d, MAC.cur[i]);
   }
   MorphEngine.prototype.applyMacros.call(MAC);
-  const v = {}; for (const k of ['aatk', 'adec', 'asus', 'arel']) v[k] = MAC.val[IX[k]];
+  const v = {}; for (const k of ['aatk', 'adec', 'asus', 'arel', 'fatk', 'fdec', 'fsus', 'frel', 'cutoff', 'reso', 'envamt']) v[k] = MAC.val[IX[k]];
   return v;
 }
 /* the amp envelope (after the Envelope macro): side A thin blue, side B thin pink, what you hear now thick in the morph
@@ -61,4 +65,35 @@ function drawEnvPanel() {
   c.g.globalAlpha = 1;
   c.g.fillStyle = mixColor(state.morph); c.g.font = `500 11px ${css('--font-mono')}`; c.g.textAlign = 'right';
   c.g.fillText(time(sets[2].aatk + sets[2].adec + sets[2].arel), c.w - pad, 14);
+}
+
+/* the filter: where the cutoff goes over a held note (a low C), from note-on through the filter envelope to the release,
+   on a log frequency scale; Resonance shows as the glow under the line. Side A thin blue, side B thin pink, what you
+   hear now thick in the morph colour. */
+function drawFiltPanel() {
+  const c = prep($('filtviz')); if (!c) return;
+  const sets = [heardAt(0), heardAt(1), heardAt(state.morph)];
+  const span = Math.max(...sets.map(e => e.fatk + e.fdec + e.frel)), hold = span * 0.3, T = span + hold;
+  const lvl = (e, t) => {
+    if (t < e.fatk) return t / e.fatk;
+    const endHold = e.fatk + e.fdec + hold, dec = u => e.fsus + (1 - e.fsus) * Math.exp(-5 * u / e.fdec);
+    if (t < endHold) return dec(t - e.fatk);
+    return dec(endHold - e.fatk) * Math.exp(-6.9 * (t - endHold) / e.frel);
+  };
+  const pad = 8, lo = Math.log(30), hi = Math.log(18000), yOf = f => c.h - pad - (Math.log(Math.max(30, Math.min(18000, f))) - lo) / (hi - lo) * (c.h - 2 * pad);
+  const g = c.g;
+  g.strokeStyle = css('--line'); g.lineWidth = 1; g.font = `500 10px ${css('--font-mono')}`; g.fillStyle = css('--muted'); g.textAlign = 'left';
+  for (const [f, l] of [[100, '100'], [1000, '1k'], [10000, '10k']]) { g.beginPath(); g.moveTo(0, yOf(f)); g.lineTo(c.w, yOf(f)); g.stroke(); g.fillText(l, 3, yOf(f) - 3); }
+  const cols = [css('--a'), css('--b'), mixColor(state.morph)], widths = [1.4, 1.4, 3.4], alpha = [focus === 'B' ? 0.25 : 0.7, focus === 'A' ? 0.25 : 0.7, 1];
+  for (const s of [0, 1, 2]) {
+    const e = sets[s], path = [];
+    for (let k = 0; k <= 200; k++) { const t = k / 200; path.push([pad + 22 + t * (c.w - 2 * pad - 22), yOf(e.cutoff * Math.pow(2, e.envamt * 5 * lvl(e, t * T)))]); }
+    if (s === 2) {   // resonance: a glow under the line, stronger with more resonance
+      g.save(); g.globalAlpha = 0.18 + 0.5 * e.reso; g.strokeStyle = cols[2]; g.lineWidth = 6 + 18 * e.reso; g.filter = 'blur(6px)';
+      g.beginPath(); path.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); g.restore();
+    }
+    g.strokeStyle = cols[s]; g.lineWidth = widths[s]; g.globalAlpha = alpha[s]; g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath(); path.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+  }
+  g.globalAlpha = 1;
 }

@@ -43,7 +43,6 @@ test('sequencer plays real audio through the AudioWorklet', async ({ page }) => 
 test('computer keyboard plays notes', async ({ page }) => {
   await openSynth(page, { tapAudio: true });
   await startAudio(page);
-  await page.click('#pmKeys');
   const idle = await outputLevel(page);
   await page.keyboard.down('a');
   await page.waitForTimeout(400);
@@ -67,7 +66,7 @@ test('dice sliders, side focus, undo and redo, and the section dice work without
   await openSynth(page);
   const snap = () => page.evaluate(() => JSON.stringify({ A: state.A, B: state.B, smp: state.smp, t: tables.map(t => [t.A.name, t.B.name]), seq: state.seq }));
   const s0 = await snap();
-  await dragDice(page, dice('sound', 'M'), 1); await dragDice(page, dice('seq', 'M'), 1);
+  await dragDice(page, dice('synth', 'M'), 1); await dragDice(page, dice('seq', 'M'), 1);
   for (const g of ['Wavetable 1', 'Filter', 'OTT']) {   // in the Basic view the dice sit in each section's overlay
     await page.click(`section[data-group="${g}"] .gname`);
     await page.click(`[data-dice="${g}"]:not([data-side])`);
@@ -88,7 +87,7 @@ test('dice sliders, side focus, undo and redo, and the section dice work without
   expect(await page.evaluate(() => [state.morph, $('morph').disabled])).toEqual([0, true]);
   const sideB = () => page.evaluate(() => state.B.filter((_, i) => DEFS[i].single !== 'A'));   // A-only parameters are stored on both sides
   const b0 = await sideB();
-  await dragDice(page, dice('sound', 'A'), 0.6);
+  await dragDice(page, dice('synth', 'A'), 0.6);
   expect(await sideB()).toEqual(b0);
   await page.click('[data-focus="A"]');
   expect(await page.evaluate(() => [state.morph, $('morph').disabled])).toEqual([0.37, false]);
@@ -162,18 +161,17 @@ test.describe('phone', () => {
   test('every panel has its own boxed dice (A, B, Both) that fit; a low roll changes less than a high one', async ({ page }) => {
     await openSynth(page, { dev: false });
     const m = await page.evaluate(() => [...document.querySelectorAll('.dbox')].map(b => ({ scope: b.dataset.scope, caps: [...b.querySelectorAll('.dcap')].map(c => c.textContent), faces: [...b.querySelectorAll('.face')].map(f => f.children.length) })));
-    expect(m).toEqual([{ scope: 'sound', caps: ['A', 'B', 'Both'], faces: [1, 2, 3] }, { scope: 'env', caps: ['A', 'B', 'Both'], faces: [4, 5, 6] },
-      { scope: 'fx', caps: ['A', 'B', 'Both'], faces: [1, 2, 3] }, { scope: 'seq', caps: ['A', 'B', 'Both'], faces: [4, 5, 6] }]);
-    for (const t of ['sound', 'env', 'fx', 'seq']) {   // each tab's panel fits the phone with no sideways scroll, and the page itself doesn't scroll
+    expect(m).toEqual(['synth', 'amp', 'filt', 'fx', 'seq'].map(scope => ({ scope, caps: ['A', 'B', 'Both'], faces: [1, 2, 3] })));   // one and two make three
+    for (const t of ['synth', 'amp', 'filt', 'fx', 'seq']) {   // each tab's panel fits the phone with no sideways scroll, and the page itself doesn't scroll
       await page.locator(`[data-tab="${t}"]`).tap();
       const f = await page.evaluate(t => { const r = document.querySelector(`.panel[data-panel="${t}"] .dbox`).getBoundingClientRect(); return { right: r.right <= innerWidth, page: document.documentElement.scrollHeight <= innerHeight + 1 }; }, t);
       expect(f).toEqual({ right: true, page: true });
     }
-    await page.locator('[data-tab="sound"]').tap();
+    await page.locator('[data-tab="synth"]').tap();
     const moved = () => page.evaluate(() => { const u = undoStack[undoStack.length - 1]; return state.A.reduce((t, x, i) => t + Math.abs(x - u.A[i]) + Math.abs(state.B[i] - u.B[i]), 0); });
     let small = 0, big = 0;
     for (let k = 0; k < 6; k++) {
-      const b1 = await page.locator('.dicetrack[data-what="sound"][data-side="M"]').boundingBox();
+      const b1 = await page.locator('.dicetrack[data-what="synth"][data-side="M"]').boundingBox();
       await page.touchscreen.tap(b1.x + b1.width / 2, b1.y + b1.height * 0.75);   // low on the track: a nudge
       small += await moved();
       await page.touchscreen.tap(b1.x + b1.width / 2, b1.y + 10);                 // at the top: a whole new roll
@@ -181,10 +179,13 @@ test.describe('phone', () => {
     }
     expect(small).toBeLessThan(big);
     await expect(page.locator('#undo')).toBeEnabled();
-    // copy a sequence to the other side (in the Sequence panel)
-    await page.locator('[data-tab="seq"]').tap();
-    await page.locator('#seqAB').tap();
-    expect(await page.evaluate(() => JSON.stringify(state.seq.A) === JSON.stringify(state.seq.B))).toBe(true);
+    // the Play panel: three octave rows of piano, or the scale grid, with the roots lit
+    await page.locator('[data-tab="play"]').tap();
+    expect(await page.evaluate(() => [document.querySelectorAll('#keys .krow').length, document.querySelectorAll('#keys .white').length])).toEqual([3, 21]);
+    await page.locator('#kbMode').tap();
+    const g = await page.evaluate(() => { const cells = [...document.querySelectorAll('#keys .cell')], root = state.seq.A.root;
+      return { n: cells.length, roots: cells.filter(c => c.classList.contains('root')).every(c => ((base() + +c.dataset.off) % 12) === root), size: cells[0].getBoundingClientRect().width }; });
+    expect(g.n).toBeGreaterThanOrEqual(15); expect(g.roots).toBe(true); expect(g.size).toBeGreaterThan(40);
   });
 
   test('Sampler: built-in sample menus, and a loaded file that survives a reload', async ({ page }) => {
@@ -247,17 +248,17 @@ test('the Full view shows every control, and the choice is remembered', async ({
   await openSynth(page);
   const hidden = () => page.evaluate(() => [...document.querySelectorAll('main .group')].filter(g => g.offsetParent).flatMap(g => [...g.querySelectorAll('.kn')]).filter(k => !k.offsetParent).length);
   expect(await hidden()).toBeGreaterThan(20);
-  await page.click('#viewFull');
+  await page.click('#viewPill');
   expect(await hidden()).toBe(0);
   await page.reload();
   expect(await page.evaluate(() => document.body.classList.contains('full'))).toBe(true);
-  await page.click('#viewBasic');
+  await page.click('#viewPill');
 });
 
 test('oscillator On/Off is a bypass: it dims the section and is never randomized', async ({ page }) => {
   await openSynth(page);
   await page.click('section[data-group="Wavetable 1"] [data-osc]');
   expect(await page.evaluate(() => [state.oscOn[0], sections['Wavetable 1'].classList.contains('fxoff')])).toEqual([false, true]);
-  await dragDice(page, dice('sound', 'M'), 1);
+  await dragDice(page, dice('synth', 'M'), 1);
   expect(await page.evaluate(() => state.oscOn)).toEqual([false, true, true, true, true]);
 });

@@ -1,22 +1,8 @@
-/* ---------- bottom panel and the Sequence card (2026-11-10) ----------
-   The bottom panel always holds the morph row and Set A / Keys / Set B; Keys opens the keyboard drawer under them.
-   The sequencer's controls live in the Sequence card (Pattern with its own Set A / Set B, Walk / Swap, copies, Edit), and
-   its lanes in the visual-feedback panel under the wave. panel is 'keys' while the drawer is open. */
+/* ---------- transport and the Seq panel's controls (2026-11-11) ----------
+   The Seq panel's top-left holds Scale (built in editor.js) and the Walk / Swap pill; its lanes run the full width; Edit
+   sits bottom right. The keyboard moved to the Play panel; the bottom panel holds only the morph row. */
 let panel = 'seq', seqPlaying = false, seqPos = null, seqLoop = 1;
-$('pSeqCtl').insertAdjacentHTML('beforeend', `<div class="seqrow">
-  <span class="seg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></span>
-  <span class="spacer"></span>
-  <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A&rarr;B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B&rarr;A</button><button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
-</div>`);
-function setPanel(p, quiet) {
-  if (p === panel) return;
-  panel = p;
-  $('pmKeys').setAttribute('aria-pressed', p === 'keys');
-  $('keysPane').hidden = p !== 'keys';
-  if (p !== 'keys') { latch = false; $('latch').setAttribute('aria-pressed', 'false'); latched.forEach(n => off(n)); latched.clear(); }
-  if (typeof applyLayout === 'function') applyLayout();
-}
-$('pmKeys').addEventListener('click', () => setPanel(panel === 'keys' ? 'seq' : 'keys'));
+$('pSeqTop').insertAdjacentHTML('beforeend', `<button type="button" class="pill" id="walkPill" role="switch" aria-checked="false" aria-label="How differing notes morph: walk or swap"><span>Walk</span><span>Swap</span></button>`);
 const ICON_PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>';
 const ICON_STOP = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>';
 function setPlaying(on) {
@@ -47,9 +33,9 @@ function onReport(d) {
   else if (d.type === 'ott') onOtt(d);
 }
 // mono / poly for playing the keys (the sequencer is always one note at a time), in Settings since 2026-11-10
-function updateMonoUI() { $('monoBtn').setAttribute('aria-pressed', state.mono); $('polyBtn').setAttribute('aria-pressed', !state.mono); }
+function updateMonoUI() { setPill($('monoPill'), state.mono ? 1 : 0); }
 const setMono = m => { state.mono = m; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); };
-$('monoBtn').addEventListener('click', () => setMono(true)); $('polyBtn').addEventListener('click', () => setMono(false));
+$('monoPill').addEventListener('click', () => setMono(!state.mono));
 updateMonoUI();
 
 /* ---------- mini lanes: A, what plays now, B ---------- */
@@ -81,8 +67,7 @@ function drawLanes() {
   });
 }
 
-/* ---------- Pitch mode (Walk / Swap) ---------- */
-function updateWalkUI() { $('pmWalk').setAttribute('aria-pressed', state.walk); $('pmSwap').setAttribute('aria-pressed', !state.walk); }
-$('pmWalk').addEventListener('click', () => { state.walk = true; updateWalkUI(); if (ready) send({ type:'walk', v:true }); drawLanes(); save(); });
-$('pmSwap').addEventListener('click', () => { state.walk = false; updateWalkUI(); if (ready) send({ type:'walk', v:false }); drawLanes(); save(); });
+/* ---------- Pitch mode (Walk / Swap): one pill ---------- */
+function updateWalkUI() { setPill($('walkPill'), state.walk ? 0 : 1); }
+$('walkPill').addEventListener('click', () => { state.walk = !state.walk; updateWalkUI(); if (ready) send({ type:'walk', v: state.walk }); drawLanes(); save(); });
 

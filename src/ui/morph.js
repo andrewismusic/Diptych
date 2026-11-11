@@ -27,14 +27,14 @@ function setMorph(m) {
   const mAt = (x, off) => { const r = morphEl.getBoundingClientRect(), cw = mcap.offsetWidth; return (x - r.left - off) / Math.max(1, r.width - cw); };
   morphEl.addEventListener('pointerdown', e => {
     e.preventDefault();
-    if (focus !== 'M') { setFocus('M'); return; }   // a focused side: touching the slider comes back to the morph
-    pid = e.pointerId; morphEl.setPointerCapture(pid); morphEl.classList.add('drag');
+    if (focus !== 'M') { setFocus('M'); return; }   // a focused side: the slot is one big MORPH key; touching it comes back to the morph
+    pid = e.pointerId; morphEl.setPointerCapture(pid); morphEl.classList.add('drag'); holdingMorph = true;
     const cr = mcap.getBoundingClientRect();
     if (e.clientX >= cr.left && e.clientX <= cr.right) grab = e.clientX - cr.left;   // on the cap: drag it from where you hold it
     else { grab = cr.width / 2; setMorph(mAt(e.clientX, grab)); }                    // on the track: the cap jumps there
   });
   morphEl.addEventListener('pointermove', e => { if (e.pointerId === pid) setMorph(mAt(e.clientX, grab)); });
-  const end = e => { if (e.pointerId === pid) { pid = null; morphEl.classList.remove('drag'); } };
+  const end = e => { if (e.pointerId === pid) { pid = null; morphEl.classList.remove('drag'); holdingMorph = false; } };
   morphEl.addEventListener('pointerup', end); morphEl.addEventListener('pointercancel', end);
   morphEl.addEventListener('keydown', e => {
     const st = e.shiftKey ? 0.1 : 0.01;
@@ -90,7 +90,19 @@ function setFocus(f) {
   if (ready) send({ type:'morph', v: state.morph });
   drawLanes();
 }
-// tap A or B to edit only that side; tap it again (or the other) to come back to the morph or switch sides
-document.querySelectorAll('[data-focus]').forEach(b => b.addEventListener('click', () => setFocus(focus === b.dataset.focus ? 'M' : b.dataset.focus)));
+/* Tap A or B to edit only that side; tap it again (or the other) to come back to the morph or switch sides.
+   Hold MORPH and tap A or B (2026-11-11; with a mouse, Shift-click A or B) to capture what you hear into that side: the
+   sound, and the sequence heard at the Pattern knob's value. The morph then sits at that end, so nothing changes. */
+let holdingMorph = false;
+function captureHeard(side) {
+  pushUndo();
+  capturePattern(side, true);   // first, while the Pattern value still is what you hear
+  captureSound(side, true);
+  const b = document.querySelector(`[data-focus="${side}"]`); b.classList.remove('caught'); void b.offsetWidth; b.classList.add('caught');
+}
+document.querySelectorAll('[data-focus]').forEach(b => b.addEventListener('click', e => {
+  if ((holdingMorph || e.shiftKey) && focus === 'M') { captureHeard(b.dataset.focus); return; }
+  setFocus(focus === b.dataset.focus ? 'M' : b.dataset.focus);
+}));
 const savedMorph = () => (focus === 'M' ? state.morph : focusMem);
 document.body.dataset.sidefocus = 'M';

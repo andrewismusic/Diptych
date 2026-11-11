@@ -1,30 +1,50 @@
 /* =====================================================================
-   KEYBOARD
+   KEYBOARD (the Play panel, 2026-11-11)
+   Piano: three rows, one octave each (the lowest at the bottom). Grid: an
+   isomorphic grid of the scale's notes (the Key in the Seq and Play panels):
+   each step right is the next note of the scale, each row up is three scale
+   notes higher, and roots are lit in their own colour (on the piano too).
+   The cell size suits the device: about 56 px for touch, 44 px for a mouse.
+   Every key carries its offset from the bottom octave (data-off).
    ===================================================================== */
 const keysEl = $('keys');
-const WHITE = [0, 2, 4, 5, 7, 9, 11, 12];
-const BLACK = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
-let octShift = 0;
+let octShift = 0, kbGrid = false;
+try { kbGrid = localStorage.getItem('diptych-kb') === 'grid'; } catch (e) {}
 const base = () => 48 + 12 * octShift;
-const keyEls = {};
-WHITE.forEach(o => {
-  const k = document.createElement('div'); k.className = 'white'; k.dataset.off = o;
-  if (o % 12 === 0) k.innerHTML = '<span></span>';
-  keysEl.appendChild(k); keyEls[o] = k;
-});
-BLACK.forEach(([o, w]) => {
-  const k = document.createElement('div'); k.className = 'black'; k.dataset.off = o;
-  k.style.left = ((w + 1) * 12.5 - 3.75) + '%';
-  keysEl.appendChild(k); keyEls[o] = k;
-});
-function labelOct() {
-  const name = n => 'C' + (Math.floor(n / 12) - 1);
-  $('octLabel').textContent = name(base());
-  keyEls[0].querySelector('span').textContent = name(base());
-  keyEls[12].querySelector('span').textContent = name(base() + 12);
+const WHITE7 = [0, 2, 4, 5, 7, 9, 11], BLACK5 = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
+const keyRoot = () => (state.seq ? state.seq.A.root : 0), keyScale = () => (state.seq ? SCALES[state.seq.A.scale] : [0, 2, 4, 5, 7, 9, 11]);
+function buildKeys() {
+  keysEl.innerHTML = ''; keysEl.classList.toggle('grid', kbGrid);
+  const root = keyRoot(), isRoot = off => ((base() + off) % 12 + 12) % 12 === root;
+  if (!kbGrid) {
+    for (let r = 2; r >= 0; r--) {
+      const row = document.createElement('div'); row.className = 'krow';
+      WHITE7.forEach(o => { const k = document.createElement('div'); k.className = 'white' + (isRoot(r * 12 + o) ? ' root' : ''); k.dataset.off = r * 12 + o;
+        if (o === 0) k.innerHTML = `<span>C${Math.floor((base() + r * 12) / 12) - 1}</span>`; row.appendChild(k); });
+      BLACK5.forEach(([o, w]) => { const k = document.createElement('div'); k.className = 'black' + (isRoot(r * 12 + o) ? ' root' : ''); k.dataset.off = r * 12 + o;
+        k.style.left = ((w + 1) * (100 / 7) - 100 / 7 * 0.3) + '%'; row.appendChild(k); });
+      keysEl.appendChild(row);
+    }
+  } else {
+    const coarse = matchMedia('(pointer: coarse)').matches, cell = coarse ? 56 : 44;
+    const W = keysEl.clientWidth || 340, H = keysEl.clientHeight || 300;
+    const cols = Math.max(4, Math.floor(W / cell)), rows = Math.max(3, Math.floor(H / cell)), sc = keyScale(), n = sc.length;
+    keysEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; keysEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    for (let r = rows - 1; r >= 0; r--) for (let c = 0; c < cols; c++) {
+      const d = c + r * 3, off = root + sc[d % n] + 12 * Math.floor(d / n);
+      const k = document.createElement('div'); k.className = 'cell' + (d % n === 0 ? ' root' : ''); k.dataset.off = off;
+      k.innerHTML = `<span>${NOTE_NAMES[((root + sc[d % n]) % 12)]}</span>`;
+      keysEl.appendChild(k);
+    }
+  }
+  setPill($('kbMode'), kbGrid ? 1 : 0);
+  labelOct(); markKeys();
 }
+function labelOct() { $('octLabel').textContent = 'C' + (Math.floor(base() / 12) - 1); }
+$('kbMode').addEventListener('click', () => { kbGrid = !kbGrid; try { localStorage.setItem('diptych-kb', kbGrid ? 'grid' : 'piano'); } catch (e) {} buildKeys(); });
+new ResizeObserver(() => { if (kbGrid && keysEl.offsetParent) buildKeys(); }).observe(keysEl);
 const sounding = new Map();
-function markKeys() { Object.entries(keyEls).forEach(([o, el]) => el.classList.toggle('on', sounding.has(base() + +o))); }
+function markKeys() { keysEl.querySelectorAll('[data-off]').forEach(el => el.classList.toggle('on', sounding.has(base() + +el.dataset.off))); }
 function on(n) { sounding.set(n, (sounding.get(n) || 0) + 1); post({ type:'on', note:n, vel:0.9 }); markKeys(); }
 function off(n) {
   const c = (sounding.get(n) || 0) - 1;
@@ -42,7 +62,7 @@ $('latch').addEventListener('click', e => {
   if (!latch) { latched.forEach(n => off(n)); latched.clear(); }
 });
 const pointers = new Map();
-const noteAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.dataset && el.dataset.off !== undefined ? base() + +el.dataset.off : null; };
+const noteAt = (x, y) => { const h = document.elementFromPoint(x, y), el = h && h.closest('[data-off]'); return el && keysEl.contains(el) ? base() + +el.dataset.off : null; };
 keysEl.addEventListener('pointerdown', e => {
   e.preventDefault(); keysEl.setPointerCapture(e.pointerId);
   const n = noteAt(e.clientX, e.clientY); pointers.set(e.pointerId, n);
@@ -58,7 +78,7 @@ keysEl.addEventListener('pointermove', e => {
 });
 const pEnd = e => { if (!pointers.has(e.pointerId)) return; const n = pointers.get(e.pointerId); pointers.delete(e.pointerId); if (n !== null) release(n); };
 keysEl.addEventListener('pointerup', pEnd); keysEl.addEventListener('pointercancel', pEnd);
-function shiftOct(dir) { octShift = Math.max(-2, Math.min(3, octShift + dir)); labelOct(); markKeys(); }
+function shiftOct(dir) { octShift = Math.max(-2, Math.min(2, octShift + dir)); buildKeys(); }
 $('octDown').addEventListener('click', () => shiftOct(-1));
 $('octUp').addEventListener('click', () => shiftOct(1));
 const KEYMAP = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k:12 };

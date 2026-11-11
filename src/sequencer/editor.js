@@ -17,21 +17,28 @@ function closeSeq() { sq.classList.remove('open'); $('seqEdit').focus({ preventS
 $('seqEdit').addEventListener('click', () => openSeq());
 $('sqDone').addEventListener('click', closeSeq);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && sq.classList.contains('open')) closeSeq(); });
-$('sqA').addEventListener('click', () => openSeq('A'));
-$('sqB').addEventListener('click', () => openSeq('B'));
+$('sqSide').addEventListener('click', () => openSeq(sqSide === 'A' ? 'B' : 'A'));
 function syncSeqControls() {
   const s = cur(); fixSeq(s);
   const dn = Math.round(seqDensity(s) * 100); $('sqDens').value = dn; $('sqDensVal').textContent = dn + '%';
-  $('sqA').setAttribute('aria-pressed', sqSide === 'A'); $('sqB').setAttribute('aria-pressed', sqSide === 'B');
+  setPill($('sqSide'), sqSide === 'A' ? 0 : 1);
   $('sqRate').value = s.rate; $('sqRoot').value = s.root; $('sqScale').value = s.scale;
   $('sqLen').textContent = s.n16;
   $('sqOther').textContent = `Copy to ${sqSide === 'A' ? 'B' : 'A'}`;
 }
-// the shared Scale also sits in the Sequence card on the main page (a broad control: root and scale type)
-$('pSeqCtl').insertAdjacentHTML('beforeend', `<div class="qscale"><span class="lbl">Scale</span><select id="qRoot" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="qScale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select><span class="spacer"></span><button type="button" class="key send" id="patA" aria-label="Make the pattern you hear now sequence A">&larr; Set A</button><button type="button" class="key send" id="patB" aria-label="Make the pattern you hear now sequence B">Set B &rarr;</button></div>`);
-function syncScaleUI() { $('qRoot').value = state.seq.A.root; $('qScale').value = state.seq.A.scale; }
-$('qRoot').addEventListener('change', () => { pushUndo(); setScale(+$('qRoot').value, state.seq.A.scale); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
-$('qScale').addEventListener('change', () => { pushUndo(); setScale(state.seq.A.root, $('qScale').value); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
+// the shared Scale (root and type) sits at the top left of the Seq panel, and again in the Play panel, where it decides
+// the notes of the grid and which keys are roots (2026-11-11)
+const scaleSel = p => `<span class="qscale"><span class="lbl">Key</span><select id="${p}Root" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="${p}Scale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select></span>`;
+$('pSeqTop').insertAdjacentHTML('afterbegin', scaleSel('q'));
+$('pScaleBox').insertAdjacentHTML('afterbegin', scaleSel('k'));
+function syncScaleUI() {
+  for (const p of ['q', 'k']) { $(p + 'Root').value = state.seq.A.root; $(p + 'Scale').value = state.seq.A.scale; }
+  if (typeof buildKeys === 'function') buildKeys();
+}
+for (const p of ['q', 'k']) {
+  $(p + 'Root').addEventListener('change', () => { pushUndo(); setScale(+$(p + 'Root').value, state.seq.A.scale); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
+  $(p + 'Scale').addEventListener('change', () => { pushUndo(); setScale(state.seq.A.root, $(p + 'Scale').value); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
+}
 function snapToScale(s) {
   const pcs = scalePcs(s);
   s.steps.forEach(st => { for (let d = 0; d < 12; d++) { if (pcs.has(((st.note - d) % 12 + 12) % 12)) { st.note -= d; break; } if (pcs.has((st.note + d) % 12)) { st.note += d; break; } } });
@@ -53,11 +60,10 @@ $('sqRight').addEventListener('click', () => editSeq(s => { s.steps.unshift(s.st
 let genType = 'Arp';
 function setGen(t) {
   genType = t;
-  $('gnArp').setAttribute('aria-pressed', t === 'Arp'); $('gnRiff').setAttribute('aria-pressed', t === 'Riff');
+  setPill($('genPill'), t === 'Arp' ? 0 : 1);
   $('arpRow').hidden = t !== 'Arp'; $('riffRow').hidden = t !== 'Riff';
 }
-$('gnArp').addEventListener('click', () => setGen('Arp'));
-$('gnRiff').addEventListener('click', () => setGen('Riff'));
+$('genPill').addEventListener('click', () => setGen(genType === 'Arp' ? 'Riff' : 'Arp'));
 setGen('Arp');
 $('sqGen').addEventListener('click', () => editSeq(s => genFromControls(s)));
 $('sqClear').addEventListener('click', () => editSeq(s => s.steps.forEach(st => { st.on = false; })));
@@ -193,15 +199,13 @@ const SEQ_KEYS = ['sqdens', 'sqspeed', 'sqoct'];
 function copySeqTo(from, to) { state.seq[to] = cloneSeq(state.seq[from]); SEQ_KEYS.forEach(k => { state[to][IX[k]] = state[from][IX[k]]; }); }
 const refreshSeqKnobs = () => SEQ_KEYS.forEach(k => updateKnob(IX[k]));
 const copySeq = (from, to) => { pushUndo(); copySeqTo(from, to); refreshSeqKnobs(); if (ready) sendState(); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); };
-$('seqAB').addEventListener('click', () => copySeq('A', 'B'));
-$('seqBA').addEventListener('click', () => copySeq('B', 'A'));
 
 /* Pattern Set A / Set B (2026-11-10): the sequence heard at the Pattern knob's current value becomes sequence A (or B):
    a 1/16 pattern as long as the loop (at most 32 sixteenths), each note at its sixteenth, with its length and velocity.
    Speed and Octave are already in the notes, so that side's Speed goes to 1x, Octave to 0 and Density to 100%, and the Pattern
    knob's handle for that side goes to its end (All A or All B), so that end plays exactly the captured sequence. */
-function capturePattern(side) {
-  pushUndo();
+function capturePattern(side, noUndo) {
+  if (!noUndo) pushUndo();
   const s = buildSeq(), mm = resolveNorm(IX.pattern), n16 = Math.max(1, Math.min(MAXSTEPS, Math.round(s.loop / 12)));
   const q = cloneSeq(state.seq[side]); q.rate = R16; q.n16 = n16; q.rot = 0;
   q.steps = Array.from({ length: n16 }, () => ({ on: false, note: 48 + q.root, len: 1, vel: 0.75, dur: 12 }));
@@ -216,5 +220,3 @@ function capturePattern(side) {
   if (ready) sendState();
   refreshSeqKnobs(); updateKnob(IX.pattern); if (sq.classList.contains('open')) syncSeqControls(); seqChanged();
 }
-$('patA').addEventListener('click', () => capturePattern('A'));
-$('patB').addEventListener('click', () => capturePattern('B'));

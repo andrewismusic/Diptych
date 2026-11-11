@@ -21,14 +21,14 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
     expect(m.appBottom).toBeLessThanOrEqual(1); expect(m.appRight).toBeLessThanOrEqual(1);
     expect(m.cut).toEqual([]);
     // all four panels show, and none is cut off
-    expect(await page.evaluate(() => [...document.querySelectorAll('.panel')].filter(p => p.offsetParent && p.scrollHeight <= p.clientHeight + 1).map(p => p.dataset.panel))).toEqual(['sound', 'env', 'fx', 'seq']);
+    expect(await page.evaluate(() => [...document.querySelectorAll('.panel')].filter(p => p.offsetParent && p.scrollHeight <= p.clientHeight + 1).map(p => p.dataset.panel))).toEqual(['synth', 'amp', 'filt', 'fx', 'seq', 'play']);
   });
   test(`${w}x${h}: the developer view never scrolls the page`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });
     await openSynth(page);
     for (const t of ['Basic', 'Basic, everything off', 'Full', 'Full, everything back on']) {   // switching off dims but must not move anything
       if (t.includes('off') || t.includes('back on')) await page.evaluate(() => document.querySelectorAll('[data-fx], [data-osc]').forEach(b => b.click()));
-      if (t === 'Full') await page.click('#viewFull');
+      if (t === 'Full') await page.click('#viewPill');
       const m = await measure(page);
       expect(m.desk).toBe(true);
       expect(m.docScroll, t).toBeLessThanOrEqual(0); expect(m.docSide, t).toBeLessThanOrEqual(0);
@@ -40,8 +40,8 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
 test('the Basic view comes out larger than the Full view', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openSynth(page);
-  const size = () => page.evaluate(() => $('k' + IX.cutoff).getBoundingClientRect().width);
-  const basic = await size(); await page.click('#viewFull'); const full = await size();
+  const size = () => page.evaluate(() => $('k' + IX.aatk).getBoundingClientRect().width);
+  const basic = await size(); await page.click('#viewPill'); const full = await size();
   expect(basic).toBeGreaterThan(full * 1.15);
 });
 

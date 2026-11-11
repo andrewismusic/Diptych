@@ -33,43 +33,52 @@
         <button type="button" id="redo" class="key icon" aria-label="Redo" disabled></button>
         <button type="button" id="setBtn" class="key icon" aria-label="Settings"></button>
       </span>
-      <span class="seg view" role="group" aria-label="View"><button type="button" class="key" id="viewBasic">Basic</button><button type="button" class="key" id="viewFull">Full</button></span>
+      <div class="alldie"><div class="dicetrack horiz" data-what="all" data-side="M" data-face="5" tabindex="0" role="slider" aria-label="Randomize everything, both sides: slide further right for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><span class="dlab">Everything</span><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i></div></div></div></div>
+      <button type="button" class="pill view" id="viewPill" role="switch" aria-checked="false" aria-label="View: basic or full"><span>Basic</span><span>Full</span></button>
     </div>
   </div>
 </header>
 
 <nav class="tabs" role="tablist" aria-label="Sections">
-  <button type="button" class="key tab" role="tab" data-tab="sound" aria-selected="true">Sound</button><button type="button" class="key tab" role="tab" data-tab="env" aria-selected="false">Envelope</button><button type="button" class="key tab" role="tab" data-tab="fx" aria-selected="false">FX</button><button type="button" class="key tab" role="tab" data-tab="seq" aria-selected="false">Sequence</button>
+  <button type="button" class="key tab" role="tab" data-tab="synth" aria-selected="false">Synth</button><button type="button" class="key tab" role="tab" data-tab="amp" aria-selected="false">Amp</button><button type="button" class="key tab" role="tab" data-tab="filt" aria-selected="false">Filt</button><button type="button" class="key tab" role="tab" data-tab="fx" aria-selected="false">FX</button><button type="button" class="key tab" role="tab" data-tab="seq" aria-selected="false">Seq</button><button type="button" class="key tab" role="tab" data-tab="play" aria-selected="false">Play</button>
 </nav>
 <div class="panels" id="panels">
-  <section class="panel" data-panel="sound" role="tabpanel" aria-label="Sound">
-    <h2 class="ph">Sound</h2>
-    <div class="prow"><div class="pviz"><canvas id="scope" aria-label="Wave display: the wave you hear now"></canvas></div><div class="dbox" data-scope="sound" data-faces="1,2,3"></div></div>
-    <div class="knobs" id="pkSound"></div>
+  <section class="panel" data-panel="synth" role="tabpanel" aria-label="Synth">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Synth</h2></div><div class="dbox" data-scope="synth"></div></div>
+    <div class="pviz"><canvas id="scope" aria-label="Wave display: the wave you hear now"></canvas></div>
+    <div class="knobs" id="pk_synth"></div>
   </section>
-  <section class="panel" data-panel="env" role="tabpanel" aria-label="Envelope">
-    <h2 class="ph">Envelope</h2>
-    <div class="prow"><div class="pviz"><canvas id="envviz" aria-label="Envelope: side A, side B and what you hear now"></canvas></div><div class="dbox" data-scope="env" data-faces="4,5,6"></div></div>
-    <div class="knobs" id="pkEnv"></div>
+  <section class="panel" data-panel="amp" role="tabpanel" aria-label="Amp">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Amp</h2></div><div class="dbox" data-scope="amp"></div></div>
+    <div class="pviz"><canvas id="envviz" aria-label="Amp envelope: side A, side B and what you hear now"></canvas></div>
+    <div class="knobs" id="pk_amp"></div>
+  </section>
+  <section class="panel" data-panel="filt" role="tabpanel" aria-label="Filt">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Filt</h2></div><div class="dbox" data-scope="filt"></div></div>
+    <div class="pviz"><canvas id="filtviz" aria-label="Filter: the cutoff over a held note, side A, side B and what you hear now"></canvas></div>
+    <div class="knobs" id="pk_filt"></div>
   </section>
   <section class="panel" data-panel="fx" role="tabpanel" aria-label="FX">
-    <h2 class="ph">FX</h2>
-    <div class="prow"><div class="pviz"><canvas id="fxscope" aria-label="Effects shown on the wave you hear now"></canvas></div><div class="dbox" data-scope="fx" data-faces="1,2,3"></div></div>
-    <div class="knobs" id="pkFx"></div>
+    <div class="ptop"><div class="pctl"><h2 class="ph">FX</h2></div><div class="dbox" data-scope="fx"></div></div>
+    <div class="pviz"><canvas id="fxscope" aria-label="Effects shown on the wave you hear now"></canvas></div>
+    <div class="knobs" id="pk_fx"></div>
   </section>
-  <section class="panel" data-panel="seq" role="tabpanel" aria-label="Sequence">
-    <h2 class="ph">Sequence</h2>
-    <div class="prow"><div class="pviz lanes">
+  <section class="panel" data-panel="seq" role="tabpanel" aria-label="Seq">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Seq</h2><div class="pctl2" id="pSeqTop"></div></div><div class="dbox" data-scope="seq"></div></div>
+    <div class="pviz"><div class="lanes">
         <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
         <span class="ln now">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
         <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
-      </div><div class="dbox" data-scope="seq" data-faces="4,5,6"></div></div>
-    <div class="knobs" id="pkSeq"></div>
-    <div id="pSeqCtl"></div>
+      </div></div>
+    <div class="knobs" id="pk_seq"></div><div class="pfoot"><span class="spacer"></span><button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button></div>
+  </section>
+  <section class="panel" data-panel="play" role="tabpanel" aria-label="Play">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Play</h2><div class="pctl2"><button type="button" class="pill" id="kbMode" role="switch" aria-checked="false" aria-label="Keyboard layout: piano or grid"><span>Piano</span><span>Grid</span></button><span class="scalebox" id="pScaleBox"></span><span class="octbox"><button type="button" class="key" id="octDown" aria-label="Octave down">−</button><span class="oct" id="octLabel">C3</span><button type="button" class="key" id="octUp" aria-label="Octave up">+</button></span><button type="button" class="key" id="latch" aria-pressed="false">Latch</button></div></div></div>
+    <div class="pviz"><div class="keys" id="keys"></div></div>
+    
   </section>
   <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
 </div>
-
 
 <main id="groups">
 </main>
@@ -88,23 +97,6 @@
       </div>
       <button type="button" class="key letter b" data-focus="B" aria-pressed="false" aria-label="Edit side B only (tap again to morph)">B</button>
     </div>
-    <div class="kbbar">
-      <button type="button" class="key send" id="sendA" aria-label="Make what you hear now side A">&larr; Set A</button>
-      <span class="spacer"></span>
-      <button type="button" class="key" id="pmKeys" aria-pressed="false">Keys</button>
-      <span class="spacer"></span>
-      <button type="button" class="key send" id="sendB" aria-label="Make what you hear now side B">Set B &rarr;</button>
-    </div>
-    <div class="keysdrawer" id="keysPane" hidden>
-      <div class="kbbar" id="kctl">
-        <button type="button" class="key" id="octDown" aria-label="Octave down">−</button>
-        <span class="oct" id="octLabel">C3</span>
-        <button type="button" class="key" id="octUp" aria-label="Octave up">+</button>
-        <span class="spacer"></span>
-        <button type="button" class="key" id="latch" aria-pressed="false">Latch</button>
-      </div>
-      <div class="keys" id="keys"></div>
-    </div>
   </div>
 </div>
 <button type="button" id="play" hidden></button>
@@ -114,10 +106,10 @@
 <div class="sheet" id="settings" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
   <div class="sheetcard">
     <div class="edhead"><h2 id="setTitle">Settings</h2><button type="button" class="key" id="setDone">Done</button></div>
-    <div class="setrow"><span class="lbl">Theme</span><span class="seg" role="group" aria-label="Theme"><button type="button" class="key" data-theme-set="auto">Auto</button><button type="button" class="key" data-theme-set="light">Light</button><button type="button" class="key" data-theme-set="dark">Dark</button></span></div>
-    <div class="setrow"><span class="lbl">Background</span><span class="seg" role="group" aria-label="Background"><button type="button" class="key" data-bg-set="subtle">Subtle</button><button type="button" class="key" data-bg-set="vivid">Vivid</button></span></div>
+    <div class="setrow"><span class="lbl">Theme</span><button type="button" class="pill" id="themePill" aria-label="Theme"><span>Auto</span><span>Light</span><span>Dark</span></button></div>
+    <div class="setrow"><span class="lbl">Background</span><button type="button" class="pill" id="bgPill" role="switch" aria-checked="false" aria-label="Background: subtle or vivid"><span>Subtle</span><span>Vivid</span></button></div>
     <div class="setrow"><span class="lbl">Colours</span><div class="schemes" id="schemes" role="group" aria-label="Colour scheme"></div></div>
-    <div class="setrow"><span class="lbl">Keys</span><span class="seg" role="group" aria-label="Voices"><button type="button" class="key" id="polyBtn">Poly</button><button type="button" class="key" id="monoBtn">Mono</button></span></div>
+    <div class="setrow"><span class="lbl">Keys</span><button type="button" class="pill" id="monoPill" role="switch" aria-checked="false" aria-label="Voices: poly or mono"><span>Poly</span><span>Mono</span></button></div>
   </div>
 </div>
 
@@ -169,7 +161,7 @@
         <label>Scale <select id="sqRoot"></select></label><select id="sqScale" aria-label="Scale type"></select>
       </div>
     </div>
-    <div class="edrow"><span class="seg" role="group" aria-label="Side"><button type="button" id="sqA">Side A</button><button type="button" id="sqB">Side B</button></span></div>
+    <div class="edrow"><button type="button" class="pill" id="sqSide" role="switch" aria-checked="false" aria-label="Side being edited: A or B"><span>Side A</span><span>Side B</span></button></div>
     <div class="sqset sqside">
       <div class="edrow">
         <label>Rate <select id="sqRate"></select></label>
@@ -181,7 +173,7 @@
       </div>
       <div class="edrow">
         <span class="lbl">Generator</span>
-        <span class="seg" role="group" aria-label="Generator"><button type="button" id="gnArp">Arp</button><button type="button" id="gnRiff">Riff</button></span>
+        <button type="button" class="pill" id="genPill" role="switch" aria-checked="false" aria-label="Generator: arp or riff"><span>Arp</span><span>Riff</span></button>
         <button type="button" id="sqGen">Generate</button>
       </div>
       <div class="edrow" id="arpRow">

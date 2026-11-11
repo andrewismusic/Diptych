@@ -88,6 +88,9 @@ DEFS.forEach((d, i) => {
 });
 
 const $ = id => document.getElementById(id);
+/* Pills (2026-11-11): a two- or three-way choice drawn as one pill with a dividing line; it presses as one button, and only
+   the side that is on lights up. setPill marks segment k as on. */
+const setPill = (el, k) => { el.dataset.on = k; [...el.children].forEach((c, j) => c.classList.toggle('on', j === k)); if (el.getAttribute('role') === 'switch') el.setAttribute('aria-checked', String(k === 1)); };
 const valText = (i, x) => FMT[DEFS[i].key](MorphEngine.denorm(DEFS[i], x));
 const editing = {};
 /* Side focus (DESIGN.md section 15, built 2026-11-10): A | Morph | B. In A or B every knob shows and edits only that
@@ -299,11 +302,11 @@ function bindKnob(i) {
   });
 }
 DEFS.forEach((d, i) => { if (!d.opts) bindKnob(i); });
-/* The player's panels (2026-11-11): the macros and the sequencer's knobs move out of their cards into the four panels
-   (Sound, Envelope, FX, Sequence; ui/panels.js), and the Sound and Sequence cards go away. */
+/* The player's panels (2026-11-11; ui/panels.js): the macros, the filter's Cutoff, Resonance and Env amount, and the
+   sequencer's knobs move into the panels (Synth, Amp, Filt, FX, Seq), and the Sound and Sequence cards go away. */
 {
   const put = (box, keys) => keys.forEach(k => $(box).appendChild($('k' + IX[k]).closest('.kn')));
-  put('pkSound', ['mbright', 'wpos']); put('pkEnv', ['menv']); put('pkFx', ['mfx', 'mwet']); put('pkSeq', ['pattern', 'sqdens', 'sqspeed', 'sqoct']);
+  put('pk_synth', ['mbright', 'wpos']); put('pk_amp', ['menv']); put('pk_filt', ['cutoff', 'reso', 'envamt']); put('pk_fx', ['mfx', 'mwet']); put('pk_seq', ['pattern', 'sqdens', 'sqspeed', 'sqoct']);
   $('patKnob').remove();
   for (const g of ['Sound', 'Sequence']) { if (sections[g]) { sections[g].remove(); delete sections[g]; } }
 }

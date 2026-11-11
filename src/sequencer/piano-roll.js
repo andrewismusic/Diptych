@@ -1,5 +1,14 @@
 const GUT = 34, RH = 14;
-function rollRows() { const pcs = scalePcs(cur()), rows = []; for (let n = 84; n >= 36; n--) if (pcs.has(n % 12)) rows.push(n); return rows; }
+// rows: the scale's notes over the pattern's range plus a margin, at least two octaves (2026-11-11: the full C2 to C6 put
+// a pattern's notes off the bottom of a phone screen)
+function rollRows() {
+  const s = cur(), pcs = scalePcs(s), on = s.steps.filter(st => st.on).map(st => st.note), rows = [];
+  let lo = on.length ? Math.min(...on) - 5 : 48, hi = on.length ? Math.max(...on) + 5 : 72;
+  if (hi - lo < 24) { const m = (hi + lo) / 2; lo = Math.round(m - 12); hi = Math.round(m + 12); }
+  lo = Math.max(24, lo); hi = Math.min(96, hi);
+  for (let n = hi; n >= lo; n--) if (pcs.has(n % 12)) rows.push(n);
+  return rows;
+}
 function rowOf(rows, note) { let best = 0; rows.forEach((n, i) => { if (Math.abs(n - note) < Math.abs(rows[best] - note)) best = i; }); return best; }
 function rollGeom(s, w) {   // x position and width of every step (steps can differ in length with Mixed)
   const P = stepPos(s), span = w - GUT;

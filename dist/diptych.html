@@ -144,6 +144,14 @@ body.dev .view{display:inline-flex}
   .key.icon{width:36px;min-width:36px;height:38px}
   .bpm{min-width:48px;height:38px}
 }
+
+/* a side focused: the slot becomes one big MORPH key; touching it anywhere comes back to the morph */
+.morph-slider.rest{background:transparent;box-shadow:none;border-color:transparent}
+.morph-slider.rest::after,.morph-slider.rest .glim{display:none}
+.morph-slider.rest .mcap{left:0!important;width:100%;color:var(--ink)}
+/* hold MORPH and tap A or B: the key flashes as it takes what you hear */
+.letter.caught{animation:caught .5s ease-out}
+@keyframes caught{0%{background:var(--hold)}100%{}}
 /* ---------- groups + knobs ---------- */
 main{max-width:780px;margin:0 auto;padding:4px 12px 0;display:flex;flex-wrap:wrap;gap:0 24px}
 .group{flex:1 1 100%;padding:12px 0 6px}
@@ -434,55 +442,79 @@ body:not(.dev) .kwrap .icons{display:none}
 .qscale select{min-height:32px}
 /* the developer view keeps one Wavetable (2026-11-10): the other oscillators are silent and hidden */
 .group[data-kind="osc"]:not([data-slot="0"]){display:none}
-/* tabs */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0 14px 8px;max-width:780px;margin:0 auto;width:100%}
-.tab{min-height:34px;font-size:.68rem;padding:4px 2px;letter-spacing:.08em}
+/* tabs: Synth, Amp, Filt, FX, Seq, Play */
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:0 14px 8px;max-width:780px;margin:0 auto;width:100%}
+.tab{min-height:34px;font-size:.66rem;padding:4px 0;letter-spacing:.06em}
 .tab[aria-selected="true"]{background:var(--hold);color:var(--on-ink)}
-/* panels */
+/* panels: controls top left, dice top right (the same place on every tab), the picture the full width, knobs below */
 .panels{position:relative;max-width:780px;margin:0 auto;width:100%;padding:0 14px}
-.panel{background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 0 var(--shadow);padding:10px 12px 10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+.panel{background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 0 var(--shadow);padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0}
 body:not(.desk) .panel:not(.on){display:none}
+.ptop{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.pctl{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.pctl2{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
 .ph{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--font-ui);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
 .ph::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--mc)}
-.prow{display:flex;gap:10px;align-items:stretch;min-height:0}
-.pviz{flex:1;min-width:0;min-height:96px;background:var(--well);border-radius:12px;box-shadow:inset 0 2px 0 rgba(0,0,0,.1);padding:6px;display:flex;flex-direction:column}
-.pviz canvas{display:block;width:100%;flex:1;min-height:110px}
-.pviz.lanes{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:repeat(3,1fr);gap:4px 6px;align-items:center}
-.pviz.lanes canvas{min-height:0;height:100%;border-radius:6px;background:var(--surface)}
+.pviz{flex:1;min-height:110px;min-width:0;background:var(--well);border-radius:12px;box-shadow:inset 0 2px 0 rgba(0,0,0,.1);padding:6px;display:flex;flex-direction:column}
+.pviz canvas{display:block;width:100%;flex:1;min-height:0}
+.pviz .lanes{flex:1;min-height:0;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:repeat(3,minmax(0,1fr));gap:4px 6px;align-items:stretch;margin:0}
+.pviz .lanes .ln{align-self:center}
+.pviz .lanes canvas{height:100%;min-height:0;border-radius:6px;background:var(--surface)}
 .ln.now{color:var(--mc)}
-.dbox{align-self:flex-start;display:flex;gap:6px;padding:8px 8px 6px;border:1.5px solid var(--edge);border-radius:12px;background:color-mix(in srgb,var(--surface) 60%,var(--well));align-items:flex-start}
-.dbox .dicetrack{height:96px}
+.pfoot{display:flex;align-items:center;gap:6px}
+.dbox{flex:0 0 auto;display:flex;gap:6px;padding:8px 8px 6px;border:1.5px solid var(--edge);border-radius:12px;background:color-mix(in srgb,var(--surface) 60%,var(--well));align-items:flex-start}
+.dbox .dicetrack{height:84px}
 .panel .knobs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);max-width:none;gap:4px;justify-items:center}
 .panel .kn{width:auto;min-width:0}
-.panel .knob{width:70px;height:70px}
-#pSeqCtl .seqrow:first-child{margin-top:0}
-#audioBtn{position:absolute;left:50%;top:52px;transform:translate(-50%,0);z-index:5;white-space:nowrap}
+.panel .knob{width:66px;height:66px}
+.qscale{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:6px}
+.qscale .lbl{font-weight:600;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.qscale select{min-height:32px;max-width:9.5em}
+.octbox{display:inline-flex;align-items:center;gap:4px}
+.octbox .key{min-width:34px;padding:4px}
+.oct{font-family:var(--font-mono);font-weight:700;font-size:.8rem;min-width:2.4em;text-align:center}
+#audioBtn{position:absolute;left:50%;top:60px;transform:translate(-50%,0);z-index:5;white-space:nowrap}
 #audioBtn[hidden]{display:none}
-/* phones: the app fills the window and only the panel area scrolls (if a panel is taller than the room) */
+/* the Play panel: three octave rows of piano, or the grid */
+.panel[data-panel="play"] .pviz{padding:6px}
+.keys{flex:1;display:flex;flex-direction:column;gap:5px;min-height:0;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.krow{position:relative;flex:1;display:flex;min-height:0}
+.krow .white{flex:1}
+.krow .black{width:calc(100% / 7 * .6);height:60%}
+.white.root{background:color-mix(in srgb,var(--mc) 26%,var(--key))}
+.black.root{background:color-mix(in srgb,var(--mc) 70%,var(--keyb))}
+.keys.grid{display:grid;gap:4px}
+.cell{border-radius:8px;background:var(--cap-hi);border:1.5px solid var(--k);box-shadow:2px 2px 0 var(--k);display:flex;align-items:flex-end;justify-content:flex-start;padding:3px 5px}
+.cell span,.white span{pointer-events:none}
+.cell span{font-family:var(--font-mono);font-size:.6rem;color:var(--muted)}
+.cell.root{background:color-mix(in srgb,var(--mc) 30%,var(--cap-hi));border-color:var(--mc)}
+.cell.root span{color:var(--ink);font-weight:700}
+.cell.on,.white.on,.black.on{background:var(--hold)!important}
+/* phones: the app fills the window and only a panel taller than the room scrolls */
 body:not(.desk):not(.dev){height:100dvh;overflow:hidden}
 body:not(.desk):not(.dev) #app{display:flex;flex-direction:column;height:100dvh}
 body:not(.desk):not(.dev) .panels{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:8px}
 body:not(.desk):not(.dev) .panel.on{flex:1}
-body:not(.desk):not(.dev) .panel.on .prow{flex:1}
 body:not(.desk):not(.dev) .kb{position:static}
 body:not(.desk):not(.dev) .foot{display:none}
-/* desktop (plugin): designed at 1280 x 800 and scaled; all four panels in a 2 x 2 grid; no tabs */
+/* desktop (plugin): designed at 1280 x 800 and scaled; all six panels in a 3 x 2 grid; no tabs */
 .desk .tabs{display:none}
 .desk:not(.dev) #app{display:grid;grid-template-rows:auto minmax(0,1fr) auto;margin:0 auto;overflow:hidden;padding:0 16px}
 .desk:not(.dev) .top .wrap,.desk:not(.dev) .kb .wrap{max-width:none;padding:0}
-.desk:not(.dev) .panels{max-width:none;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,.86fr) minmax(0,1.14fr);gap:14px;min-height:0}
-.desk:not(.dev) .panel .prow{flex:1}
-.desk:not(.dev) .panel{overflow:hidden}
-.desk:not(.dev) .panel[data-panel="seq"] .knob{width:58px;height:58px}
-.desk:not(.dev) .panel[data-panel="seq"] .kab{display:none}
+.desk:not(.dev) .panels{max-width:none;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px;min-height:0}
+.desk:not(.dev) .panel{overflow:hidden;padding:8px 10px;gap:6px}
+.desk:not(.dev) .panel .knob{width:56px;height:56px}
+.desk:not(.dev) .panel .kab{display:none}
+.desk:not(.dev) .dbox .dicetrack{height:58px}
+.desk:not(.dev) .pviz{min-height:0}
+.desk:not(.dev) .dbox{padding:6px 6px 4px}
 .desk:not(.dev) .kb{position:static}
 .desk:not(.dev) .foot{display:none}
-.desk .dbox .dicetrack{height:84px}
-.desk:not(.dev) .panel .knob{width:62px;height:62px}
 /* developer view on desktop: the panels in one row above the sections */
 .desk.dev #app{grid-template-rows:auto 250px minmax(0,1fr) auto}
-.desk.dev .panels{max-width:none;padding:0 12px 6px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;min-height:0}
-.desk.dev .panel .knob{width:46px;height:46px} .desk.dev .dbox .dicetrack{height:72px} .desk.dev .pviz canvas{min-height:60px}
+.desk.dev .panels{max-width:none;padding:0 12px 6px;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;min-height:0}
+.desk.dev .panel{overflow:hidden}
+.desk.dev .panel .knob{width:42px;height:42px} .desk.dev .dbox .dicetrack{height:60px}
 
 /* the page takes the colour heard now (as the wave and the slider do): a tint (Subtle) or the colour itself (Vivid,
    with the panels darker, in the morph's colour) */
@@ -499,10 +531,8 @@ body.vivid .wordmark{color:#fff}
 .seqrow{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
 .seqrow .spacer,.kbbar .spacer{flex:1}
 .key.send{font-size:.7rem;padding:4px 9px}
-/* bottom panel: the morph row, then Set A / Keys / Set B; Keys opens the keyboard drawer */
-.kbbar{display:flex;align-items:center;gap:6px;padding:4px 0 8px}
-.keysdrawer[hidden]{display:none}
-.keysdrawer .keys{margin-bottom:10px}
+/* bottom panel: only the morph row, with no line above it */
+.kb{border-top:0!important;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 /* settings sheet */
 .sheet{position:fixed;inset:0;z-index:40;background:rgba(5,7,12,.45);display:flex;align-items:flex-end;justify-content:center}
 .sheet[hidden]{display:none}
@@ -521,6 +551,25 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
 .desk:not(.dev) .panel[data-panel="seq"] .dicetrack{height:70px}
 .desk:not(.dev) .panel[data-panel="seq"] .seqrow,.desk:not(.dev) .panel[data-panel="seq"] .qscale{margin-top:2px}
 .vivid .letter.a:not([aria-pressed="true"]){color:var(--a)} .vivid .letter.b:not([aria-pressed="true"]){color:var(--b)}
+
+/* pills: a two- or three-way choice as one pill with dividing lines; it presses as one key; only the side that is on is yellow */
+.pill{display:inline-flex;padding:0;overflow:hidden;gap:0;align-items:stretch;min-height:34px}
+.pill span{display:flex;align-items:center;padding:4px 11px;font-size:.7rem}
+.pill span + span{border-left:1.5px solid var(--k)}
+.pill span.on{background:var(--hold);color:var(--on-ink)}
+/* the header's Everything die (five pips), a level track */
+.titlebar{flex-wrap:wrap}
+.alldie{flex:1 1 160px;display:flex;min-width:140px;max-width:420px;order:2}
+.dicetrack.horiz{width:100%;height:36px}
+.dicetrack.horiz .fill{top:0;bottom:0;left:0;right:auto;width:0;height:auto;transition:width .5s cubic-bezier(.3,.9,.3,1.1)}
+.dicetrack.horiz .die{left:0;top:1px;bottom:auto;transition:left .5s cubic-bezier(.3,.9,.3,1.1),transform .07s,filter .07s}
+.dicetrack.horiz .dlab{position:absolute;right:10px;top:0;bottom:0;display:flex;align-items:center;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);pointer-events:none;z-index:1}
+.dicetrack.horiz.dragging .dlab{color:var(--on-ink)}
+.titlebar .hctl{order:3} .titlebar .view{order:4}
+@media (max-width:640px){ .alldie{order:5;flex-basis:100%;max-width:none} }
+.dicetrack.horiz.dragging .fill{transition:none}
+body:not(.dev) .view{display:none!important}
+.setrow .pill{align-self:flex-start}
 </style>
 </head>
 <body>
@@ -537,43 +586,52 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
         <button type="button" id="redo" class="key icon" aria-label="Redo" disabled></button>
         <button type="button" id="setBtn" class="key icon" aria-label="Settings"></button>
       </span>
-      <span class="seg view" role="group" aria-label="View"><button type="button" class="key" id="viewBasic">Basic</button><button type="button" class="key" id="viewFull">Full</button></span>
+      <div class="alldie"><div class="dicetrack horiz" data-what="all" data-side="M" data-face="5" tabindex="0" role="slider" aria-label="Randomize everything, both sides: slide further right for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><span class="dlab">Everything</span><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i></div></div></div></div>
+      <button type="button" class="pill view" id="viewPill" role="switch" aria-checked="false" aria-label="View: basic or full"><span>Basic</span><span>Full</span></button>
     </div>
   </div>
 </header>
 
 <nav class="tabs" role="tablist" aria-label="Sections">
-  <button type="button" class="key tab" role="tab" data-tab="sound" aria-selected="true">Sound</button><button type="button" class="key tab" role="tab" data-tab="env" aria-selected="false">Envelope</button><button type="button" class="key tab" role="tab" data-tab="fx" aria-selected="false">FX</button><button type="button" class="key tab" role="tab" data-tab="seq" aria-selected="false">Sequence</button>
+  <button type="button" class="key tab" role="tab" data-tab="synth" aria-selected="false">Synth</button><button type="button" class="key tab" role="tab" data-tab="amp" aria-selected="false">Amp</button><button type="button" class="key tab" role="tab" data-tab="filt" aria-selected="false">Filt</button><button type="button" class="key tab" role="tab" data-tab="fx" aria-selected="false">FX</button><button type="button" class="key tab" role="tab" data-tab="seq" aria-selected="false">Seq</button><button type="button" class="key tab" role="tab" data-tab="play" aria-selected="false">Play</button>
 </nav>
 <div class="panels" id="panels">
-  <section class="panel" data-panel="sound" role="tabpanel" aria-label="Sound">
-    <h2 class="ph">Sound</h2>
-    <div class="prow"><div class="pviz"><canvas id="scope" aria-label="Wave display: the wave you hear now"></canvas></div><div class="dbox" data-scope="sound" data-faces="1,2,3"></div></div>
-    <div class="knobs" id="pkSound"></div>
+  <section class="panel" data-panel="synth" role="tabpanel" aria-label="Synth">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Synth</h2></div><div class="dbox" data-scope="synth"></div></div>
+    <div class="pviz"><canvas id="scope" aria-label="Wave display: the wave you hear now"></canvas></div>
+    <div class="knobs" id="pk_synth"></div>
   </section>
-  <section class="panel" data-panel="env" role="tabpanel" aria-label="Envelope">
-    <h2 class="ph">Envelope</h2>
-    <div class="prow"><div class="pviz"><canvas id="envviz" aria-label="Envelope: side A, side B and what you hear now"></canvas></div><div class="dbox" data-scope="env" data-faces="4,5,6"></div></div>
-    <div class="knobs" id="pkEnv"></div>
+  <section class="panel" data-panel="amp" role="tabpanel" aria-label="Amp">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Amp</h2></div><div class="dbox" data-scope="amp"></div></div>
+    <div class="pviz"><canvas id="envviz" aria-label="Amp envelope: side A, side B and what you hear now"></canvas></div>
+    <div class="knobs" id="pk_amp"></div>
+  </section>
+  <section class="panel" data-panel="filt" role="tabpanel" aria-label="Filt">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Filt</h2></div><div class="dbox" data-scope="filt"></div></div>
+    <div class="pviz"><canvas id="filtviz" aria-label="Filter: the cutoff over a held note, side A, side B and what you hear now"></canvas></div>
+    <div class="knobs" id="pk_filt"></div>
   </section>
   <section class="panel" data-panel="fx" role="tabpanel" aria-label="FX">
-    <h2 class="ph">FX</h2>
-    <div class="prow"><div class="pviz"><canvas id="fxscope" aria-label="Effects shown on the wave you hear now"></canvas></div><div class="dbox" data-scope="fx" data-faces="1,2,3"></div></div>
-    <div class="knobs" id="pkFx"></div>
+    <div class="ptop"><div class="pctl"><h2 class="ph">FX</h2></div><div class="dbox" data-scope="fx"></div></div>
+    <div class="pviz"><canvas id="fxscope" aria-label="Effects shown on the wave you hear now"></canvas></div>
+    <div class="knobs" id="pk_fx"></div>
   </section>
-  <section class="panel" data-panel="seq" role="tabpanel" aria-label="Sequence">
-    <h2 class="ph">Sequence</h2>
-    <div class="prow"><div class="pviz lanes">
+  <section class="panel" data-panel="seq" role="tabpanel" aria-label="Seq">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Seq</h2><div class="pctl2" id="pSeqTop"></div></div><div class="dbox" data-scope="seq"></div></div>
+    <div class="pviz"><div class="lanes">
         <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
         <span class="ln now">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
         <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
-      </div><div class="dbox" data-scope="seq" data-faces="4,5,6"></div></div>
-    <div class="knobs" id="pkSeq"></div>
-    <div id="pSeqCtl"></div>
+      </div></div>
+    <div class="knobs" id="pk_seq"></div><div class="pfoot"><span class="spacer"></span><button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button></div>
+  </section>
+  <section class="panel" data-panel="play" role="tabpanel" aria-label="Play">
+    <div class="ptop"><div class="pctl"><h2 class="ph">Play</h2><div class="pctl2"><button type="button" class="pill" id="kbMode" role="switch" aria-checked="false" aria-label="Keyboard layout: piano or grid"><span>Piano</span><span>Grid</span></button><span class="scalebox" id="pScaleBox"></span><span class="octbox"><button type="button" class="key" id="octDown" aria-label="Octave down">−</button><span class="oct" id="octLabel">C3</span><button type="button" class="key" id="octUp" aria-label="Octave up">+</button></span><button type="button" class="key" id="latch" aria-pressed="false">Latch</button></div></div></div>
+    <div class="pviz"><div class="keys" id="keys"></div></div>
+    
   </section>
   <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
 </div>
-
 
 <main id="groups">
 </main>
@@ -592,23 +650,6 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
       </div>
       <button type="button" class="key letter b" data-focus="B" aria-pressed="false" aria-label="Edit side B only (tap again to morph)">B</button>
     </div>
-    <div class="kbbar">
-      <button type="button" class="key send" id="sendA" aria-label="Make what you hear now side A">&larr; Set A</button>
-      <span class="spacer"></span>
-      <button type="button" class="key" id="pmKeys" aria-pressed="false">Keys</button>
-      <span class="spacer"></span>
-      <button type="button" class="key send" id="sendB" aria-label="Make what you hear now side B">Set B &rarr;</button>
-    </div>
-    <div class="keysdrawer" id="keysPane" hidden>
-      <div class="kbbar" id="kctl">
-        <button type="button" class="key" id="octDown" aria-label="Octave down">−</button>
-        <span class="oct" id="octLabel">C3</span>
-        <button type="button" class="key" id="octUp" aria-label="Octave up">+</button>
-        <span class="spacer"></span>
-        <button type="button" class="key" id="latch" aria-pressed="false">Latch</button>
-      </div>
-      <div class="keys" id="keys"></div>
-    </div>
   </div>
 </div>
 <button type="button" id="play" hidden></button>
@@ -618,10 +659,10 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
 <div class="sheet" id="settings" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden>
   <div class="sheetcard">
     <div class="edhead"><h2 id="setTitle">Settings</h2><button type="button" class="key" id="setDone">Done</button></div>
-    <div class="setrow"><span class="lbl">Theme</span><span class="seg" role="group" aria-label="Theme"><button type="button" class="key" data-theme-set="auto">Auto</button><button type="button" class="key" data-theme-set="light">Light</button><button type="button" class="key" data-theme-set="dark">Dark</button></span></div>
-    <div class="setrow"><span class="lbl">Background</span><span class="seg" role="group" aria-label="Background"><button type="button" class="key" data-bg-set="subtle">Subtle</button><button type="button" class="key" data-bg-set="vivid">Vivid</button></span></div>
+    <div class="setrow"><span class="lbl">Theme</span><button type="button" class="pill" id="themePill" aria-label="Theme"><span>Auto</span><span>Light</span><span>Dark</span></button></div>
+    <div class="setrow"><span class="lbl">Background</span><button type="button" class="pill" id="bgPill" role="switch" aria-checked="false" aria-label="Background: subtle or vivid"><span>Subtle</span><span>Vivid</span></button></div>
     <div class="setrow"><span class="lbl">Colours</span><div class="schemes" id="schemes" role="group" aria-label="Colour scheme"></div></div>
-    <div class="setrow"><span class="lbl">Keys</span><span class="seg" role="group" aria-label="Voices"><button type="button" class="key" id="polyBtn">Poly</button><button type="button" class="key" id="monoBtn">Mono</button></span></div>
+    <div class="setrow"><span class="lbl">Keys</span><button type="button" class="pill" id="monoPill" role="switch" aria-checked="false" aria-label="Voices: poly or mono"><span>Poly</span><span>Mono</span></button></div>
   </div>
 </div>
 
@@ -673,7 +714,7 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
         <label>Scale <select id="sqRoot"></select></label><select id="sqScale" aria-label="Scale type"></select>
       </div>
     </div>
-    <div class="edrow"><span class="seg" role="group" aria-label="Side"><button type="button" id="sqA">Side A</button><button type="button" id="sqB">Side B</button></span></div>
+    <div class="edrow"><button type="button" class="pill" id="sqSide" role="switch" aria-checked="false" aria-label="Side being edited: A or B"><span>Side A</span><span>Side B</span></button></div>
     <div class="sqset sqside">
       <div class="edrow">
         <label>Rate <select id="sqRate"></select></label>
@@ -685,7 +726,7 @@ body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56re
       </div>
       <div class="edrow">
         <span class="lbl">Generator</span>
-        <span class="seg" role="group" aria-label="Generator"><button type="button" id="gnArp">Arp</button><button type="button" id="gnRiff">Riff</button></span>
+        <button type="button" class="pill" id="genPill" role="switch" aria-checked="false" aria-label="Generator: arp or riff"><span>Arp</span><span>Riff</span></button>
         <button type="button" id="sqGen">Generate</button>
       </div>
       <div class="edrow" id="arpRow">
@@ -2589,6 +2630,9 @@ DEFS.forEach((d, i) => {
 });
 
 const $ = id => document.getElementById(id);
+/* Pills (2026-11-11): a two- or three-way choice drawn as one pill with a dividing line; it presses as one button, and only
+   the side that is on lights up. setPill marks segment k as on. */
+const setPill = (el, k) => { el.dataset.on = k; [...el.children].forEach((c, j) => c.classList.toggle('on', j === k)); if (el.getAttribute('role') === 'switch') el.setAttribute('aria-checked', String(k === 1)); };
 const valText = (i, x) => FMT[DEFS[i].key](MorphEngine.denorm(DEFS[i], x));
 const editing = {};
 /* Side focus (DESIGN.md section 15, built 2026-11-10): A | Morph | B. In A or B every knob shows and edits only that
@@ -2800,11 +2844,11 @@ function bindKnob(i) {
   });
 }
 DEFS.forEach((d, i) => { if (!d.opts) bindKnob(i); });
-/* The player's panels (2026-11-11): the macros and the sequencer's knobs move out of their cards into the four panels
-   (Sound, Envelope, FX, Sequence; ui/panels.js), and the Sound and Sequence cards go away. */
+/* The player's panels (2026-11-11; ui/panels.js): the macros, the filter's Cutoff, Resonance and Env amount, and the
+   sequencer's knobs move into the panels (Synth, Amp, Filt, FX, Seq), and the Sound and Sequence cards go away. */
 {
   const put = (box, keys) => keys.forEach(k => $(box).appendChild($('k' + IX[k]).closest('.kn')));
-  put('pkSound', ['mbright', 'wpos']); put('pkEnv', ['menv']); put('pkFx', ['mfx', 'mwet']); put('pkSeq', ['pattern', 'sqdens', 'sqspeed', 'sqoct']);
+  put('pk_synth', ['mbright', 'wpos']); put('pk_amp', ['menv']); put('pk_filt', ['cutoff', 'reso', 'envamt']); put('pk_fx', ['mfx', 'mwet']); put('pk_seq', ['pattern', 'sqdens', 'sqspeed', 'sqoct']);
   $('patKnob').remove();
   for (const g of ['Sound', 'Sequence']) { if (sections[g]) { sections[g].remove(); delete sections[g]; } }
 }
@@ -2994,7 +3038,7 @@ function drawWaves() {
         $('nmA' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'A')); $('nmB' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'B'));
       }
     }
-    drawScopeSoon(); drawEnvPanel(); drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
+    drawScopeSoon(); drawEnvPanel(); drawFiltPanel(); drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
   });
 }
 function updateBlendUI() {}
@@ -3028,14 +3072,14 @@ function setMorph(m) {
   const mAt = (x, off) => { const r = morphEl.getBoundingClientRect(), cw = mcap.offsetWidth; return (x - r.left - off) / Math.max(1, r.width - cw); };
   morphEl.addEventListener('pointerdown', e => {
     e.preventDefault();
-    if (focus !== 'M') { setFocus('M'); return; }   // a focused side: touching the slider comes back to the morph
-    pid = e.pointerId; morphEl.setPointerCapture(pid); morphEl.classList.add('drag');
+    if (focus !== 'M') { setFocus('M'); return; }   // a focused side: the slot is one big MORPH key; touching it comes back to the morph
+    pid = e.pointerId; morphEl.setPointerCapture(pid); morphEl.classList.add('drag'); holdingMorph = true;
     const cr = mcap.getBoundingClientRect();
     if (e.clientX >= cr.left && e.clientX <= cr.right) grab = e.clientX - cr.left;   // on the cap: drag it from where you hold it
     else { grab = cr.width / 2; setMorph(mAt(e.clientX, grab)); }                    // on the track: the cap jumps there
   });
   morphEl.addEventListener('pointermove', e => { if (e.pointerId === pid) setMorph(mAt(e.clientX, grab)); });
-  const end = e => { if (e.pointerId === pid) { pid = null; morphEl.classList.remove('drag'); } };
+  const end = e => { if (e.pointerId === pid) { pid = null; morphEl.classList.remove('drag'); holdingMorph = false; } };
   morphEl.addEventListener('pointerup', end); morphEl.addEventListener('pointercancel', end);
   morphEl.addEventListener('keydown', e => {
     const st = e.shiftKey ? 0.1 : 0.01;
@@ -3091,8 +3135,20 @@ function setFocus(f) {
   if (ready) send({ type:'morph', v: state.morph });
   drawLanes();
 }
-// tap A or B to edit only that side; tap it again (or the other) to come back to the morph or switch sides
-document.querySelectorAll('[data-focus]').forEach(b => b.addEventListener('click', () => setFocus(focus === b.dataset.focus ? 'M' : b.dataset.focus)));
+/* Tap A or B to edit only that side; tap it again (or the other) to come back to the morph or switch sides.
+   Hold MORPH and tap A or B (2026-11-11; with a mouse, Shift-click A or B) to capture what you hear into that side: the
+   sound, and the sequence heard at the Pattern knob's value. The morph then sits at that end, so nothing changes. */
+let holdingMorph = false;
+function captureHeard(side) {
+  pushUndo();
+  capturePattern(side, true);   // first, while the Pattern value still is what you hear
+  captureSound(side, true);
+  const b = document.querySelector(`[data-focus="${side}"]`); b.classList.remove('caught'); void b.offsetWidth; b.classList.add('caught');
+}
+document.querySelectorAll('[data-focus]').forEach(b => b.addEventListener('click', e => {
+  if ((holdingMorph || e.shiftKey) && focus === 'M') { captureHeard(b.dataset.focus); return; }
+  setFocus(focus === b.dataset.focus ? 'M' : b.dataset.focus);
+}));
 const savedMorph = () => (focus === 'M' ? state.morph : focusMem);
 document.body.dataset.sidefocus = 'M';
 /* ---------- undo ---------- */
@@ -3143,19 +3199,17 @@ function resetPatch() {
     state.seq = defaultSeqs();
   });
 }
-/* Set A / Set B (2026-11-10, DESIGN.md section 15 "capture the midpoint"): what you hear at the current morph becomes
+/* Capture (hold MORPH and tap A or B, 2026-11-11; it was Set A / Set B, 2026-11-10, DESIGN.md section 15 "capture the midpoint"): what you hear at the current morph becomes
    side A (or B). Every morphing value takes the value heard now (Wave included, so a side can hold a blend of the two
    tables); each side's own settings (table positions, the sequencer's) and the Pattern knob stay. The morph then moves to
    that end, so the sound doesn't change: the sweet spot is now the slider's destination. */
-function captureSound(side) {
-  bulk(() => {
+function captureSound(side, noUndo) {
+  (noUndo ? applyBulk : bulk)(() => {
     const heard = DEFS.map((d, i) => resolveNorm(i));
     DEFS.forEach((d, i) => { if (!d.single && !d.seq && !d.pair && d.group !== 'Sequencer' && !isLinked(i)) state[side][i] = heard[i]; });
     if (focus === 'M') state.morph = side === 'A' ? 0 : 1;
   });
 }
-$('sendA').addEventListener('click', () => captureSound('A'));
-$('sendB').addEventListener('click', () => captureSound('B'));
 /* ---------- randomize ----------
    Values are drawn from musically useful ranges rather than the full range
    of each knob, so results are usually playable. */
@@ -3962,27 +4016,31 @@ function scopeLoop() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) drawScopeSoon(); });
 /* =====================================================================
    PANELS (2026-11-11)
-   The player's view is four panels, each with its picture, its dice and
-   its knobs: Sound (the wave; Brightness, Position), Envelope (the amp
-   envelope; Envelope), FX (the wave with the effects' marks; FX intensity,
-   FX wet), Sequence (the lanes; Pattern, Density, Speed, Octave, and the
-   sequencer's controls). On a phone one shows at a time, picked with the
-   tabs (remembered per browser); on desktop all four show at once.
-   Each panel's dice (A, B, Both) roll only that panel's part (ui/dice.js).
+   The player's view is six panels: Synth (the wave; Brightness, Position),
+   Amp (the amp envelope; Envelope), Filt (the cutoff over a held note;
+   Cutoff, Resonance, Env amount), FX (the wave with the effects' marks; FX
+   intensity, FX wet), Seq (the lanes; Pattern, Density, Speed, Octave, Scale,
+   Walk / Swap, Edit) and Play (the keyboard or the grid). Each panel's
+   controls sit top left and its dice (A 1, B 2, Both 3: one and two make
+   three) top right, in the same place on every tab; its picture runs the
+   full width below. On a phone one panel shows at a time, chosen with the
+   tabs (remembered per browser); on desktop all six show at once.
    ===================================================================== */
-const DIE_CAPS = { A: 'A', B: 'B', M: 'Both' };
+const DIE_CAPS = { A: 'A', B: 'B', M: 'Both' }, DIE_FACE = { A: 1, B: 2, M: 3 };
 document.querySelectorAll('.dbox').forEach(box => {
-  const scope = box.dataset.scope, faces = box.dataset.faces.split(',').map(Number);
-  const name = { sound: 'the sound', env: 'the envelope', fx: 'the effects', seq: 'the sequence' }[scope];
-  box.innerHTML = ['A', 'B', 'M'].map((side, k) => `<div class="dcol"><div class="dicetrack" data-what="${scope}" data-side="${side}" data-face="${faces[k]}" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize ${name}, ${side === 'M' ? 'both sides' : 'side ' + side}: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face">${'<i></i>'.repeat(faces[k])}</div></div></div><span class="dcap${side === 'A' ? ' a' : side === 'B' ? ' b' : ''}">${DIE_CAPS[side]}</span></div>`).join('');
+  const scope = box.dataset.scope;
+  const name = { synth: 'the synth', amp: 'the amp envelope', filt: 'the filter', fx: 'the effects', seq: 'the sequence' }[scope];
+  box.innerHTML = ['A', 'B', 'M'].map(side => `<div class="dcol"><div class="dicetrack" data-what="${scope}" data-side="${side}" data-face="${DIE_FACE[side]}" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize ${name}, ${side === 'M' ? 'both sides' : 'side ' + side}: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face">${'<i></i>'.repeat(DIE_FACE[side])}</div></div></div><span class="dcap${side === 'A' ? ' a' : side === 'B' ? ' b' : ''}">${DIE_CAPS[side]}</span></div>`).join('');
 });
-let curTab = 'sound';
-try { const t = localStorage.getItem('diptych-tab'); if (['sound', 'env', 'fx', 'seq'].includes(t)) curTab = t; } catch (e) {}
+const TABS = ['synth', 'amp', 'filt', 'fx', 'seq', 'play'];
+let curTab = 'synth';
+try { const t = localStorage.getItem('diptych-tab'); if (TABS.includes(t)) curTab = t; } catch (e) {}
 function setTab(t) {
   curTab = t;
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.dataset.panel === t));
   try { localStorage.setItem('diptych-tab', t); } catch (e) {}
+  if (typeof buildKeys === 'function' && t === 'play') requestAnimationFrame(buildKeys);
   drawWaves();
 }
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
@@ -3996,7 +4054,7 @@ function heardAt(m) {
     MAC.val[i] = MorphEngine.denorm(d, MAC.cur[i]);
   }
   MorphEngine.prototype.applyMacros.call(MAC);
-  const v = {}; for (const k of ['aatk', 'adec', 'asus', 'arel']) v[k] = MAC.val[IX[k]];
+  const v = {}; for (const k of ['aatk', 'adec', 'asus', 'arel', 'fatk', 'fdec', 'fsus', 'frel', 'cutoff', 'reso', 'envamt']) v[k] = MAC.val[IX[k]];
   return v;
 }
 /* the amp envelope (after the Envelope macro): side A thin blue, side B thin pink, what you hear now thick in the morph
@@ -4024,6 +4082,37 @@ function drawEnvPanel() {
   c.g.fillStyle = mixColor(state.morph); c.g.font = `500 11px ${css('--font-mono')}`; c.g.textAlign = 'right';
   c.g.fillText(time(sets[2].aatk + sets[2].adec + sets[2].arel), c.w - pad, 14);
 }
+
+/* the filter: where the cutoff goes over a held note (a low C), from note-on through the filter envelope to the release,
+   on a log frequency scale; Resonance shows as the glow under the line. Side A thin blue, side B thin pink, what you
+   hear now thick in the morph colour. */
+function drawFiltPanel() {
+  const c = prep($('filtviz')); if (!c) return;
+  const sets = [heardAt(0), heardAt(1), heardAt(state.morph)];
+  const span = Math.max(...sets.map(e => e.fatk + e.fdec + e.frel)), hold = span * 0.3, T = span + hold;
+  const lvl = (e, t) => {
+    if (t < e.fatk) return t / e.fatk;
+    const endHold = e.fatk + e.fdec + hold, dec = u => e.fsus + (1 - e.fsus) * Math.exp(-5 * u / e.fdec);
+    if (t < endHold) return dec(t - e.fatk);
+    return dec(endHold - e.fatk) * Math.exp(-6.9 * (t - endHold) / e.frel);
+  };
+  const pad = 8, lo = Math.log(30), hi = Math.log(18000), yOf = f => c.h - pad - (Math.log(Math.max(30, Math.min(18000, f))) - lo) / (hi - lo) * (c.h - 2 * pad);
+  const g = c.g;
+  g.strokeStyle = css('--line'); g.lineWidth = 1; g.font = `500 10px ${css('--font-mono')}`; g.fillStyle = css('--muted'); g.textAlign = 'left';
+  for (const [f, l] of [[100, '100'], [1000, '1k'], [10000, '10k']]) { g.beginPath(); g.moveTo(0, yOf(f)); g.lineTo(c.w, yOf(f)); g.stroke(); g.fillText(l, 3, yOf(f) - 3); }
+  const cols = [css('--a'), css('--b'), mixColor(state.morph)], widths = [1.4, 1.4, 3.4], alpha = [focus === 'B' ? 0.25 : 0.7, focus === 'A' ? 0.25 : 0.7, 1];
+  for (const s of [0, 1, 2]) {
+    const e = sets[s], path = [];
+    for (let k = 0; k <= 200; k++) { const t = k / 200; path.push([pad + 22 + t * (c.w - 2 * pad - 22), yOf(e.cutoff * Math.pow(2, e.envamt * 5 * lvl(e, t * T)))]); }
+    if (s === 2) {   // resonance: a glow under the line, stronger with more resonance
+      g.save(); g.globalAlpha = 0.18 + 0.5 * e.reso; g.strokeStyle = cols[2]; g.lineWidth = 6 + 18 * e.reso; g.filter = 'blur(6px)';
+      g.beginPath(); path.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); g.restore();
+    }
+    g.strokeStyle = cols[s]; g.lineWidth = widths[s]; g.globalAlpha = alpha[s]; g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath(); path.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
+  }
+  g.globalAlpha = 1;
+}
 /* =====================================================================
    DICE SLIDERS (Orbital's dice, standing up; 2026-11-11 in each panel)
    Every panel has three: A, B and Both (built in ui/panels.js). Touch a
@@ -4038,11 +4127,15 @@ function drawEnvPanel() {
    as before for the target side(s), everything outside the part goes back to where it was, then every value in the part
    moves only `amt` of the way toward the new roll (stepped values round, switches flip with chance amt; on Sound each
    wavetable is replaced with chance amt). On Sound the guards (level match, sine and loudness guards) run again. */
-const ENV_KEYS = new Set(['aatk', 'adec', 'asus', 'arel', 'fatk', 'fdec', 'fsus', 'frel', 'menv']);
+const AMP_KEYS = new Set(['aatk', 'adec', 'asus', 'arel', 'menv']);
+const FILT_KEYS = new Set(['cutoff', 'reso', 'mode', 'envamt', 'keytrack', 'fatk', 'fdec', 'fsus', 'frel']);
+const isFxD = d => d.kind === 'fx' || d.key === 'mfx' || d.key === 'mwet', isSeqD = d => !!d.seq || d.group === 'Sequencer';
 const PART = {
-  env: d => ENV_KEYS.has(d.key),
-  fx: d => d.kind === 'fx' || d.key === 'mfx' || d.key === 'mwet',
-  sound: d => !ENV_KEYS.has(d.key) && !(d.kind === 'fx' || d.key === 'mfx' || d.key === 'mwet') && !d.seq && d.group !== 'Sequencer',
+  amp: d => AMP_KEYS.has(d.key),
+  filt: d => FILT_KEYS.has(d.key),
+  fx: isFxD,
+  synth: d => !AMP_KEYS.has(d.key) && !FILT_KEYS.has(d.key) && !isFxD(d) && !isSeqD(d),
+  all: d => !isSeqD(d),
 };
 function rollPart(part, side, s) {
   const amt = 0.35 + 0.65 * s, inPart = PART[part];
@@ -4050,7 +4143,7 @@ function rollPart(part, side, s) {
   const old = { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), t: tables.map(t => ({ A: t.A, B: t.B })), smp: { ...state.smp } };
   if (sides.length === 2) randomizeAll(); else randomizeSide(sides[0]);
   DEFS.forEach((d, i) => { if (!inPart(d)) { state.A[i] = old.A[i]; state.B[i] = old.B[i]; state.C[i] = old.C[i]; } });
-  if (part !== 'sound') { tables.forEach((t, k) => { t.A = old.t[k].A; t.B = old.t[k].B; }); state.smp = old.smp; }
+  if (part !== 'synth' && part !== 'all') { tables.forEach((t, k) => { t.A = old.t[k].A; t.B = old.t[k].B; }); state.smp = old.smp; }
   if (amt < 0.98) {
     for (const k of sides) {
       DEFS.forEach((d, i) => {
@@ -4058,13 +4151,15 @@ function rollPart(part, side, s) {
         if (o === n || !inPart(d)) return;
         state[k][i] = d.opts ? (rnd() < amt ? n : o) : quant(d, o + (n - o) * amt);
       });
-      if (part === 'sound') { tables.forEach((t, j) => { if (rnd() >= amt) t[k] = old.t[j][k]; }); if (rnd() >= amt) state.smp[k] = old.smp[k]; }
+      if (part === 'synth' || part === 'all') { tables.forEach((t, j) => { if (rnd() >= amt) t[k] = old.t[j][k]; }); if (rnd() >= amt) state.smp[k] = old.smp[k]; }
     }
     if (sides.length === 2) state.C = state.C.map((c, i) => old.C[i] + (c - old.C[i]) * amt);
   }
-  if (part === 'sound') for (const k of sides) { levelMatch(k); sineGuard(k); loudnessGuard(k); }
+  for (const k of sides) { if (part === 'synth' || part === 'all') levelMatch(k); if (part === 'synth' || part === 'all' || part === 'filt') { sineGuard(k); loudnessGuard(k); } }
 }
-const rollSound = (side, s) => rollPart('sound', side, s);
+const rollSound = (side, s) => rollPart('synth', side, s);
+// the header's die: everything, both sides (the sound by parts at this strength, and the sequences)
+const rollAll = s => { rollPart('all', 'M', s); rollSeq('M', s); };
 /* Sequence: a full roll at the far end (as before: new rate, generator, rhythm, density, speed and octave; in Morph also a
    new shared scale). Below that the pattern keeps its rate and length, and each note is re-rolled with chance amt (a new
    melody in the scale), with rests and velocities shuffled in proportion. */
@@ -4085,23 +4180,24 @@ function rollSeq(side, amt) {
 document.querySelectorAll('.dicetrack').forEach(el => {
   const die = el.querySelector('.die'), face = die.firstChild, fill = el.querySelector('.fill'), what = el.dataset.what, side = el.dataset.side;
   let pid = null;
-  const dieH = () => die.offsetHeight || 31, travel = () => Math.max(1, el.clientHeight - dieH());
+  const horiz = el.classList.contains('horiz');   // the header's Everything die runs left to right
+  const dieH = () => die.offsetHeight || 31, travel = () => Math.max(1, (horiz ? el.clientWidth : el.clientHeight) - dieH());
   // the die sits under your finger and the whole face turns as it travels (1.25 turns over the track); the track fills behind it
   const place = x => {
-    die.style.bottom = (x * travel()) + 'px';
+    die.style[horiz ? 'left' : 'bottom'] = (x * travel()) + 'px';
     face.style.transform = `rotate(${x * 450}deg)`;
-    fill.style.height = x > 0 ? x * travel() + dieH() / 2 + 'px' : '0';
+    fill.style[horiz ? 'width' : 'height'] = x > 0 ? x * travel() + dieH() / 2 + 'px' : '0';
     el.setAttribute('aria-valuenow', Math.round(x * 100));
   };
-  const fromY = cy => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, (r.bottom - cy - dieH() / 2) / travel())); };
+  const fromY = (cy, cx) => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, (horiz ? cx - r.left - dieH() / 2 : r.bottom - cy - dieH() / 2) / travel())); };
   const roll = a => {
-    bulk(() => (what === 'seq' ? rollSeq(side, a) : rollPart(what, side, a)));
+    bulk(() => (what === 'all' ? rollAll(a) : what === 'seq' ? rollSeq(side, a) : rollPart(what, side, a)));
     el.classList.remove('dragging'); place(0);
     die.classList.remove('rolled'); void die.offsetWidth; die.classList.add('rolled');
   };
-  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('dragging'); place(fromY(e.clientY)); });
-  el.addEventListener('pointermove', e => { if (e.pointerId === pid) place(fromY(e.clientY)); });
-  el.addEventListener('pointerup', e => { if (e.pointerId !== pid) return; pid = null; const x = fromY(e.clientY); if (x > 0.01) roll(x); else { el.classList.remove('dragging'); place(0); } });
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pid = e.pointerId; el.setPointerCapture(pid); el.classList.add('dragging'); place(fromY(e.clientY, e.clientX)); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === pid) place(fromY(e.clientY, e.clientX)); });
+  el.addEventListener('pointerup', e => { if (e.pointerId !== pid) return; pid = null; const x = fromY(e.clientY, e.clientX); if (x > 0.01) roll(x); else { el.classList.remove('dragging'); place(0); } });
   el.addEventListener('pointercancel', e => { if (e.pointerId !== pid) return; pid = null; el.classList.remove('dragging'); place(0); });
   el.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); roll(0.5); }
@@ -4116,14 +4212,12 @@ document.querySelectorAll('.dicetrack').forEach(el => {
    morph passes between them) and Mono / Poly for the keys. Per browser
    conveniences, kept in localStorage, not part of the patch.
    ===================================================================== */
-const SCHEMES = [   // [name, A light, B light, A dark, B dark] (2026-11-11 set)
-  ['Blue & pink', '#4F6FE0', '#E3308F', '#7F9BFF', '#FF5AAE'],
-  ['Aquamarine & baby pink', '#14A386', '#DE6A9E', '#5FE3C6', '#FFB3D1'],
-  ['Indigo & yellow', '#4B3FC4', '#B48600', '#8C80FF', '#FFD84D'],
-  ['Cyan & ruby', '#0092B5', '#C2183F', '#3FD7F2', '#FF4D73'],
-  ['Emerald & topaz', '#108A55', '#C46A12', '#3FD68F', '#FFB45A'],
-  ['Azure & gold', '#1F6FD6', '#A87A00', '#5AA8FF', '#F2C94C'],
-  ['Sky & coral', '#0E8FC2', '#E0503A', '#53C6F2', '#FF7F66'],
+const SCHEMES = [   // [name, A light, B light, A dark, B dark] (2026-11-11: blue & pink, ruby & cyan, indigo & emerald, aquamarine & baby pink, sky & coral)
+  ['Twin Flame', '#4F6FE0', '#E3308F', '#7F9BFF', '#FF5AAE'],
+  ['Garnet Tide', '#C2183F', '#0092B5', '#FF4D73', '#3FD7F2'],
+  ['Night Garden', '#4B3FC4', '#108A55', '#8C80FF', '#3FD68F'],
+  ['Sea Glass Blush', '#14A386', '#DE6A9E', '#5FE3C6', '#FFB3D1'],
+  ['Harbour Dusk', '#0E8FC2', '#E0503A', '#53C6F2', '#FF7F66'],
 ];
 /* the cog, drawn evenly: eight identical teeth around a ring, and the hole in the middle */
 const COG = (() => {
@@ -4138,7 +4232,7 @@ const COG = (() => {
 $('setBtn').innerHTML = COG;
 const pref = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
-let bgPref = pref('diptych-bg', 'subtle'), themePref = pref('diptych-theme', 'auto'), schemeIx = Math.max(0, Math.min(SCHEMES.length - 1, +pref('diptych-scheme', '0') || 0));
+let bgPref = pref('diptych-bg', 'subtle'), themePref = pref('diptych-theme', 'auto'), schemeIx = Math.max(0, Math.min(SCHEMES.length - 1, +pref('diptych-scheme2', '0') || 0));
 const darkMQ = matchMedia('(prefers-color-scheme: dark)');
 const isDark = () => (themePref === 'auto' ? darkMQ.matches : themePref === 'dark');
 function applyTheme() {
@@ -4146,17 +4240,17 @@ function applyTheme() {
   if (themePref === 'auto') delete root.dataset.theme; else root.dataset.theme = themePref;
   const sc = SCHEMES[schemeIx], dk = isDark();
   root.style.setProperty('--a', dk ? sc[3] : sc[1]); root.style.setProperty('--b', dk ? sc[4] : sc[2]);
-  document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', b.dataset.themeSet === themePref));
+  setPill($('themePill'), ['auto', 'light', 'dark'].indexOf(themePref));
   document.body.classList.toggle('vivid', bgPref === 'vivid');
-  document.querySelectorAll('[data-bg-set]').forEach(b => b.setAttribute('aria-pressed', b.dataset.bgSet === bgPref));
+  setPill($('bgPill'), bgPref === 'vivid' ? 1 : 0);
   document.querySelectorAll('[data-scheme]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.scheme === schemeIx));
   if (typeof glimColor !== 'undefined') glimColor = null;
   drawWaves();
 }
 $('schemes').innerHTML = SCHEMES.map(([n, a, b], k) => `<button type="button" class="key scheme" data-scheme="${k}" aria-label="${n}"><i style="background:linear-gradient(90deg,${a},${b})"></i><span>${n}</span></button>`).join('');
-document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('click', () => { themePref = b.dataset.themeSet; setPref('diptych-theme', themePref); applyTheme(); }));
-document.querySelectorAll('[data-scheme]').forEach(b => b.addEventListener('click', () => { schemeIx = +b.dataset.scheme; setPref('diptych-scheme', String(schemeIx)); applyTheme(); }));
-document.querySelectorAll('[data-bg-set]').forEach(b => b.addEventListener('click', () => { bgPref = b.dataset.bgSet; setPref('diptych-bg', bgPref); applyTheme(); }));
+$('themePill').addEventListener('click', () => { themePref = ['light', 'dark', 'auto'][['auto', 'light', 'dark'].indexOf(themePref)]; setPref('diptych-theme', themePref); applyTheme(); });   // Auto, Light, Dark in turn
+document.querySelectorAll('[data-scheme]').forEach(b => b.addEventListener('click', () => { schemeIx = +b.dataset.scheme; setPref('diptych-scheme2', String(schemeIx)); applyTheme(); }));
+$('bgPill').addEventListener('click', () => { bgPref = bgPref === 'vivid' ? 'subtle' : 'vivid'; setPref('diptych-bg', bgPref); applyTheme(); });
 darkMQ.addEventListener('change', applyTheme);
 applyTheme();
 const openSettings = () => { $('settings').hidden = false; $('setDone').focus({ preventScroll: true }); };
@@ -4230,14 +4324,13 @@ try { fullView = localStorage.getItem('diptych-view') === 'full'; } catch (e) {}
 function setView(full) {
   closeOverlay();
   fullView = full; document.body.classList.toggle('full', full);
-  $('viewBasic').setAttribute('aria-pressed', !full); $('viewFull').setAttribute('aria-pressed', full);
+  setPill($('viewPill'), full ? 1 : 0);
   try { localStorage.setItem('diptych-view', full ? 'full' : 'basic'); } catch (e) {}
   if (typeof applyLayout === 'function') applyLayout();
 }
-$('viewBasic').addEventListener('click', () => setView(false));
-$('viewFull').addEventListener('click', () => setView(true));
+$('viewPill').addEventListener('click', () => setView(!fullView));
 document.body.classList.toggle('full', fullView && devView);
-$('viewBasic').setAttribute('aria-pressed', !fullView); $('viewFull').setAttribute('aria-pressed', fullView);
+setPill($('viewPill'), fullView ? 1 : 0);
 /* =====================================================================
    LAYOUT
    Phones and narrow windows: sections stacked, the page scrolls, the
@@ -4260,32 +4353,52 @@ function applyLayout() {
 let layoutTimer = null;
 window.addEventListener('resize', () => { clearTimeout(layoutTimer); layoutTimer = setTimeout(applyLayout, 120); });
 /* =====================================================================
-   KEYBOARD
+   KEYBOARD (the Play panel, 2026-11-11)
+   Piano: three rows, one octave each (the lowest at the bottom). Grid: an
+   isomorphic grid of the scale's notes (the Key in the Seq and Play panels):
+   each step right is the next note of the scale, each row up is three scale
+   notes higher, and roots are lit in their own colour (on the piano too).
+   The cell size suits the device: about 56 px for touch, 44 px for a mouse.
+   Every key carries its offset from the bottom octave (data-off).
    ===================================================================== */
 const keysEl = $('keys');
-const WHITE = [0, 2, 4, 5, 7, 9, 11, 12];
-const BLACK = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
-let octShift = 0;
+let octShift = 0, kbGrid = false;
+try { kbGrid = localStorage.getItem('diptych-kb') === 'grid'; } catch (e) {}
 const base = () => 48 + 12 * octShift;
-const keyEls = {};
-WHITE.forEach(o => {
-  const k = document.createElement('div'); k.className = 'white'; k.dataset.off = o;
-  if (o % 12 === 0) k.innerHTML = '<span></span>';
-  keysEl.appendChild(k); keyEls[o] = k;
-});
-BLACK.forEach(([o, w]) => {
-  const k = document.createElement('div'); k.className = 'black'; k.dataset.off = o;
-  k.style.left = ((w + 1) * 12.5 - 3.75) + '%';
-  keysEl.appendChild(k); keyEls[o] = k;
-});
-function labelOct() {
-  const name = n => 'C' + (Math.floor(n / 12) - 1);
-  $('octLabel').textContent = name(base());
-  keyEls[0].querySelector('span').textContent = name(base());
-  keyEls[12].querySelector('span').textContent = name(base() + 12);
+const WHITE7 = [0, 2, 4, 5, 7, 9, 11], BLACK5 = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
+const keyRoot = () => (state.seq ? state.seq.A.root : 0), keyScale = () => (state.seq ? SCALES[state.seq.A.scale] : [0, 2, 4, 5, 7, 9, 11]);
+function buildKeys() {
+  keysEl.innerHTML = ''; keysEl.classList.toggle('grid', kbGrid);
+  const root = keyRoot(), isRoot = off => ((base() + off) % 12 + 12) % 12 === root;
+  if (!kbGrid) {
+    for (let r = 2; r >= 0; r--) {
+      const row = document.createElement('div'); row.className = 'krow';
+      WHITE7.forEach(o => { const k = document.createElement('div'); k.className = 'white' + (isRoot(r * 12 + o) ? ' root' : ''); k.dataset.off = r * 12 + o;
+        if (o === 0) k.innerHTML = `<span>C${Math.floor((base() + r * 12) / 12) - 1}</span>`; row.appendChild(k); });
+      BLACK5.forEach(([o, w]) => { const k = document.createElement('div'); k.className = 'black' + (isRoot(r * 12 + o) ? ' root' : ''); k.dataset.off = r * 12 + o;
+        k.style.left = ((w + 1) * (100 / 7) - 100 / 7 * 0.3) + '%'; row.appendChild(k); });
+      keysEl.appendChild(row);
+    }
+  } else {
+    const coarse = matchMedia('(pointer: coarse)').matches, cell = coarse ? 56 : 44;
+    const W = keysEl.clientWidth || 340, H = keysEl.clientHeight || 300;
+    const cols = Math.max(4, Math.floor(W / cell)), rows = Math.max(3, Math.floor(H / cell)), sc = keyScale(), n = sc.length;
+    keysEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`; keysEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    for (let r = rows - 1; r >= 0; r--) for (let c = 0; c < cols; c++) {
+      const d = c + r * 3, off = root + sc[d % n] + 12 * Math.floor(d / n);
+      const k = document.createElement('div'); k.className = 'cell' + (d % n === 0 ? ' root' : ''); k.dataset.off = off;
+      k.innerHTML = `<span>${NOTE_NAMES[((root + sc[d % n]) % 12)]}</span>`;
+      keysEl.appendChild(k);
+    }
+  }
+  setPill($('kbMode'), kbGrid ? 1 : 0);
+  labelOct(); markKeys();
 }
+function labelOct() { $('octLabel').textContent = 'C' + (Math.floor(base() / 12) - 1); }
+$('kbMode').addEventListener('click', () => { kbGrid = !kbGrid; try { localStorage.setItem('diptych-kb', kbGrid ? 'grid' : 'piano'); } catch (e) {} buildKeys(); });
+new ResizeObserver(() => { if (kbGrid && keysEl.offsetParent) buildKeys(); }).observe(keysEl);
 const sounding = new Map();
-function markKeys() { Object.entries(keyEls).forEach(([o, el]) => el.classList.toggle('on', sounding.has(base() + +o))); }
+function markKeys() { keysEl.querySelectorAll('[data-off]').forEach(el => el.classList.toggle('on', sounding.has(base() + +el.dataset.off))); }
 function on(n) { sounding.set(n, (sounding.get(n) || 0) + 1); post({ type:'on', note:n, vel:0.9 }); markKeys(); }
 function off(n) {
   const c = (sounding.get(n) || 0) - 1;
@@ -4303,7 +4416,7 @@ $('latch').addEventListener('click', e => {
   if (!latch) { latched.forEach(n => off(n)); latched.clear(); }
 });
 const pointers = new Map();
-const noteAt = (x, y) => { const el = document.elementFromPoint(x, y); return el && el.dataset && el.dataset.off !== undefined ? base() + +el.dataset.off : null; };
+const noteAt = (x, y) => { const h = document.elementFromPoint(x, y), el = h && h.closest('[data-off]'); return el && keysEl.contains(el) ? base() + +el.dataset.off : null; };
 keysEl.addEventListener('pointerdown', e => {
   e.preventDefault(); keysEl.setPointerCapture(e.pointerId);
   const n = noteAt(e.clientX, e.clientY); pointers.set(e.pointerId, n);
@@ -4319,7 +4432,7 @@ keysEl.addEventListener('pointermove', e => {
 });
 const pEnd = e => { if (!pointers.has(e.pointerId)) return; const n = pointers.get(e.pointerId); pointers.delete(e.pointerId); if (n !== null) release(n); };
 keysEl.addEventListener('pointerup', pEnd); keysEl.addEventListener('pointercancel', pEnd);
-function shiftOct(dir) { octShift = Math.max(-2, Math.min(3, octShift + dir)); labelOct(); markKeys(); }
+function shiftOct(dir) { octShift = Math.max(-2, Math.min(2, octShift + dir)); buildKeys(); }
 $('octDown').addEventListener('click', () => shiftOct(-1));
 $('octUp').addEventListener('click', () => shiftOct(1));
 const KEYMAP = { a:0, w:1, s:2, e:3, d:4, f:5, t:6, g:7, y:8, h:9, u:10, j:11, k:12 };
@@ -4539,25 +4652,11 @@ function buildSeq() {
 function sendSeq() { if (ready) { const s = buildSeq(); send({ type:'seq', seq: { events: s.events, loop: s.loop, scale: s.scale } }); } }
 function seqChanged() { seqCache = null; sendSeq(); drawLanes(); if (sq.classList.contains('open')) drawRoll(); if (typeof syncScaleUI === 'function') syncScaleUI(); save(); }
 
-/* ---------- bottom panel and the Sequence card (2026-11-10) ----------
-   The bottom panel always holds the morph row and Set A / Keys / Set B; Keys opens the keyboard drawer under them.
-   The sequencer's controls live in the Sequence card (Pattern with its own Set A / Set B, Walk / Swap, copies, Edit), and
-   its lanes in the visual-feedback panel under the wave. panel is 'keys' while the drawer is open. */
+/* ---------- transport and the Seq panel's controls (2026-11-11) ----------
+   The Seq panel's top-left holds Scale (built in editor.js) and the Walk / Swap pill; its lanes run the full width; Edit
+   sits bottom right. The keyboard moved to the Play panel; the bottom panel holds only the morph row. */
 let panel = 'seq', seqPlaying = false, seqPos = null, seqLoop = 1;
-$('pSeqCtl').insertAdjacentHTML('beforeend', `<div class="seqrow">
-  <span class="seg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></span>
-  <span class="spacer"></span>
-  <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A&rarr;B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B&rarr;A</button><button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
-</div>`);
-function setPanel(p, quiet) {
-  if (p === panel) return;
-  panel = p;
-  $('pmKeys').setAttribute('aria-pressed', p === 'keys');
-  $('keysPane').hidden = p !== 'keys';
-  if (p !== 'keys') { latch = false; $('latch').setAttribute('aria-pressed', 'false'); latched.forEach(n => off(n)); latched.clear(); }
-  if (typeof applyLayout === 'function') applyLayout();
-}
-$('pmKeys').addEventListener('click', () => setPanel(panel === 'keys' ? 'seq' : 'keys'));
+$('pSeqTop').insertAdjacentHTML('beforeend', `<button type="button" class="pill" id="walkPill" role="switch" aria-checked="false" aria-label="How differing notes morph: walk or swap"><span>Walk</span><span>Swap</span></button>`);
 const ICON_PLAY = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z" fill="currentColor"/></svg>';
 const ICON_STOP = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.2" fill="currentColor"/></svg>';
 function setPlaying(on) {
@@ -4588,9 +4687,9 @@ function onReport(d) {
   else if (d.type === 'ott') onOtt(d);
 }
 // mono / poly for playing the keys (the sequencer is always one note at a time), in Settings since 2026-11-10
-function updateMonoUI() { $('monoBtn').setAttribute('aria-pressed', state.mono); $('polyBtn').setAttribute('aria-pressed', !state.mono); }
+function updateMonoUI() { setPill($('monoPill'), state.mono ? 1 : 0); }
 const setMono = m => { state.mono = m; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); };
-$('monoBtn').addEventListener('click', () => setMono(true)); $('polyBtn').addEventListener('click', () => setMono(false));
+$('monoPill').addEventListener('click', () => setMono(!state.mono));
 updateMonoUI();
 
 /* ---------- mini lanes: A, what plays now, B ---------- */
@@ -4622,10 +4721,9 @@ function drawLanes() {
   });
 }
 
-/* ---------- Pitch mode (Walk / Swap) ---------- */
-function updateWalkUI() { $('pmWalk').setAttribute('aria-pressed', state.walk); $('pmSwap').setAttribute('aria-pressed', !state.walk); }
-$('pmWalk').addEventListener('click', () => { state.walk = true; updateWalkUI(); if (ready) send({ type:'walk', v:true }); drawLanes(); save(); });
-$('pmSwap').addEventListener('click', () => { state.walk = false; updateWalkUI(); if (ready) send({ type:'walk', v:false }); drawLanes(); save(); });
+/* ---------- Pitch mode (Walk / Swap): one pill ---------- */
+function updateWalkUI() { setPill($('walkPill'), state.walk ? 0 : 1); }
+$('walkPill').addEventListener('click', () => { state.walk = !state.walk; updateWalkUI(); if (ready) send({ type:'walk', v: state.walk }); drawLanes(); save(); });
 
 /* ---------- piano roll editor ---------- */
 const sq = $('sq'), roll = $('roll'), velCv = $('velCv');
@@ -4646,21 +4744,28 @@ function closeSeq() { sq.classList.remove('open'); $('seqEdit').focus({ preventS
 $('seqEdit').addEventListener('click', () => openSeq());
 $('sqDone').addEventListener('click', closeSeq);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && sq.classList.contains('open')) closeSeq(); });
-$('sqA').addEventListener('click', () => openSeq('A'));
-$('sqB').addEventListener('click', () => openSeq('B'));
+$('sqSide').addEventListener('click', () => openSeq(sqSide === 'A' ? 'B' : 'A'));
 function syncSeqControls() {
   const s = cur(); fixSeq(s);
   const dn = Math.round(seqDensity(s) * 100); $('sqDens').value = dn; $('sqDensVal').textContent = dn + '%';
-  $('sqA').setAttribute('aria-pressed', sqSide === 'A'); $('sqB').setAttribute('aria-pressed', sqSide === 'B');
+  setPill($('sqSide'), sqSide === 'A' ? 0 : 1);
   $('sqRate').value = s.rate; $('sqRoot').value = s.root; $('sqScale').value = s.scale;
   $('sqLen').textContent = s.n16;
   $('sqOther').textContent = `Copy to ${sqSide === 'A' ? 'B' : 'A'}`;
 }
-// the shared Scale also sits in the Sequence card on the main page (a broad control: root and scale type)
-$('pSeqCtl').insertAdjacentHTML('beforeend', `<div class="qscale"><span class="lbl">Scale</span><select id="qRoot" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="qScale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select><span class="spacer"></span><button type="button" class="key send" id="patA" aria-label="Make the pattern you hear now sequence A">&larr; Set A</button><button type="button" class="key send" id="patB" aria-label="Make the pattern you hear now sequence B">Set B &rarr;</button></div>`);
-function syncScaleUI() { $('qRoot').value = state.seq.A.root; $('qScale').value = state.seq.A.scale; }
-$('qRoot').addEventListener('change', () => { pushUndo(); setScale(+$('qRoot').value, state.seq.A.scale); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
-$('qScale').addEventListener('change', () => { pushUndo(); setScale(state.seq.A.root, $('qScale').value); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
+// the shared Scale (root and type) sits at the top left of the Seq panel, and again in the Play panel, where it decides
+// the notes of the grid and which keys are roots (2026-11-11)
+const scaleSel = p => `<span class="qscale"><span class="lbl">Key</span><select id="${p}Root" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="${p}Scale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select></span>`;
+$('pSeqTop').insertAdjacentHTML('afterbegin', scaleSel('q'));
+$('pScaleBox').insertAdjacentHTML('afterbegin', scaleSel('k'));
+function syncScaleUI() {
+  for (const p of ['q', 'k']) { $(p + 'Root').value = state.seq.A.root; $(p + 'Scale').value = state.seq.A.scale; }
+  if (typeof buildKeys === 'function') buildKeys();
+}
+for (const p of ['q', 'k']) {
+  $(p + 'Root').addEventListener('change', () => { pushUndo(); setScale(+$(p + 'Root').value, state.seq.A.scale); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
+  $(p + 'Scale').addEventListener('change', () => { pushUndo(); setScale(state.seq.A.root, $(p + 'Scale').value); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
+}
 function snapToScale(s) {
   const pcs = scalePcs(s);
   s.steps.forEach(st => { for (let d = 0; d < 12; d++) { if (pcs.has(((st.note - d) % 12 + 12) % 12)) { st.note -= d; break; } if (pcs.has((st.note + d) % 12)) { st.note += d; break; } } });
@@ -4682,11 +4787,10 @@ $('sqRight').addEventListener('click', () => editSeq(s => { s.steps.unshift(s.st
 let genType = 'Arp';
 function setGen(t) {
   genType = t;
-  $('gnArp').setAttribute('aria-pressed', t === 'Arp'); $('gnRiff').setAttribute('aria-pressed', t === 'Riff');
+  setPill($('genPill'), t === 'Arp' ? 0 : 1);
   $('arpRow').hidden = t !== 'Arp'; $('riffRow').hidden = t !== 'Riff';
 }
-$('gnArp').addEventListener('click', () => setGen('Arp'));
-$('gnRiff').addEventListener('click', () => setGen('Riff'));
+$('genPill').addEventListener('click', () => setGen(genType === 'Arp' ? 'Riff' : 'Arp'));
 setGen('Arp');
 $('sqGen').addEventListener('click', () => editSeq(s => genFromControls(s)));
 $('sqClear').addEventListener('click', () => editSeq(s => s.steps.forEach(st => { st.on = false; })));
@@ -4822,15 +4926,13 @@ const SEQ_KEYS = ['sqdens', 'sqspeed', 'sqoct'];
 function copySeqTo(from, to) { state.seq[to] = cloneSeq(state.seq[from]); SEQ_KEYS.forEach(k => { state[to][IX[k]] = state[from][IX[k]]; }); }
 const refreshSeqKnobs = () => SEQ_KEYS.forEach(k => updateKnob(IX[k]));
 const copySeq = (from, to) => { pushUndo(); copySeqTo(from, to); refreshSeqKnobs(); if (ready) sendState(); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); };
-$('seqAB').addEventListener('click', () => copySeq('A', 'B'));
-$('seqBA').addEventListener('click', () => copySeq('B', 'A'));
 
 /* Pattern Set A / Set B (2026-11-10): the sequence heard at the Pattern knob's current value becomes sequence A (or B):
    a 1/16 pattern as long as the loop (at most 32 sixteenths), each note at its sixteenth, with its length and velocity.
    Speed and Octave are already in the notes, so that side's Speed goes to 1x, Octave to 0 and Density to 100%, and the Pattern
    knob's handle for that side goes to its end (All A or All B), so that end plays exactly the captured sequence. */
-function capturePattern(side) {
-  pushUndo();
+function capturePattern(side, noUndo) {
+  if (!noUndo) pushUndo();
   const s = buildSeq(), mm = resolveNorm(IX.pattern), n16 = Math.max(1, Math.min(MAXSTEPS, Math.round(s.loop / 12)));
   const q = cloneSeq(state.seq[side]); q.rate = R16; q.n16 = n16; q.rot = 0;
   q.steps = Array.from({ length: n16 }, () => ({ on: false, note: 48 + q.root, len: 1, vel: 0.75, dur: 12 }));
@@ -4845,10 +4947,17 @@ function capturePattern(side) {
   if (ready) sendState();
   refreshSeqKnobs(); updateKnob(IX.pattern); if (sq.classList.contains('open')) syncSeqControls(); seqChanged();
 }
-$('patA').addEventListener('click', () => capturePattern('A'));
-$('patB').addEventListener('click', () => capturePattern('B'));
 const GUT = 34, RH = 14;
-function rollRows() { const pcs = scalePcs(cur()), rows = []; for (let n = 84; n >= 36; n--) if (pcs.has(n % 12)) rows.push(n); return rows; }
+// rows: the scale's notes over the pattern's range plus a margin, at least two octaves (2026-11-11: the full C2 to C6 put
+// a pattern's notes off the bottom of a phone screen)
+function rollRows() {
+  const s = cur(), pcs = scalePcs(s), on = s.steps.filter(st => st.on).map(st => st.note), rows = [];
+  let lo = on.length ? Math.min(...on) - 5 : 48, hi = on.length ? Math.max(...on) + 5 : 72;
+  if (hi - lo < 24) { const m = (hi + lo) / 2; lo = Math.round(m - 12); hi = Math.round(m + 12); }
+  lo = Math.max(24, lo); hi = Math.min(96, hi);
+  for (let n = hi; n >= lo; n--) if (pcs.has(n % 12)) rows.push(n);
+  return rows;
+}
 function rowOf(rows, note) { let best = 0; rows.forEach((n, i) => { if (Math.abs(n - note) < Math.abs(rows[best] - note)) best = i; }); return best; }
 function rollGeom(s, w) {   // x position and width of every step (steps can differ in length with Mixed)
   const P = stepPos(s), span = w - GUT;
@@ -4942,7 +5051,7 @@ $('bpmVal').textContent = state.bpm;
 updateWalkUI();
 
 
-labelOct();
+buildKeys();
 updateIcons();
 applyLayout();
 refreshAll();

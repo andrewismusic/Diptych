@@ -179,17 +179,18 @@ test.describe('player\'s view on a phone', () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
   test('the four panels as tabs: one at a time, knobs in one row, no padlocks, no page scroll', async ({ page }) => {
     await openSynth(page, { dev: false });
-    for (const t of ['sound', 'env', 'fx', 'seq']) {
+    for (const t of ['synth', 'amp', 'filt', 'fx', 'seq', 'play']) {
       await page.locator(`[data-tab="${t}"]`).tap();
       const m = await page.evaluate(t => {
         const shown = [...document.querySelectorAll('.panel')].filter(p => p.offsetParent).map(p => p.dataset.panel);
         const tops = [...document.querySelectorAll(`.panel[data-panel="${t}"] .knobs .kn`)].map(k => Math.round(k.getBoundingClientRect().top));
-        return { shown, oneRow: new Set(tops).size === 1, icons: [...document.querySelectorAll('.lock')].filter(b => b.offsetParent).length,
-          side: document.documentElement.scrollWidth - innerWidth, down: document.documentElement.scrollHeight - innerHeight, view: !!$('viewFull').offsetParent,
+        return { shown, oneRow: new Set(tops).size <= 1, icons: [...document.querySelectorAll('.lock')].filter(b => b.offsetParent).length,
+          side: document.documentElement.scrollWidth - innerWidth, down: document.documentElement.scrollHeight - innerHeight, view: !!$('viewPill').offsetParent,
           morph: $('morph').getBoundingClientRect().bottom <= innerHeight };
       }, t);
       expect(m).toEqual({ shown: [t], oneRow: true, icons: 0, side: 0, down: 0, view: false, morph: true });
     }
+    await page.locator('[data-tab="seq"]').tap();
     await page.locator('#qScale').selectOption('Dorian');
     expect(await page.evaluate(() => [state.seq.A.scale, state.seq.B.scale])).toEqual(['Dorian', 'Dorian']);
   });
