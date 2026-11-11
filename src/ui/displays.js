@@ -173,7 +173,7 @@ function drawWaves() {
         $('nmA' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'A')); $('nmB' + s).textContent = FMT.sshape(slotVal(s, 'sshape', 'B'));
       }
     }
-    drawScopeSoon(); drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
+    drawScopeSoon(); drawEnvPanel(); drawFilterViz(); drawEnvViz('vzFE', 'f'); drawEnvViz('vzAE', 'a'); drawOttViz(); drawLanes();
   });
 }
 function updateBlendUI() {}

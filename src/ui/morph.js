@@ -44,36 +44,29 @@ function setMorph(m) {
     e.preventDefault(); if (focus !== 'M') setFocus('M'); setMorph(m);
   });
 }
-/* glimmer: the track's colour, a band of light sweeping across, and glints that sparkle and drift up off the top */
-const glim = $('glim'), glints = [];
+/* the slot is a window onto coloured space (2026-11-11): the colour heard now, deeper at the edges, with stars at three
+   distances drifting past (the far ones slow and faint, the near ones faster and brighter), twinkling, and now and then
+   a bright one flaring. Everything stays inside the slot. */
+const glim = $('glim'), STARS = [];
 let glimColor = null, glimLast = 0;
+{ let r = 7; const R = () => ((r = (r * 16807) % 2147483647) / 2147483647);   // its own generator: the stars never use up Math.random
+  for (let k = 0; k < 70; k++) { const z = k < 40 ? 0 : k < 60 ? 1 : 2; STARS.push({ x: R(), y: R(), z, ph: R() * 6.28, tw: 0.6 + R() * 2.4 }); } }
 function drawGlim(now) {
   const c = prep(glim); if (!c) return;
-  const { g, w, h } = c, top = h - morphEl.clientHeight, th = morphEl.clientHeight, t = now / 1000, rad = 10;
+  const { g, w, h } = c, t = now / 1000;
   if (!glimColor) glimColor = mixColor(state.morph);
-  g.save();
-  g.beginPath(); g.roundRect(0, top, w, th, rad); g.clip();
-  g.fillStyle = glimColor; g.fillRect(0, top, w, th);
-  // two soft bands of light sweeping across at different speeds, and a shimmer along the top edge
-  for (const [sp, wd, a] of [[0.23, 0.35, 0.35], [0.37, 0.18, 0.25]]) {
-    const x = ((t * sp) % 1.6 - 0.3) * w, gr = g.createLinearGradient(x - wd * w, 0, x + wd * w, 0);
-    gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, `rgba(255,255,255,${a})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
-    g.fillStyle = gr; g.fillRect(0, top, w, th);
-  }
-  const sh = g.createLinearGradient(0, top, 0, top + th);
-  sh.addColorStop(0, 'rgba(255,255,255,.35)'); sh.addColorStop(0.45, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(0,0,0,.12)');
-  g.fillStyle = sh; g.fillRect(0, top, w, th);
-  g.restore();
-  // glints: born on the track, twinkle, and some drift up and off it
-  if (glints.length < 26 && Math.random() < 0.5) glints.push({ x: Math.random() * w, y: top + 4 + Math.random() * (th - 8), vy: Math.random() < 0.45 ? -(6 + Math.random() * 16) : 0, born: t, life: 0.6 + Math.random() * 1.4, s: 1.5 + Math.random() * 3 });
-  for (let k = glints.length - 1; k >= 0; k--) {
-    const p = glints[k], age = (t - p.born) / p.life;
-    if (age >= 1) { glints.splice(k, 1); continue; }
-    const y = p.y + p.vy * (t - p.born), a = Math.sin(Math.PI * age), s = p.s * (0.6 + 0.4 * a);
-    g.globalAlpha = a * 0.95; g.fillStyle = '#fff';
-    g.beginPath();   // a four-point star
-    g.moveTo(p.x, y - s * 2); g.quadraticCurveTo(p.x, y, p.x + s * 2, y); g.quadraticCurveTo(p.x, y, p.x, y + s * 2); g.quadraticCurveTo(p.x, y, p.x - s * 2, y); g.quadraticCurveTo(p.x, y, p.x, y - s * 2);
-    g.fill();
+  g.fillStyle = glimColor; g.fillRect(0, 0, w, h);
+  const vg = g.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, w * 0.6);   // deeper towards the edges, like looking out
+  vg.addColorStop(0, 'rgba(255,255,255,.10)'); vg.addColorStop(1, 'rgba(0,0,20,.42)');
+  g.fillStyle = vg; g.fillRect(0, 0, w, h);
+  const SPEED = [0.006, 0.016, 0.04], SIZE = [0.7, 1.15, 1.7], ALPHA = [0.45, 0.7, 0.95];
+  for (const st of STARS) {
+    const x = ((st.x - t * SPEED[st.z]) % 1 + 1) % 1 * w, y = 3 + st.y * (h - 6);
+    const tw = 0.55 + 0.45 * Math.sin(t * st.tw + st.ph), a = ALPHA[st.z] * tw, r = SIZE[st.z] * (0.8 + 0.3 * tw);
+    g.globalAlpha = a; g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+    if (st.z === 2 && tw > 0.93) {   // a near star flares now and then
+      const f = (tw - 0.93) / 0.07 * 7; g.globalAlpha = a * 0.8; g.fillRect(x - f, y - 0.4, 2 * f, 0.8); g.fillRect(x - 0.4, y - f, 0.8, 2 * f);
+    }
   }
   g.globalAlpha = 1;
 }

@@ -17,7 +17,7 @@ test.describe('Randomize all (shaped)', () => {
         // per side: key -> values of that key in every parameter (oscillators share keys, in slot order)
         const vals = { A: {}, B: {} };
         DEFS.forEach((d, i) => { for (const s of ['A', 'B']) (vals[s][d.key] = vals[s][d.key] || []).push(MorphEngine.denorm(d, state[s][i])); });
-        const spreadFails = DEFS.filter((d, i) => !d.single && !d.seq && !isLinked(i) && !isLocked(d) && !NO_SPREAD.has(d.key) && d.key !== 'cutoff'   // cutoff can be moved by the sine guard
+        const spreadFails = DEFS.filter((d, i) => !d.single && !d.seq && !d.pair && !isLinked(i) && !isLocked(d) && !NO_SPREAD.has(d.key) && d.key !== 'cutoff'   // cutoff can be moved by the sine guard
           && Math.abs(state.A[i] - state.B[i]) < SPREAD - 1e-9).map(d => d.id);
         const lockedChanged = locked0.filter(([i, a, b]) => state.A[i] !== a || state.B[i] !== b).map(([i]) => DEFS[i].id);
         const linkedPitch = WT_SLOTS.map(s => [MorphEngine.denorm(DEFS[oi(s, 'pitch')], state.A[oi(s, 'pitch')]), MorphEngine.denorm(DEFS[oi(s, 'fine')], state.A[oi(s, 'fine')])]);

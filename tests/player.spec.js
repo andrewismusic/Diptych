@@ -106,9 +106,26 @@ test('the MORPH cap brings back the morph view; Settings change the colours and 
   await page.click('#setBtn');
   await expect(page.locator('#settings')).toBeVisible();
   await page.click('[data-scheme="1"]');
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#11907D');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#14A386');
   await page.click('#monoBtn');
   expect(await page.evaluate(() => state.mono)).toBe(true);
   await page.click('#setDone');
   await expect(page.locator('#settings')).toBeHidden();
+});
+
+test('each panel\'s dice roll only their part: Envelope, FX and Sound leave the rest alone', async ({ page }) => {
+  await openSynth(page, { dev: false });
+  for (const part of ['env', 'fx', 'sound']) {
+    const r = await page.evaluate(part => {
+      const A0 = state.A.slice(), B0 = state.B.slice(), seq0 = JSON.stringify(state.seq), t0 = tables[0].A;
+      bulk(() => rollPart(part, 'M', 1));
+      const changed = DEFS.filter((d, i) => state.A[i] !== A0[i] || state.B[i] !== B0[i]);
+      return { outside: changed.filter(d => !PART[part](d) && !d.pair && !d.single).map(d => d.id), inside: changed.filter(d => PART[part](d)).length,
+        seq: JSON.stringify(state.seq) === seq0, table: tables[0].A === t0 };
+    }, part);
+    expect(r.outside).toEqual([]);
+    expect(r.inside).toBeGreaterThan(0);
+    expect(r.seq).toBe(true);
+    if (part !== 'sound') expect(r.table).toBe(true);
+  }
 });

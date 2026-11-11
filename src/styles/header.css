@@ -26,17 +26,17 @@ body.dev .view{display:inline-flex}
 .dicetrack .fill{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--hold);opacity:.85;transition:height .5s cubic-bezier(.3,.9,.3,1.1)}
 .die{position:absolute;left:0;bottom:0;width:calc(var(--dh) - 3px);height:calc(var(--dh) - 3px);z-index:2;filter:drop-shadow(0 3px 0 var(--shadow));
   transition:bottom .5s cubic-bezier(.3,.9,.3,1.1),transform .07s,filter .07s}
-.die .face{width:100%;height:100%;border-radius:7.5px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--dh)*.19);
+.die .face{position:relative;width:100%;height:100%;border-radius:7.5px;
   background:linear-gradient(180deg,#FFF,#DCE2EB);border:1.5px solid #A9B3C3;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.9),inset 0 -2px 0 rgba(16,21,33,.08);
   transition:transform .5s cubic-bezier(.3,.9,.3,1.1)}
-.die .face i{width:4.5px;height:4.5px;border-radius:50%;background:#0E1320;place-self:center;box-shadow:inset 0 1px 0 rgba(0,0,0,.5)}
-/* pips, faces 1 to 6 */
-[data-face="1"] .face i{grid-area:2/2}
-[data-face="2"] .face i:nth-child(1){grid-area:1/1} [data-face="2"] .face i:nth-child(2){grid-area:3/3}
-[data-face="3"] .face i:nth-child(1){grid-area:1/1} [data-face="3"] .face i:nth-child(2){grid-area:2/2} [data-face="3"] .face i:nth-child(3){grid-area:3/3}
-[data-face="4"] .face i:nth-child(1){grid-area:1/1} [data-face="4"] .face i:nth-child(2){grid-area:1/3} [data-face="4"] .face i:nth-child(3){grid-area:3/1} [data-face="4"] .face i:nth-child(4){grid-area:3/3}
-[data-face="5"] .face i:nth-child(1){grid-area:1/1} [data-face="5"] .face i:nth-child(2){grid-area:1/3} [data-face="5"] .face i:nth-child(3){grid-area:2/2} [data-face="5"] .face i:nth-child(4){grid-area:3/1} [data-face="5"] .face i:nth-child(5){grid-area:3/3}
-[data-face="6"] .face i:nth-child(1){grid-area:1/1} [data-face="6"] .face i:nth-child(2){grid-area:1/3} [data-face="6"] .face i:nth-child(3){grid-area:2/1} [data-face="6"] .face i:nth-child(4){grid-area:2/3} [data-face="6"] .face i:nth-child(5){grid-area:3/1} [data-face="6"] .face i:nth-child(6){grid-area:3/3}
+/* pips at the same three positions on every die (25 / 50 / 75% of the face, rounded to the face's middle), faces 1 to 6 */
+.die .face i{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#0E1320;box-shadow:inset 0 1px 0 rgba(0,0,0,.5)}
+[data-face="1"] .face i:nth-child(1){left:50%;top:50%}
+[data-face="2"] .face i:nth-child(1){left:27%;top:27%} [data-face="2"] .face i:nth-child(2){left:73%;top:73%}
+[data-face="3"] .face i:nth-child(1){left:27%;top:27%} [data-face="3"] .face i:nth-child(2){left:50%;top:50%} [data-face="3"] .face i:nth-child(3){left:73%;top:73%}
+[data-face="4"] .face i:nth-child(1){left:27%;top:27%} [data-face="4"] .face i:nth-child(2){left:73%;top:27%} [data-face="4"] .face i:nth-child(3){left:27%;top:73%} [data-face="4"] .face i:nth-child(4){left:73%;top:73%}
+[data-face="5"] .face i:nth-child(1){left:27%;top:27%} [data-face="5"] .face i:nth-child(2){left:73%;top:27%} [data-face="5"] .face i:nth-child(3){left:50%;top:50%} [data-face="5"] .face i:nth-child(4){left:27%;top:73%} [data-face="5"] .face i:nth-child(5){left:73%;top:73%}
+[data-face="6"] .face i:nth-child(1){left:27%;top:27%} [data-face="6"] .face i:nth-child(2){left:73%;top:27%} [data-face="6"] .face i:nth-child(3){left:27%;top:50%} [data-face="6"] .face i:nth-child(4){left:73%;top:50%} [data-face="6"] .face i:nth-child(5){left:27%;top:73%} [data-face="6"] .face i:nth-child(6){left:73%;top:73%}
 .dicetrack.dragging .die,.dicetrack.dragging .fill{transition:none}
 .dicetrack.dragging .die{transform:translateY(2px);filter:drop-shadow(0 1px 0 var(--shadow))}
 .dicetrack.dragging .die .face{transition:none}
@@ -59,12 +59,18 @@ body.dev .view{display:inline-flex}
 .letter.a{color:var(--a)} .letter.b{color:var(--b)}
 .letter.a[aria-pressed="true"]{background:var(--a);color:#fff}
 .letter.b[aria-pressed="true"]{background:var(--b);color:#fff}
-.morph-slider{position:relative;height:44px;border-radius:10px;border:1.5px solid var(--edge);touch-action:none;cursor:pointer;box-shadow:inset 0 2px 0 rgba(0,0,0,.18);margin-bottom:4px}
-.morph-slider .glim{position:absolute;left:0;right:0;bottom:0;height:calc(100% + 26px);width:100%;pointer-events:none;border-radius:10px}
+/* the slot: a recessed window onto space; the MORPH block is exactly the slot's height and, unpressed, stands out of it
+   (shifted up and left onto its side, so it sticks out a little above the slot); pressed, the whole block moves into
+   the slot as one piece. */
+.morph-slider{position:relative;height:44px;border-radius:10px;border:1.5px solid var(--k);touch-action:none;cursor:pointer;margin:0 4px 4px 0;
+  box-shadow:inset 3px 3px 0 rgba(0,0,0,.28),inset 0 0 0 1px rgba(0,0,0,.12);background:#05070C}
+.morph-slider .glim{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;border-radius:9px}
+.morph-slider::after{content:'';position:absolute;inset:0;border-radius:9px;pointer-events:none;box-shadow:inset 3px 3px 0 rgba(0,0,0,.3),inset 0 0 6px rgba(0,0,0,.35)}
 .morph-slider:focus-visible{outline:2px solid var(--hold);outline-offset:3px}
-.mcap{position:absolute;top:2px;bottom:6px;left:0;width:78px;min-height:0;padding:0;margin:0;font-family:var(--font-head);font-size:.7rem;letter-spacing:.14em;z-index:2}
-.morph-slider.drag .mcap{cursor:grabbing;transform:translate(4px,4px);box-shadow:0 0 0 var(--k)}
-.morph-slider.rest .glim{opacity:.45}
+.mcap{position:absolute;top:0;height:100%;left:0;width:84px;min-height:0;padding:0;margin:0;font-family:var(--font-head);font-size:.72rem;letter-spacing:.14em;z-index:2;
+  border-radius:8px;transform:translate(-4px,-4px);box-shadow:1px 1px 0 var(--k),2px 2px 0 var(--k),3px 3px 0 var(--k),4px 4px 0 var(--k);transition:transform 70ms ease-out,box-shadow 70ms ease-out}
+.morph-slider.drag .mcap,.mcap:active{transform:none;box-shadow:0 0 0 var(--k);cursor:grabbing}
+.morph-slider.rest .glim{opacity:.5}
 .morph-slider.rest .mcap{color:var(--muted)}
 @media (max-width:480px){
   .wordmark{font-size:1.05rem;letter-spacing:.14em}

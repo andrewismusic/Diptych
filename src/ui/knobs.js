@@ -179,6 +179,8 @@ function updateKnob(i) {
     v.textContent = ed === 'A' ? 'A ' + valText(i, a) : ed === 'B' ? 'B ' + valText(i, b) : ed === 'C' ? fmtCurve(c) : d.seq || d.pair ? '\u00a0' : valText(i, r);
     $('va' + i).textContent = valText(i, a); $('va' + i).classList.remove('muted');
     $('vb' + i).textContent = valText(i, b);
+    // a side's own setting (Position, Density, Speed, Octave) has no single heard value: its line shows both sides
+    if ((d.seq || d.pair) && !ed) { v.innerHTML = `<span class="a">${valText(i, a)}</span> <span class="b">${valText(i, b)}</span>`; $('va' + i).textContent = ''; $('vb' + i).textContent = ''; }
   }
 
   // accessibility
@@ -297,8 +299,14 @@ function bindKnob(i) {
   });
 }
 DEFS.forEach((d, i) => { if (!d.opts) bindKnob(i); });
-// Pattern sits first in the Sequence card (2026-11-10)
-{ const pk = $('patKnob'); sections.Sequence.querySelector('.knobs').prepend(...pk.children); pk.remove(); }
+/* The player's panels (2026-11-11): the macros and the sequencer's knobs move out of their cards into the four panels
+   (Sound, Envelope, FX, Sequence; ui/panels.js), and the Sound and Sequence cards go away. */
+{
+  const put = (box, keys) => keys.forEach(k => $(box).appendChild($('k' + IX[k]).closest('.kn')));
+  put('pkSound', ['mbright', 'wpos']); put('pkEnv', ['menv']); put('pkFx', ['mfx', 'mwet']); put('pkSeq', ['pattern', 'sqdens', 'sqspeed', 'sqoct']);
+  $('patKnob').remove();
+  for (const g of ['Sound', 'Sequence']) { if (sections[g]) { sections[g].remove(); delete sections[g]; } }
+}
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-sw]'); if (!b) return;
   const i = +b.dataset.sw, k = b.dataset.side;

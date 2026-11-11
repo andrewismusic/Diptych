@@ -3,14 +3,10 @@
    The sequencer's controls live in the Sequence card (Pattern with its own Set A / Set B, Walk / Swap, copies, Edit), and
    its lanes in the visual-feedback panel under the wave. panel is 'keys' while the drawer is open. */
 let panel = 'seq', seqPlaying = false, seqPos = null, seqLoop = 1;
-sections.Sequence.querySelector('.gbody').insertAdjacentHTML('beforeend', `<div class="seqrow">
+$('pSeqCtl').insertAdjacentHTML('beforeend', `<div class="seqrow">
   <span class="seg" role="group" aria-label="How differing notes morph"><button type="button" class="key" id="pmWalk">Walk</button><button type="button" class="key" id="pmSwap">Swap</button></span>
   <span class="spacer"></span>
-  <button type="button" class="key send" id="patA" aria-label="Make the pattern you hear now sequence A">&larr; Set A</button><button type="button" class="key send" id="patB" aria-label="Make the pattern you hear now sequence B">Set B &rarr;</button>
-</div><div class="seqrow">
-  <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A&rarr;B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B&rarr;A</button>
-  <span class="spacer"></span>
-  <button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
+  <button type="button" class="key" id="seqAB" aria-label="Copy sequence A to B">A&rarr;B</button><button type="button" class="key" id="seqBA" aria-label="Copy sequence B to A">B&rarr;A</button><button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button>
 </div>`);
 function setPanel(p, quiet) {
   if (p === panel) return;

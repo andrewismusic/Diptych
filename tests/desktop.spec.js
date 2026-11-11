@@ -20,7 +20,8 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
     expect(m.main).toBeLessThanOrEqual(1);
     expect(m.appBottom).toBeLessThanOrEqual(1); expect(m.appRight).toBeLessThanOrEqual(1);
     expect(m.cut).toEqual([]);
-    expect(await page.evaluate(() => [...document.querySelectorAll('main .group')].filter(g => g.offsetParent).map(g => g.dataset.group))).toEqual(['Sound', 'Sequence']);
+    // all four panels show, and none is cut off
+    expect(await page.evaluate(() => [...document.querySelectorAll('.panel')].filter(p => p.offsetParent && p.scrollHeight <= p.clientHeight + 1).map(p => p.dataset.panel))).toEqual(['sound', 'env', 'fx', 'seq']);
   });
   test(`${w}x${h}: the developer view never scrolls the page`, async ({ page }) => {
     await page.setViewportSize({ width: w, height: h });

@@ -35,21 +35,41 @@
       </span>
       <span class="seg view" role="group" aria-label="View"><button type="button" class="key" id="viewBasic">Basic</button><button type="button" class="key" id="viewFull">Full</button></span>
     </div>
-    <div class="dicerow" role="group" aria-label="Randomize">
-      <div class="dgrp"><div class="dhead">Sound</div><div class="dtracks"><div class="dcol"><div class="dicetrack" data-what="sound" data-side="A" data-face="1" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, side A: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i></div></div></div><span class="dcap a">A</span></div><div class="dcol"><div class="dicetrack" data-what="sound" data-side="B" data-face="2" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, side B: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i></div></div></div><span class="dcap b">B</span></div><div class="dcol"><div class="dicetrack" data-what="sound" data-side="M" data-face="3" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sound, both sides: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i></div></div></div><span class="dcap">Both</span></div></div></div>
-      <div class="dgrp"><div class="dhead">Sequence</div><div class="dtracks"><div class="dcol"><div class="dicetrack" data-what="seq" data-side="A" data-face="4" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, side A: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i></div></div></div><span class="dcap a">A</span></div><div class="dcol"><div class="dicetrack" data-what="seq" data-side="B" data-face="5" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, side B: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i></div></div></div><span class="dcap b">B</span></div><div class="dcol"><div class="dicetrack" data-what="seq" data-side="M" data-face="6" tabindex="0" role="slider" aria-orientation="vertical" aria-label="Randomize the sequence, both sides: slide further up for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div><span class="dcap">Both</span></div></div></div>
-    </div>
-    <div class="scopebox">
-      <canvas id="scope" aria-label="Wave display: the sound you hear now"></canvas>
-      <div class="lanes">
-        <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
-        <span class="ln">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
-        <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
-      </div>
-      <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
-    </div>
   </div>
 </header>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button type="button" class="key tab" role="tab" data-tab="sound" aria-selected="true">Sound</button><button type="button" class="key tab" role="tab" data-tab="env" aria-selected="false">Envelope</button><button type="button" class="key tab" role="tab" data-tab="fx" aria-selected="false">FX</button><button type="button" class="key tab" role="tab" data-tab="seq" aria-selected="false">Sequence</button>
+</nav>
+<div class="panels" id="panels">
+  <section class="panel" data-panel="sound" role="tabpanel" aria-label="Sound">
+    <h2 class="ph">Sound</h2>
+    <div class="prow"><div class="pviz"><canvas id="scope" aria-label="Wave display: the wave you hear now"></canvas></div><div class="dbox" data-scope="sound" data-faces="1,2,3"></div></div>
+    <div class="knobs" id="pkSound"></div>
+  </section>
+  <section class="panel" data-panel="env" role="tabpanel" aria-label="Envelope">
+    <h2 class="ph">Envelope</h2>
+    <div class="prow"><div class="pviz"><canvas id="envviz" aria-label="Envelope: side A, side B and what you hear now"></canvas></div><div class="dbox" data-scope="env" data-faces="4,5,6"></div></div>
+    <div class="knobs" id="pkEnv"></div>
+  </section>
+  <section class="panel" data-panel="fx" role="tabpanel" aria-label="FX">
+    <h2 class="ph">FX</h2>
+    <div class="prow"><div class="pviz"><canvas id="fxscope" aria-label="Effects shown on the wave you hear now"></canvas></div><div class="dbox" data-scope="fx" data-faces="1,2,3"></div></div>
+    <div class="knobs" id="pkFx"></div>
+  </section>
+  <section class="panel" data-panel="seq" role="tabpanel" aria-label="Sequence">
+    <h2 class="ph">Sequence</h2>
+    <div class="prow"><div class="pviz lanes">
+        <span class="ln a">A</span><canvas id="lnA" aria-label="Sequence A"></canvas>
+        <span class="ln now">Now</span><canvas id="lnL" aria-label="Sequence playing now"></canvas>
+        <span class="ln b">B</span><canvas id="lnB" aria-label="Sequence B"></canvas>
+      </div><div class="dbox" data-scope="seq" data-faces="4,5,6"></div></div>
+    <div class="knobs" id="pkSeq"></div>
+    <div id="pSeqCtl"></div>
+  </section>
+  <button id="audioBtn" class="key attn" type="button">Tap to start audio</button>
+</div>
+
 
 <main id="groups">
 </main>
@@ -95,6 +115,7 @@
   <div class="sheetcard">
     <div class="edhead"><h2 id="setTitle">Settings</h2><button type="button" class="key" id="setDone">Done</button></div>
     <div class="setrow"><span class="lbl">Theme</span><span class="seg" role="group" aria-label="Theme"><button type="button" class="key" data-theme-set="auto">Auto</button><button type="button" class="key" data-theme-set="light">Light</button><button type="button" class="key" data-theme-set="dark">Dark</button></span></div>
+    <div class="setrow"><span class="lbl">Background</span><span class="seg" role="group" aria-label="Background"><button type="button" class="key" data-bg-set="subtle">Subtle</button><button type="button" class="key" data-bg-set="vivid">Vivid</button></span></div>
     <div class="setrow"><span class="lbl">Colours</span><div class="schemes" id="schemes" role="group" aria-label="Colour scheme"></div></div>
     <div class="setrow"><span class="lbl">Keys</span><span class="seg" role="group" aria-label="Voices"><button type="button" class="key" id="polyBtn">Poly</button><button type="button" class="key" id="monoBtn">Mono</button></span></div>
   </div>
@@ -214,6 +235,7 @@
 // @include ui/section-tools.js
 // @include ui/sampler.js
 // @include ui/scope.js
+// @include ui/panels.js
 // @include ui/dice.js
 // @include ui/settings.js
 // @include ui/overlay.js

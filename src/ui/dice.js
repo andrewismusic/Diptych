@@ -1,34 +1,44 @@
 /* =====================================================================
-   DICE SLIDERS (2026-11-10, Orbital's dice, standing up)
-   Six tracks in one row: Sound A, B, Both and Sequence A, B, Both, the same
-   in every view. Touch a track and let go: the higher, the bigger the change
-   (the die sits under your finger and rolls as it travels over a yellow fill,
-   then springs home). Faces show 1 to 6 in order. As in Orbital, each sound
-   value moves 0.35 + 0.65 x strength of the way toward a fresh roll, so the
-   top is a whole new sound. Keys: Enter or Space rolls at 50%, 1 to 9 at 10%
-   to 90%, 0 at 100%.
+   DICE SLIDERS (Orbital's dice, standing up; 2026-11-11 in each panel)
+   Every panel has three: A, B and Both (built in ui/panels.js). Touch a
+   track and let go: the higher, the bigger the change (the die sits under
+   your finger and rolls as it travels over a yellow fill, then springs
+   home). As in Orbital, each value moves 0.35 + 0.65 x strength of the way
+   toward a fresh roll, so the top is a whole new roll of that part. Keys:
+   Enter or Space rolls at 50%, 1 to 9 at 10% to 90%, 0 at 100%.
    ===================================================================== */
-/* Sound: the shaped randomizer runs for the target side(s), then every value moves only `amt` of the way from where it
-   was toward the new roll (stepped values round, switches flip with chance amt), and each wavetable is replaced with
-   chance amt. The guards (level match, sine and loudness guards) run again on the result. */
-function rollSound(side, s) {
-  const amt = 0.35 + 0.65 * s;
+/* Each panel's dice roll only its part (2026-11-11): Sound (the wave, filter, voice, oscillators, Brightness), Envelope
+   (both envelopes and the Envelope macro), FX (the seven effects, FX intensity and FX wet). The shaped randomizer runs
+   as before for the target side(s), everything outside the part goes back to where it was, then every value in the part
+   moves only `amt` of the way toward the new roll (stepped values round, switches flip with chance amt; on Sound each
+   wavetable is replaced with chance amt). On Sound the guards (level match, sine and loudness guards) run again. */
+const ENV_KEYS = new Set(['aatk', 'adec', 'asus', 'arel', 'fatk', 'fdec', 'fsus', 'frel', 'menv']);
+const PART = {
+  env: d => ENV_KEYS.has(d.key),
+  fx: d => d.kind === 'fx' || d.key === 'mfx' || d.key === 'mwet',
+  sound: d => !ENV_KEYS.has(d.key) && !(d.kind === 'fx' || d.key === 'mfx' || d.key === 'mwet') && !d.seq && d.group !== 'Sequencer',
+};
+function rollPart(part, side, s) {
+  const amt = 0.35 + 0.65 * s, inPart = PART[part];
   const sides = side === 'M' ? ['A', 'B'] : [side];
   const old = { A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), t: tables.map(t => ({ A: t.A, B: t.B })), smp: { ...state.smp } };
   if (sides.length === 2) randomizeAll(); else randomizeSide(sides[0]);
-  if (amt >= 0.98) return;
-  for (const k of sides) {
-    DEFS.forEach((d, i) => {
-      const o = old[k][i], n = state[k][i];
-      if (o === n) return;
-      state[k][i] = d.opts ? (rnd() < amt ? n : o) : quant(d, o + (n - o) * amt);
-    });
-    tables.forEach((t, s) => { if (rnd() >= amt) t[k] = old.t[s][k]; });
-    if (rnd() >= amt) state.smp[k] = old.smp[k];
-    levelMatch(k); sineGuard(k); loudnessGuard(k);
+  DEFS.forEach((d, i) => { if (!inPart(d)) { state.A[i] = old.A[i]; state.B[i] = old.B[i]; state.C[i] = old.C[i]; } });
+  if (part !== 'sound') { tables.forEach((t, k) => { t.A = old.t[k].A; t.B = old.t[k].B; }); state.smp = old.smp; }
+  if (amt < 0.98) {
+    for (const k of sides) {
+      DEFS.forEach((d, i) => {
+        const o = old[k][i], n = state[k][i];
+        if (o === n || !inPart(d)) return;
+        state[k][i] = d.opts ? (rnd() < amt ? n : o) : quant(d, o + (n - o) * amt);
+      });
+      if (part === 'sound') { tables.forEach((t, j) => { if (rnd() >= amt) t[k] = old.t[j][k]; }); if (rnd() >= amt) state.smp[k] = old.smp[k]; }
+    }
+    if (sides.length === 2) state.C = state.C.map((c, i) => old.C[i] + (c - old.C[i]) * amt);
   }
-  if (sides.length === 2) state.C = state.C.map((c, i) => old.C[i] + (c - old.C[i]) * amt);
+  if (part === 'sound') for (const k of sides) { levelMatch(k); sineGuard(k); loudnessGuard(k); }
 }
+const rollSound = (side, s) => rollPart('sound', side, s);
 /* Sequence: a full roll at the far end (as before: new rate, generator, rhythm, density, speed and octave; in Morph also a
    new shared scale). Below that the pattern keeps its rate and length, and each note is re-rolled with chance amt (a new
    melody in the scale), with rests and velocities shuffled in proportion. */
@@ -59,7 +69,7 @@ document.querySelectorAll('.dicetrack').forEach(el => {
   };
   const fromY = cy => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(1, (r.bottom - cy - dieH() / 2) / travel())); };
   const roll = a => {
-    bulk(() => (what === 'seq' ? rollSeq(side, a) : rollSound(side, a)));
+    bulk(() => (what === 'seq' ? rollSeq(side, a) : rollPart(what, side, a)));
     el.classList.remove('dragging'); place(0);
     die.classList.remove('rolled'); void die.offsetWidth; die.classList.add('rolled');
   };

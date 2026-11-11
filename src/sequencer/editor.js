@@ -28,7 +28,7 @@ function syncSeqControls() {
   $('sqOther').textContent = `Copy to ${sqSide === 'A' ? 'B' : 'A'}`;
 }
 // the shared Scale also sits in the Sequence card on the main page (a broad control: root and scale type)
-sections.Sequence.querySelector('.gbody').insertAdjacentHTML('beforeend', `<div class="qscale"><span class="lbl">Scale</span><select id="qRoot" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="qScale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select></div>`);
+$('pSeqCtl').insertAdjacentHTML('beforeend', `<div class="qscale"><span class="lbl">Scale</span><select id="qRoot" aria-label="Scale root">${NOTE_NAMES.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select><select id="qScale" aria-label="Scale type">${Object.keys(SCALES).map(n => `<option>${n}</option>`).join('')}</select><span class="spacer"></span><button type="button" class="key send" id="patA" aria-label="Make the pattern you hear now sequence A">&larr; Set A</button><button type="button" class="key send" id="patB" aria-label="Make the pattern you hear now sequence B">Set B &rarr;</button></div>`);
 function syncScaleUI() { $('qRoot').value = state.seq.A.root; $('qScale').value = state.seq.A.scale; }
 $('qRoot').addEventListener('change', () => { pushUndo(); setScale(+$('qRoot').value, state.seq.A.scale); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });
 $('qScale').addEventListener('change', () => { pushUndo(); setScale(state.seq.A.root, $('qScale').value); if (sq.classList.contains('open')) syncSeqControls(); seqChanged(); });

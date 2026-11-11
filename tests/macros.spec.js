@@ -177,15 +177,19 @@ test('ver 2 patches: each pattern\'s Density becomes its side\'s Density setting
 
 test.describe('player\'s view on a phone', () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
-  test('only the Sound and Sequence cards, four macros across, no padlocks; macros drag', async ({ page }) => {
+  test('the four panels as tabs: one at a time, knobs in one row, no padlocks, no page scroll', async ({ page }) => {
     await openSynth(page, { dev: false });
-    const m = await page.evaluate(() => {
-      const shown = [...document.querySelectorAll('main .group')].filter(g => g.offsetParent).map(g => g.dataset.group);
-      const tops = [...sections.Sound.querySelectorAll('.kn')].map(k => Math.round(k.getBoundingClientRect().top));
-      return { shown, oneRow: new Set(tops).size === 1, icons: [...document.querySelectorAll('main .lock')].filter(b => b.offsetParent).length,
-        side: document.documentElement.scrollWidth - innerWidth, view: !!$('viewFull').offsetParent };
-    });
-    expect(m).toEqual({ shown: ['Sound', 'Sequence'], oneRow: true, icons: 0, side: 0, view: false });
+    for (const t of ['sound', 'env', 'fx', 'seq']) {
+      await page.locator(`[data-tab="${t}"]`).tap();
+      const m = await page.evaluate(t => {
+        const shown = [...document.querySelectorAll('.panel')].filter(p => p.offsetParent).map(p => p.dataset.panel);
+        const tops = [...document.querySelectorAll(`.panel[data-panel="${t}"] .knobs .kn`)].map(k => Math.round(k.getBoundingClientRect().top));
+        return { shown, oneRow: new Set(tops).size === 1, icons: [...document.querySelectorAll('.lock')].filter(b => b.offsetParent).length,
+          side: document.documentElement.scrollWidth - innerWidth, down: document.documentElement.scrollHeight - innerHeight, view: !!$('viewFull').offsetParent,
+          morph: $('morph').getBoundingClientRect().bottom <= innerHeight };
+      }, t);
+      expect(m).toEqual({ shown: [t], oneRow: true, icons: 0, side: 0, down: 0, view: false, morph: true });
+    }
     await page.locator('#qScale').selectOption('Dorian');
     expect(await page.evaluate(() => [state.seq.A.scale, state.seq.B.scale])).toEqual(['Dorian', 'Dorian']);
   });

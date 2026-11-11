@@ -1,54 +1,78 @@
-/* ---------- the player's view (body without .dev, see ui/overlay.js) ----------
-   The wave display and morph above; the Sound card (the four macros) and the Sequence card as panels like the
-   family's (Orbital's instrument card). Larger knobs, no padlocks or links. */
-body:not(.dev) main .group:not([data-group="Sound"]):not([data-group="Sequence"]){display:none}
+/* ---------- the player's view (body without .dev, see ui/overlay.js; panels: ui/panels.js) ----------
+   Header, tabs, the panels (Sound, Envelope, FX, Sequence), then the bottom panel (morph row, Set A / Keys / Set B, the
+   keyboard drawer). Phones: one panel at a time, chosen with the tabs, and the page doesn't scroll. Desktop: all four
+   panels at once in a 2 x 2 grid. The developer view adds its sections (main) under the panels. */
+body:not(.dev) main{display:none}
 body:not(.dev) .kwrap .icons{display:none}
-body:not(.dev) .group .more{display:none}
-.group[data-group="Sound"] .gname,.group[data-group="Sequence"] .gname{cursor:default}
-body:not(.dev) main .group{padding:0;margin:0 0 10px}
-body:not(.dev) main .gcard{background:var(--surface);border:1px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:12px 12px 10px}
-body:not(.dev) main .group h2{display:flex;align-items:center;gap:8px;margin:0 0 8px}
-body:not(.dev) main .group h2::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--mc)}
-.qscale{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 2px}
+.qscale{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0}
+.qscale .spacer{flex:1}
 .qscale .lbl{font-weight:600;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:2px}
 .qscale select{min-height:32px}
 /* the developer view keeps one Wavetable (2026-11-10): the other oscillators are silent and hidden */
 .group[data-kind="osc"]:not([data-slot="0"]){display:none}
-/* phones: four macros across, even at 375 px */
-body:not(.dev):not(.desk) main .group[data-group="Sound"] .knobs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));max-width:none;gap:6px 0}
-body:not(.dev):not(.desk) main .group[data-group="Sequence"] .knobs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none;gap:6px 2px}
-body:not(.dev):not(.desk) main .group[data-group="Sound"] .knob{width:62px;height:62px}
-body:not(.dev):not(.desk) main .kn{width:auto}
-/* desktop (plugin): designed at 1280 x 800 and scaled. Header, dice, wave display and morph on the left; the two cards on
-   the right; the bottom panel below */
-.desk:not(.dev) #app{display:grid;grid-template-columns:minmax(0,1fr) 520px;grid-template-rows:minmax(0,1fr) auto;column-gap:16px;padding:0 16px}
-.desk:not(.dev) .top{grid-column:1;grid-row:1;display:flex;flex-direction:column;min-height:0}
-.desk:not(.dev) .top .wrap{max-width:none;width:100%;margin:0;padding:0;display:flex;flex-direction:column;flex:1;min-height:0}
-.desk:not(.dev) .scopebox{flex:1;min-height:0;display:flex;flex-direction:column}
-.desk:not(.dev) .scopebox .lanes{flex:0 0 auto;grid-template-rows:repeat(3,30px)} .desk:not(.dev) .scopebox .lanes canvas{height:30px}
-.desk:not(.dev) #scope{height:auto;flex:1;min-height:0}
-.desk:not(.dev) main{grid-column:2;grid-row:1;max-width:none;margin:0;padding:14px 0 0;display:flex;flex-direction:column;gap:12px;align-content:stretch;overflow:hidden}
-.desk:not(.dev) main .group{margin:0}
-.desk:not(.dev) main .knobs{display:grid;grid-template-columns:repeat(4,1fr);max-width:none;gap:4px}
-.desk:not(.dev) main .group[data-group="Sound"] .knobs{grid-template-columns:repeat(5,1fr)}
-.desk:not(.dev) main .group[data-group="Sound"] .knob{width:84px;height:84px}
-.desk:not(.dev) main .kn{width:auto}
-.desk:not(.dev) main .knob{width:96px;height:96px;margin:4px 0}
-.desk:not(.dev) main .kval{font-size:.9rem}
-.desk:not(.dev) .kb{grid-column:1 / -1;grid-row:2}
-.desk:not(.dev) .kb .wrap{max-width:none;padding:0}
-.desk:not(.dev) .foot{display:none}
-.desk:not(.dev) #app{margin:0 auto;overflow:hidden}
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0 14px 8px;max-width:780px;margin:0 auto;width:100%}
+.tab{min-height:34px;font-size:.68rem;padding:4px 2px;letter-spacing:.08em}
+.tab[aria-selected="true"]{background:var(--hold);color:var(--on-ink)}
+/* panels */
+.panels{position:relative;max-width:780px;margin:0 auto;width:100%;padding:0 14px}
+.panel{background:var(--surface);border:1.5px solid var(--edge);border-radius:16px;box-shadow:0 4px 0 var(--shadow);padding:10px 12px 10px;display:flex;flex-direction:column;gap:8px;min-height:0}
+body:not(.desk) .panel:not(.on){display:none}
+.ph{display:flex;align-items:center;gap:8px;margin:0;font-family:var(--font-ui);font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.ph::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--mc)}
+.prow{display:flex;gap:10px;align-items:stretch;min-height:0}
+.pviz{flex:1;min-width:0;min-height:96px;background:var(--well);border-radius:12px;box-shadow:inset 0 2px 0 rgba(0,0,0,.1);padding:6px;display:flex;flex-direction:column}
+.pviz canvas{display:block;width:100%;flex:1;min-height:110px}
+.pviz.lanes{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:repeat(3,1fr);gap:4px 6px;align-items:center}
+.pviz.lanes canvas{min-height:0;height:100%;border-radius:6px;background:var(--surface)}
+.ln.now{color:var(--mc)}
+.dbox{align-self:flex-start;display:flex;gap:6px;padding:8px 8px 6px;border:1.5px solid var(--edge);border-radius:12px;background:color-mix(in srgb,var(--surface) 60%,var(--well));align-items:flex-start}
+.dbox .dicetrack{height:96px}
+.panel .knobs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);max-width:none;gap:4px;justify-items:center}
+.panel .kn{width:auto;min-width:0}
+.panel .knob{width:70px;height:70px}
+#pSeqCtl .seqrow:first-child{margin-top:0}
+#audioBtn{position:absolute;left:50%;top:52px;transform:translate(-50%,0);z-index:5;white-space:nowrap}
+#audioBtn[hidden]{display:none}
+/* phones: the app fills the window and only the panel area scrolls (if a panel is taller than the room) */
+body:not(.desk):not(.dev){height:100dvh;overflow:hidden}
+body:not(.desk):not(.dev) #app{display:flex;flex-direction:column;height:100dvh}
+body:not(.desk):not(.dev) .panels{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:8px}
+body:not(.desk):not(.dev) .panel.on{flex:1}
+body:not(.desk):not(.dev) .panel.on .prow{flex:1}
+body:not(.desk):not(.dev) .kb{position:static}
+body:not(.desk):not(.dev) .foot{display:none}
+/* desktop (plugin): designed at 1280 x 800 and scaled; all four panels in a 2 x 2 grid; no tabs */
+.desk .tabs{display:none}
+.desk:not(.dev) #app{display:grid;grid-template-rows:auto minmax(0,1fr) auto;margin:0 auto;overflow:hidden;padding:0 16px}
+.desk:not(.dev) .top .wrap,.desk:not(.dev) .kb .wrap{max-width:none;padding:0}
+.desk:not(.dev) .panels{max-width:none;padding:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,.86fr) minmax(0,1.14fr);gap:14px;min-height:0}
+.desk:not(.dev) .panel .prow{flex:1}
+.desk:not(.dev) .panel{overflow:hidden}
+.desk:not(.dev) .panel[data-panel="seq"] .knob{width:58px;height:58px}
+.desk:not(.dev) .panel[data-panel="seq"] .kab{display:none}
 .desk:not(.dev) .kb{position:static}
-.desk:not(.dev) .kbbar{padding:6px 0}
-.desk:not(.dev) .panes{margin-bottom:12px}
+.desk:not(.dev) .foot{display:none}
+.desk .dbox .dicetrack{height:84px}
+.desk:not(.dev) .panel .knob{width:62px;height:62px}
+/* developer view on desktop: the panels in one row above the sections */
+.desk.dev #app{grid-template-rows:auto 250px minmax(0,1fr) auto}
+.desk.dev .panels{max-width:none;padding:0 12px 6px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;min-height:0}
+.desk.dev .panel .knob{width:46px;height:46px} .desk.dev .dbox .dicetrack{height:72px} .desk.dev .pviz canvas{min-height:60px}
 
-/* the page takes the colour heard now (the morph colour, as the wave and the slider do); panels keep their own */
+/* the page takes the colour heard now (as the wave and the slider do): a tint (Subtle) or the colour itself (Vivid,
+   with the panels darker, in the morph's colour) */
 body{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
 .top,.kb{background:transparent}
-.kb{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
-/* Sequence card rows: Walk / Swap and the Pattern's Set A / Set B; the copies and Edit */
-.seqrow{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+body.vivid{background:var(--mc)}
+body.vivid .wordmark{color:#fff}
+.vivid .panel,.vivid .sheetcard{--surface:color-mix(in oklch,var(--mc) 32%,#0A0C14);--well:rgba(0,0,0,.3);--ink:#ECEFF8;--muted:#B9C0D4;--line:rgba(255,255,255,.14);
+  --edge:rgba(0,0,0,.45);--shadow:rgba(0,0,0,.35);--cap-hi:color-mix(in oklch,var(--mc) 22%,#1A1F2E);--k:rgba(0,0,0,.55);color:var(--ink)}
+.vivid .tab[aria-selected="false"],.vivid .kb .key:not([aria-pressed="true"]),.vivid .top .key:not([aria-pressed="true"]),.vivid .mcap{--cap-hi:color-mix(in oklch,var(--mc) 22%,#1A1F2E);--ink:#ECEFF8;--k:rgba(0,0,0,.5);color:#ECEFF8}
+/* values that belong to what you hear now take the morph colour */
+.kval{color:var(--mc)} .kval .a{color:var(--a)} .kval .b{color:var(--b)} .kval.a{color:var(--a)} .kval.b{color:var(--b)}
+/* Sequence panel rows: Walk / Swap and the Pattern's Set A / Set B; the copies and Edit */
+.seqrow{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
 .seqrow .spacer,.kbbar .spacer{flex:1}
 .key.send{font-size:.7rem;padding:4px 9px}
 /* bottom panel: the morph row, then Set A / Keys / Set B; Keys opens the keyboard drawer */
@@ -67,3 +91,9 @@ body{background:color-mix(in oklch,var(--mc) 16%,var(--bg))}
 .scheme i{width:28px;height:14px;border-radius:7px;flex:0 0 auto}
 @media (min-width:700px){ .sheet{align-items:center} .sheetcard{border-radius:20px} }
 body:not(.dev):not(.desk) main .group[data-group="Sound"] .kname{font-size:.56rem;letter-spacing:.04em}
+.desk:not(.dev) .panel[data-panel="seq"]{gap:4px}
+.desk:not(.dev) .panel[data-panel="seq"] .prow{flex:0 0 auto}
+.desk:not(.dev) .panel[data-panel="seq"] .pviz{height:96px;min-height:0}
+.desk:not(.dev) .panel[data-panel="seq"] .dicetrack{height:70px}
+.desk:not(.dev) .panel[data-panel="seq"] .seqrow,.desk:not(.dev) .panel[data-panel="seq"] .qscale{margin-top:2px}
+.vivid .letter.a:not([aria-pressed="true"]){color:var(--a)} .vivid .letter.b:not([aria-pressed="true"]){color:var(--b)}

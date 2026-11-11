@@ -136,6 +136,7 @@ test.describe('phone', () => {
 
   test('editors open full screen without sideways scroll and close again', async ({ page }) => {
     await openSynth(page);
+    await page.locator('[data-tab="seq"]').tap();   // the sequencer's Edit is in the Sequence panel
     for (const [open, panel, done] of [['#wtA0', '#ed', '#edDone'], ['#seqEdit', '#sq', '#sqDone']]) {
       await page.locator(open).tap();
       await expect(page.locator(panel)).toHaveClass(/open/);
@@ -148,7 +149,7 @@ test.describe('phone', () => {
   test('fixed sections: five oscillators and seven effects in order, with no engine pickers; headings fit', async ({ page }) => {
     await openSynth(page);
     expect(await page.evaluate(() => [...document.querySelectorAll('main .group')].map(g => g.dataset.group))).toEqual(
-      ['Sound', 'Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler', 'FM', 'Voice', 'Filter', 'Amp envelope', 'Output', 'Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT', 'Sequence']);
+      ['Wavetable 1', 'Wavetable 2', 'Sub', 'Sampler', 'FM', 'Voice', 'Filter', 'Amp envelope', 'Output', 'Drive', 'Formant', 'Modulation', 'Delay', 'Reverb', 'Lo-fi', 'OTT']);
     expect(await page.locator('.typesel').count()).toBe(0);
     // headings with dice, padlock and On/Off still fit at phone width
     expect(await page.evaluate(() => [...document.querySelectorAll('.group h2')].every(h => h.scrollWidth <= h.clientWidth + 1 && h.getBoundingClientRect().right <= innerWidth))).toBe(true);
@@ -158,13 +159,17 @@ test.describe('phone', () => {
     expect(await page.evaluate(() => [$('cvA1').parentNode.classList.contains('mute'), $('cvB1').parentNode.classList.contains('mute')])).toEqual([true, false]);
   });
 
-  test('six dice sit at the top in one row and fit; a short roll changes less than a tall one', async ({ page }) => {
+  test('every panel has its own boxed dice (A, B, Both) that fit; a low roll changes less than a high one', async ({ page }) => {
     await openSynth(page, { dev: false });
-    const m = await page.evaluate(() => { const r = [...document.querySelectorAll('.dicetrack')].map(d => d.getBoundingClientRect());
-      return { n: r.length, right: Math.max(...r.map(x => x.right)), vw: innerWidth, rows: new Set(r.map(x => Math.round(x.top))).size, top: Math.max(...r.map(x => x.top)),
-        faces: [...document.querySelectorAll('.dicetrack')].map(d => d.querySelectorAll('.face i').length), caps: [...document.querySelectorAll('.dcap')].map(c => c.textContent) }; });
-    expect(m).toMatchObject({ n: 6, rows: 1, faces: [1, 2, 3, 4, 5, 6], caps: ['A', 'B', 'Both', 'A', 'B', 'Both'] });
-    expect(m.right).toBeLessThanOrEqual(m.vw); expect(m.top).toBeLessThan(150);
+    const m = await page.evaluate(() => [...document.querySelectorAll('.dbox')].map(b => ({ scope: b.dataset.scope, caps: [...b.querySelectorAll('.dcap')].map(c => c.textContent), faces: [...b.querySelectorAll('.face')].map(f => f.children.length) })));
+    expect(m).toEqual([{ scope: 'sound', caps: ['A', 'B', 'Both'], faces: [1, 2, 3] }, { scope: 'env', caps: ['A', 'B', 'Both'], faces: [4, 5, 6] },
+      { scope: 'fx', caps: ['A', 'B', 'Both'], faces: [1, 2, 3] }, { scope: 'seq', caps: ['A', 'B', 'Both'], faces: [4, 5, 6] }]);
+    for (const t of ['sound', 'env', 'fx', 'seq']) {   // each tab's panel fits the phone with no sideways scroll, and the page itself doesn't scroll
+      await page.locator(`[data-tab="${t}"]`).tap();
+      const f = await page.evaluate(t => { const r = document.querySelector(`.panel[data-panel="${t}"] .dbox`).getBoundingClientRect(); return { right: r.right <= innerWidth, page: document.documentElement.scrollHeight <= innerHeight + 1 }; }, t);
+      expect(f).toEqual({ right: true, page: true });
+    }
+    await page.locator('[data-tab="sound"]').tap();
     const moved = () => page.evaluate(() => { const u = undoStack[undoStack.length - 1]; return state.A.reduce((t, x, i) => t + Math.abs(x - u.A[i]) + Math.abs(state.B[i] - u.B[i]), 0); });
     let small = 0, big = 0;
     for (let k = 0; k < 6; k++) {
@@ -176,7 +181,8 @@ test.describe('phone', () => {
     }
     expect(small).toBeLessThan(big);
     await expect(page.locator('#undo')).toBeEnabled();
-    // copy a sequence to the other side (in the Sequence card)
+    // copy a sequence to the other side (in the Sequence panel)
+    await page.locator('[data-tab="seq"]').tap();
     await page.locator('#seqAB').tap();
     expect(await page.evaluate(() => JSON.stringify(state.seq.A) === JSON.stringify(state.seq.B))).toBe(true);
   });

@@ -13,7 +13,7 @@
      OTT         the wave is squashed toward full height and the line thickens
    Time-based marks (Modulation, Wow, Flutter, Noise) animate while something can be heard.
    ===================================================================== */
-const scopeEl = $('scope');
+const scopeEl = $('scope'), fxScopeEl = $('fxscope');
 // the macros, run exactly as the engine runs them (MorphEngine.applyMacros) on the values at the current morph
 const MAC = { I: IX, defs: DEFS };
 MAC.macros = MorphEngine.prototype.buildMacros.call(MAC);
@@ -60,9 +60,12 @@ function fxMarks(v) {
   };
 }
 let scopeT = 0, scopeAnim = 0, scopeQueued = false;
-function drawScope(now) {
-  const c = prep(scopeEl); if (!c) return;
-  const v = heardValues(), fx = fxMarks(v), g = c.g, H = c.h, Wd = c.w;
+// the Sound panel's wave is plain; the FX panel's carries the effects' marks (2026-11-11)
+function drawScope(now) { drawWaveOn(scopeEl, false, now); return drawWaveOn(fxScopeEl, true, now); }
+const NO_FX = { drive: 0, mod: 0, delay: 0, reverb: 0, crush: 0, codec: 0, wow: 0, noise: 0, ott: 0 };
+function drawWaveOn(cv, withFx, now) {
+  const c = prep(cv); if (!c) return false;
+  const v = heardValues(), fx = withFx ? fxMarks(v) : NO_FX, g = c.g, H = c.h, Wd = c.w;
   const colM = mixColor(state.morph), ink = css('--ink');
   const gap = 6, mid0 = gap, midW = Wd - 2 * gap;   // only the wave heard now (2026-11-10): A and B show when a side is focused or the morph is at an end
   const t = (now || performance.now()) / 1000;
