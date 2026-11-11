@@ -90,6 +90,8 @@ DEFS.forEach((d, i) => {
 const $ = id => document.getElementById(id);
 /* Pills (2026-11-11): a two- or three-way choice drawn as one pill with a dividing line; it presses as one button, and only
    the side that is on lights up. setPill marks segment k as on. */
+/* onPill: a pill selects the option you touch (2026-11-11); a touch that misses every option (its edge) moves to the next */
+const onPill = (el, fn) => el.addEventListener('click', e => { const sp = e.target.closest('#' + el.id + ' > span'), k = sp ? [...el.children].indexOf(sp) : (+el.dataset.on + 1) % el.children.length; fn(k); });
 const setPill = (el, k) => { el.dataset.on = k; [...el.children].forEach((c, j) => c.classList.toggle('on', j === k)); if (el.getAttribute('role') === 'switch') el.setAttribute('aria-checked', String(k === 1)); };
 const valText = (i, x) => FMT[DEFS[i].key](MorphEngine.denorm(DEFS[i], x));
 const editing = {};

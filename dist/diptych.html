@@ -625,7 +625,7 @@ select{font-size:.8rem}
 /* desktop: the header is one row (wordmark, Everything die, Key, presets, then the transport and settings) */
 .desk:not(.dev) .top .wrap{display:flex;align-items:center;gap:12px}
 .desk:not(.dev) .titlebar{display:contents}
-.desk:not(.dev) .wordmark{order:0} .desk:not(.dev) .hrow2{order:1;flex:1;padding:6px 0} .desk:not(.dev) .hctl{order:2}
+.desk:not(.dev) .wordmark{order:0} .desk:not(.dev) .gpre{order:1;margin-right:0} .desk:not(.dev) .hrow2{order:2;flex:1;padding:6px 0} .desk:not(.dev) .hctl{order:3}
 .desk:not(.dev) .hkey{flex:0 1 auto}
 .pfoot .spacer{flex:1}
 .desk:not(.dev) .panel[data-panel="seq"] .pviz{min-height:84px}
@@ -633,6 +633,59 @@ select{font-size:.8rem}
 .desk:not(.dev) .panel[data-panel="seq"] .knobs{padding-right:64px}
 .desk:not(.dev) .panel[data-panel="seq"] .pfoot{position:absolute;right:10px;bottom:10px}
 .vivid .letter.a:not([aria-pressed="true"]){color:var(--a)!important} .vivid .letter.b:not([aria-pressed="true"]){color:var(--b)!important}
+
+/* ===== sixth pass ===== */
+/* grid and hexagons: keys with colour, like the rest (in-key notes tinted with the colour heard now, roots strongly,
+   out-of-key notes (chromatic) a plain darker key) */
+.cell{background:color-mix(in srgb,var(--mc) 14%,var(--cap-hi));border:1.5px solid var(--k);box-shadow:2px 2px 0 var(--k)}
+.cell.root{background:color-mix(in srgb,var(--mc) 55%,var(--cap-hi));border-color:var(--k)}
+.cell.root span{color:#fff}
+.cell.out{opacity:1;background:color-mix(in srgb,var(--ink) 18%,var(--cap-hi))}
+.cell.out span{opacity:.6}
+.hexcell::before{background:color-mix(in srgb,var(--mc) 14%,var(--cap-hi))}
+.hexcell.root::before{background:color-mix(in srgb,var(--mc) 55%,var(--cap-hi))}
+.hexcell.root span{color:#fff}
+.hexcell.out{opacity:1} .hexcell.out::before{background:color-mix(in srgb,var(--ink) 18%,var(--cap-hi))} .hexcell.out span{opacity:.6}
+.hexcell{background:var(--k)}
+.cell.on,.hexcell.on::before{background:var(--hold)!important}
+/* the Play layout pill: icons */
+.kbpill span{padding:4px 10px}
+.kbpill svg{display:block}
+/* colour schemes: two dots, A and B */
+.scheme .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1.5px var(--cap-hi),0 0 0 2.5px var(--k)}
+.scheme .dot + .dot{margin-left:-2px}
+/* the status-bar strip is part of the app (it took the colour on its own schedule when it belonged to the page) */
+:root{padding-top:0!important}
+.top{padding-top:env(safe-area-inset-top,0px)}
+
+/* the app's menus */
+.selhide{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden}
+.key.dd{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;text-transform:none;letter-spacing:0;font-size:.8rem;min-width:0}
+.key.dd .ddv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu{position:fixed;z-index:60;background:var(--surface);border:1.5px solid var(--k);border-radius:12px;box-shadow:4px 4px 0 var(--k),0 18px 40px -12px rgba(0,0,0,.45);padding:4px;overflow-y:auto;display:flex;flex-direction:column}
+.mitem{all:unset;box-sizing:border-box;display:block;padding:9px 12px;border-radius:8px;font-family:var(--font-ui);font-size:.85rem;font-weight:500;color:var(--ink);cursor:pointer;white-space:nowrap}
+.mitem:hover,.mitem:focus-visible{background:var(--well)}
+.mitem.on{background:var(--hold);color:var(--on-ink)}
+.mitem.act{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.msep{height:1.5px;background:var(--line);margin:4px 6px}
+.mhead{padding:6px 12px 2px;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+/* the Key: one pill, its title and two menus divided by lines */
+.qscale{display:inline-flex;align-items:stretch;gap:0;min-height:36px;border:1.5px solid var(--k);border-radius:10px;background:var(--cap-hi);box-shadow:4px 4px 0 var(--k);margin:0 4px 4px 0;overflow:hidden}
+.qscale .lbl{display:flex;align-items:center;padding:0 10px;border-right:1.5px solid var(--k);color:var(--muted)}
+.qscale .key.dd{border:0;border-radius:0;box-shadow:none;margin:0;min-height:0;background:transparent;padding:0 10px}
+.qscale .key.dd ~ .key.dd{border-left:1.5px solid var(--k)}
+.qscale .key.dd:last-child{flex:1}
+
+/* presets: the global menu at the top (on a phone it takes the wordmark's place), the side menus above A and B */
+.gpre{flex:0 1 220px;min-width:0;margin-right:auto;font-size:.8rem}
+@media (max-width:640px){ .wordmark{display:none} .gpre{flex:1 1 auto;max-width:none} }
+.desk .gpre{order:1}
+.siderow{display:flex;justify-content:space-between;gap:10px;padding:8px 0 0}
+.spre{max-width:46%;font-size:.78rem}
+.spre b{font-family:var(--font-head);font-size:.85rem;margin-right:2px}
+.spre.a b{color:var(--a)} .spre.b b{color:var(--b)}
+.mitem.off{opacity:.4;pointer-events:none}
+.namein{font:inherit;font-size:1rem;min-height:40px;padding:4px 12px;border:1.5px solid var(--k);border-radius:10px;background:var(--well);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -642,6 +695,7 @@ select{font-size:.8rem}
   <div class="wrap">
     <div class="titlebar">
       <h1 class="wordmark">Diptych</h1>
+      <button type="button" class="key dd gpre" id="gPre" aria-haspopup="listbox" aria-expanded="false" aria-label="Preset"></button>
       <span class="hctl">
         <button type="button" id="hplay" class="key icon" aria-label="Play"></button>
         <span class="key bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag up or down, or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120"><b id="bpmVal">120</b><small>BPM</small></span>
@@ -653,7 +707,6 @@ select{font-size:.8rem}
     </div>
     <div class="hrow2"><div class="alldie"><div class="dicetrack horiz" data-what="all" data-side="M" data-face="5" tabindex="0" role="slider" aria-label="Randomize everything, both sides: slide further right for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i></div></div></div></div>
       <span class="hkey" id="hKey"></span>
-      <button type="button" id="presetBtn" class="key icon" aria-label="Presets"></button>
     </div>
   </div>
 </header>
@@ -692,7 +745,7 @@ select{font-size:.8rem}
     <div class="knobs" id="pk_seq"></div><div class="pfoot"><span class="spacer"></span><button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button></div>
   </section>
   <section class="panel" data-panel="play" role="tabpanel" aria-label="Play">
-    <div class="ptop"><div class="pctl"><h2 class="ph">Play</h2><div class="pctl2"><span class="kbmodes" role="group" aria-label="Keyboard layout"><button type="button" class="key icon" data-kb="piano" aria-pressed="true" aria-label="Piano keys"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M15 4v16"/><path d="M7.5 4h3v9h-3zM13.5 4h3v9h-3z" fill="currentColor"/></svg></button><button type="button" class="key icon" data-kb="grid" aria-pressed="false" aria-label="Grid"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg></button><button type="button" class="key icon" data-kb="hex" aria-pressed="false" aria-label="Hexagons"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l7.4 4.25v8.5L12 20.5l-7.4-4.25v-8.5z"/></svg></button></span><span class="octbox"><button type="button" class="key" id="octDown" aria-label="Octave down">−</button><span class="oct" id="octLabel">C3</span><button type="button" class="key" id="octUp" aria-label="Octave up">+</button></span><button type="button" class="key" id="latch" aria-pressed="false">Latch</button></div></div></div>
+    <div class="ptop"><div class="pctl"><h2 class="ph">Play</h2><div class="pctl2"><button type="button" class="pill kbpill" id="kbPill" aria-label="Keyboard layout: piano, grid or hexagons"><span data-kb="piano" aria-label="Piano keys"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M15 4v16"/><path d="M7.5 4h3v9h-3zM13.5 4h3v9h-3z" fill="currentColor"/></svg></span><span data-kb="grid" aria-label="Grid"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg></span><span data-kb="hex" aria-label="Hexagons"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l7.4 4.25v8.5L12 20.5l-7.4-4.25v-8.5z"/></svg></span></button><span class="octbox"><button type="button" class="key" id="octDown" aria-label="Octave down">−</button><span class="oct" id="octLabel">C3</span><button type="button" class="key" id="octUp" aria-label="Octave up">+</button></span><button type="button" class="key" id="latch" aria-pressed="false">Latch</button></div></div></div>
     <div class="pviz"><div class="keys" id="keys"></div></div>
     
   </section>
@@ -708,6 +761,10 @@ select{font-size:.8rem}
 
 <div class="kb" id="kb">
   <div class="wrap">
+    <div class="siderow">
+      <button type="button" class="key dd spre a" data-spre="A" aria-haspopup="listbox" aria-expanded="false" aria-label="Side A preset"></button>
+      <button type="button" class="key dd spre b" data-spre="B" aria-haspopup="listbox" aria-expanded="false" aria-label="Side B preset"></button>
+    </div>
     <div class="morphrow">
       <button type="button" class="key letter a" data-focus="A" aria-pressed="false" aria-label="Edit side A only (tap again to morph)">A</button>
       <div class="morph-slider" id="morph" role="slider" tabindex="0" aria-label="Morph between A and B" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0">
@@ -734,12 +791,11 @@ select{font-size:.8rem}
   </div>
 </div>
 
-<div class="sheet" id="presets" role="dialog" aria-modal="true" aria-labelledby="preTitle" hidden>
+<div class="sheet" id="nameSheet" role="dialog" aria-modal="true" aria-labelledby="nameTitle" hidden>
   <div class="sheetcard">
-    <div class="edhead"><h2 id="preTitle">Presets</h2><button type="button" class="key" id="preDone">Done</button></div>
-    <div class="presave"><input type="text" id="preName" maxlength="40" placeholder="Name this sound" aria-label="Preset name"><button type="button" class="key" id="preSave">Save</button><button type="button" class="key icon" id="preRandom" aria-label="Load a random preset"></button></div>
-    <div class="prelist" id="preList" role="list"></div>
-    <p class="ednote" id="preNote"></p>
+    <div class="edhead"><h2 id="nameTitle">Save preset</h2></div>
+    <input type="text" id="nameIn" class="namein" maxlength="40" aria-label="Name">
+    <div class="edrow"><span class="spacer"></span><button type="button" class="key" id="nameCancel">Cancel</button><button type="button" class="key" id="nameOk">Save</button></div>
   </div>
 </div>
 
@@ -2465,6 +2521,8 @@ try {
     }
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;
+    if (typeof saved.presetName === 'string') state.presetName = saved.presetName;   // the current presets' names (2026-11-11)
+    if (saved.sideNames && typeof saved.sideNames === 'object') state.sideNames = { A: String(saved.sideNames.A || ''), B: String(saved.sideNames.B || '') };
     if (Array.isArray(saved.tables)) saved.tables.slice(0, WT_SLOTS.length).forEach((t, s) => {
       ['A', 'B'].forEach(side => { const d = t && decTable(t[side]); if (d) tables[s][side] = d; });
     });
@@ -2705,6 +2763,8 @@ DEFS.forEach((d, i) => {
 const $ = id => document.getElementById(id);
 /* Pills (2026-11-11): a two- or three-way choice drawn as one pill with a dividing line; it presses as one button, and only
    the side that is on lights up. setPill marks segment k as on. */
+/* onPill: a pill selects the option you touch (2026-11-11); a touch that misses every option (its edge) moves to the next */
+const onPill = (el, fn) => el.addEventListener('click', e => { const sp = e.target.closest('#' + el.id + ' > span'), k = sp ? [...el.children].indexOf(sp) : (+el.dataset.on + 1) % el.children.length; fn(k); });
 const setPill = (el, k) => { el.dataset.on = k; [...el.children].forEach((c, j) => c.classList.toggle('on', j === k)); if (el.getAttribute('role') === 'switch') el.setAttribute('aria-checked', String(k === 1)); };
 const valText = (i, x) => FMT[DEFS[i].key](MorphEngine.denorm(DEFS[i], x));
 const editing = {};
@@ -2943,6 +3003,72 @@ document.addEventListener('click', e => {
 // Position follows the two table positions after anything that sets them directly (randomize, undo, loading)
 function syncPair() { const w = IX.wpos; if (w === undefined) return; state.A[w] = state.A[oi(0, 'posA')]; state.B[w] = state.A[oi(0, 'posB')]; }
 syncPair();
+/* =====================================================================
+   MENUS (2026-11-11): the app's own dropdowns instead of the system ones
+   (iOS shows its own wheel, and leaves a focused select lit). Every <select>
+   gets a key that shows its value and opens the app's menu; the select stays,
+   hidden, as the value and its change events, so the code that reads it is
+   unchanged. openMenu also serves the preset menus (ui/presets.js).
+   ===================================================================== */
+const CHEV = '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+let menuOpen = null;
+/* items: [{ label, value, on, sep, cls }] ; onPick(item). The menu sits under the anchor (or above, if there is no room). */
+function openMenu(anchor, items, onPick, opts = {}) {
+  closeMenu();
+  const m = document.createElement('div'); m.className = 'menu'; m.setAttribute('role', 'listbox');
+  if (opts.label) m.setAttribute('aria-label', opts.label);
+  items.forEach((it, k) => {
+    if (it.sep) { m.insertAdjacentHTML('beforeend', '<div class="msep" role="separator"></div>'); return; }
+    if (it.head) { m.insertAdjacentHTML('beforeend', `<div class="mhead">${it.head}</div>`); return; }
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'mitem' + (it.on ? ' on' : '') + (it.cls ? ' ' + it.cls : '');
+    b.setAttribute('role', 'option'); b.setAttribute('aria-selected', !!it.on); b.textContent = it.label;
+    b.addEventListener('click', e => { e.stopPropagation(); closeMenu(); onPick(it); });
+    m.appendChild(b);
+  });
+  document.body.appendChild(m);
+  const r = anchor.getBoundingClientRect(), mh = Math.min(m.scrollHeight, innerHeight * 0.6), below = innerHeight - r.bottom - 8;
+  m.style.minWidth = Math.max(r.width, 140) + 'px';
+  m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
+  m.style.maxHeight = mh + 'px';
+  m.style.top = (below >= mh || below > r.top ? r.bottom + 6 : Math.max(8, r.top - mh - 6)) + 'px';
+  const cur = m.querySelector('.mitem.on'); if (cur) cur.scrollIntoView({ block: 'nearest' });
+  menuOpen = { m, anchor }; anchor.setAttribute('aria-expanded', 'true');
+  (cur || m.querySelector('.mitem'))?.focus({ preventScroll: true });
+}
+function closeMenu() { if (!menuOpen) return; menuOpen.m.remove(); menuOpen.anchor.setAttribute('aria-expanded', 'false'); menuOpen = null; }
+document.addEventListener('pointerdown', e => { if (menuOpen && !menuOpen.m.contains(e.target) && !menuOpen.anchor.contains(e.target)) closeMenu(); }, true);
+document.addEventListener('keydown', e => {
+  if (!menuOpen) return;
+  if (e.key === 'Escape') { e.preventDefault(); const a = menuOpen.anchor; closeMenu(); a.focus(); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault(); const its = [...menuOpen.m.querySelectorAll('.mitem')], k = its.indexOf(document.activeElement);
+    its[Math.max(0, Math.min(its.length - 1, k + (e.key === 'ArrowDown' ? 1 : -1)))]?.focus();
+  }
+});
+addEventListener('resize', closeMenu);
+// a select becomes a key with the app's menu
+function enhanceSelect(sel) {
+  if (sel.dataset.menu) return; sel.dataset.menu = '1';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'key dd'; b.setAttribute('aria-haspopup', 'listbox'); b.setAttribute('aria-expanded', 'false');
+  if (sel.getAttribute('aria-label')) b.setAttribute('aria-label', sel.getAttribute('aria-label'));
+  if (sel.id) b.id = sel.id + 'Btn';
+  sel.after(b); sel.classList.add('selhide'); sel.tabIndex = -1;
+  const label = () => { const o = sel.options[sel.selectedIndex]; b.innerHTML = `<span class="ddv">${o ? o.textContent.replace(/[<&]/g, '') : ''}</span>${CHEV}`; };
+  // keep the key's label right when the code sets the value or rebuilds the options
+  const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  Object.defineProperty(sel, 'value', { configurable: true, get() { return desc.get.call(this); }, set(v) { desc.set.call(this, v); label(); } });
+  new MutationObserver(label).observe(sel, { childList: true, subtree: true, attributes: true });
+  sel.addEventListener('change', label);
+  b.addEventListener('click', () => {
+    if (menuOpen && menuOpen.anchor === b) { closeMenu(); return; }
+    openMenu(b, [...sel.options].map(o => ({ label: o.textContent, value: o.value, on: o.value === sel.value })), it => {
+      if (it.value === sel.value && it.value !== 'load') return;
+      desc.set.call(sel, it.value); label(); sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }, { label: sel.getAttribute('aria-label') || '' });
+  });
+  label();
+}
+const enhanceAll = () => document.querySelectorAll('select').forEach(enhanceSelect);
 /* ---------- wave displays ---------- */
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const W = { fa:[new Float32Array(513), new Float32Array(513)], fb:[new Float32Array(513), new Float32Array(513)],
@@ -4430,13 +4556,13 @@ document.addEventListener('pointerdown', e => {
    morph passes between them) and Mono / Poly for the keys. Per browser
    conveniences, kept in localStorage, not part of the patch.
    ===================================================================== */
-const SCHEMES = [   // [name, A light, B light, A dark, B dark] (2026-11-11, fifth pass)
-  ['Twin Flame', '#4F6FE0', '#E62E9C', '#7F9BFF', '#FF5CC2'],   // blue, and a magenta pink (well apart from Ultra's red)
-  ['Ultra', '#0092B5', '#B0102E', '#3FD7F2', '#F23B57'],        // cyan, and ruby (sides swapped)
+const SCHEMES = [   // [name, A light, B light, A dark, B dark] (2026-11-11, sixth pass)
+  ['Twin Flame', '#1F5FFF', '#E62E9C', '#5B8CFF', '#FF5CC2'],   // a true blue (not violet), and a magenta pink
+  ['Ultra', '#0092B5', '#B0102E', '#3FD7F2', '#F23B57'],        // cyan, and ruby
   ['Iris', '#5A3FC4', '#108A55', '#9A86FF', '#3FD68F'],         // iris violet, and leaf green
-  ['Seaglass', '#1C9FB0', '#E8787A', '#62D6E3', '#FF9E9B'],     // sea-glass aqua (bluer than Iris's green), and a coral-tinted pink
-  ['Aurora', '#1F4FCF', '#7FA800', '#6E95FF', '#B8E33A'],       // cobalt, and yellow-green
-  ['Volcano', '#55657A', '#E0401C', '#98A8BD', '#FF6A3D'],      // slate, and an orangey red
+  ['Seaglass', '#2DB58C', '#E8787A', '#7FF0C4', '#FF9E9B'],     // seafoam, and a coral-tinted pink
+  ['Aurora', '#152A6E', '#14B86A', '#3B5BC8', '#4DFFA6'],       // a night-sky blue, and aurora green
+  ['Volcano', '#2E2624', '#F01E10', '#7A6964', '#FF3B2B'],      // ember black, and a vivid lava red
 ];
 /* the cog, drawn evenly: eight identical teeth around a ring, and the hole in the middle */
 const COG = (() => {
@@ -4462,14 +4588,14 @@ function applyTheme() {
   setPill($('themePill'), ['auto', 'light', 'dark'].indexOf(themePref));
   document.body.classList.toggle('vivid', bgPref === 'vivid');
   setPill($('bgPill'), bgPref === 'vivid' ? 1 : 0);
-  document.querySelectorAll('[data-scheme]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.scheme === schemeIx));
+  document.querySelectorAll('[data-scheme]').forEach(b => { b.setAttribute('aria-pressed', +b.dataset.scheme === schemeIx); const c = SCHEMES[+b.dataset.scheme], d = b.querySelectorAll('.dot'); d[0].style.background = dk ? c[3] : c[1]; d[1].style.background = dk ? c[4] : c[2]; });
   if (typeof glimColor !== 'undefined') glimColor = null;
   drawWaves();
 }
-$('schemes').innerHTML = SCHEMES.map(([n, a, b], k) => `<button type="button" class="key scheme" data-scheme="${k}" aria-label="${n}"><i style="background:linear-gradient(90deg,${a},${b})"></i><span>${n}</span></button>`).join('');
-$('themePill').addEventListener('click', () => { themePref = ['light', 'dark', 'auto'][['auto', 'light', 'dark'].indexOf(themePref)]; setPref('diptych-theme', themePref); applyTheme(); });   // Auto, Light, Dark in turn
+$('schemes').innerHTML = SCHEMES.map(([n, a, b], k) => `<button type="button" class="key scheme" data-scheme="${k}" aria-label="${n}"><i class="dot" style="background:${a}"></i><i class="dot" style="background:${b}"></i><span>${n}</span></button>`).join('');
+onPill($('themePill'), k => { themePref = ['auto', 'light', 'dark'][k]; setPref('diptych-theme', themePref); applyTheme(); });
 document.querySelectorAll('[data-scheme]').forEach(b => b.addEventListener('click', () => { schemeIx = +b.dataset.scheme; setPref('diptych-scheme3', String(schemeIx)); applyTheme(); }));
-$('bgPill').addEventListener('click', () => { bgPref = bgPref === 'vivid' ? 'subtle' : 'vivid'; setPref('diptych-bg', bgPref); applyTheme(); });
+onPill($('bgPill'), k => { bgPref = k ? 'vivid' : 'subtle'; setPref('diptych-bg', bgPref); applyTheme(); });
 darkMQ.addEventListener('change', applyTheme);
 applyTheme();
 const openSettings = () => { $('settings').hidden = false; $('setDone').focus({ preventScroll: true }); };
@@ -4491,33 +4617,48 @@ document.addEventListener('pointerdown', e => {
    the key lit more brightly), and the interval between rows: a third, a fourth (the usual choice) or a fifth */
 let kbChrom = pref('diptych-chrom', '0') === '1', kbRow = Math.max(0, Math.min(2, +pref('diptych-row', '1')));
 const syncGridPrefs = () => { setPill($('chromPill'), kbChrom ? 1 : 0); setPill($('rowPill'), kbRow); };
-$('chromPill').addEventListener('click', () => { kbChrom = !kbChrom; setPref('diptych-chrom', kbChrom ? '1' : '0'); syncGridPrefs(); if (typeof buildKeys === 'function') buildKeys(); });
-$('rowPill').addEventListener('click', () => { kbRow = (kbRow + 1) % 3; setPref('diptych-row', String(kbRow)); syncGridPrefs(); if (typeof buildKeys === 'function') buildKeys(); });
+onPill($('chromPill'), k => { kbChrom = k === 1; setPref('diptych-chrom', kbChrom ? '1' : '0'); syncGridPrefs(); if (typeof buildKeys === 'function') buildKeys(); });
+onPill($('rowPill'), k => { kbRow = k; setPref('diptych-row', String(kbRow)); syncGridPrefs(); if (typeof buildKeys === 'function') buildKeys(); });
 syncGridPrefs();
 /* =====================================================================
-   PRESETS (2026-11-11; DESIGN.md section 15, "global presets")
-   A preset holds everything: both sides, curves, locks and links, the
-   wavetables, the samples' references, both sequences, the tempo and Walk /
-   Swap. Saved in this browser (localStorage, 'diptych-presets'). Loading one
-   is one undo step. The die loads a random preset (never the one just loaded,
-   when there is a choice).
+   PRESETS (2026-11-11; DESIGN.md section 15, items 1 and 2)
+   Global presets, as in most plugins: a menu at the top showing the current
+   preset's name. A global preset holds everything: both sides, curves, locks
+   and links, the wavetables, the samples' references, both sequences, tempo
+   and Walk / Swap. The menu also has a die (a random preset, never the one
+   just loaded when there is a choice), Save, Save as and Delete.
+   Side presets: a menu above each of A and B. One pool for both sides, so any
+   sound can morph into any other: a side preset holds one side's sound (every
+   morphing value of that side, its table position, its wavetable and sample),
+   never sequences, curves, locks or links. Loading one into B changes only B.
+   Both pools live in this browser (localStorage); loading is one undo step.
    ===================================================================== */
-const PRE_KEY = 'diptych-presets';
-const BOOK = '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4.5" y="6.5" width="13" height="14" rx="2"/><path d="M7.5 3.5h10a2 2 0 0 1 2 2v12"/><path d="M8 11h6M8 14.5h6"/></svg>';
-const DIE5 = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8.3" cy="8.3" r="1.6" fill="currentColor"/><circle cx="15.7" cy="8.3" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="8.3" cy="15.7" r="1.6" fill="currentColor"/><circle cx="15.7" cy="15.7" r="1.6" fill="currentColor"/></svg>';
-$('presetBtn').innerHTML = BOOK; $('preRandom').innerHTML = DIE5;
-const readPresets = () => { try { const v = JSON.parse(localStorage.getItem(PRE_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
-const writePresets = list => { try { localStorage.setItem(PRE_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } };
+const PRE_KEY = 'diptych-presets', SIDE_KEY = 'diptych-sides';
+const readList = k => { try { const v = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+const writeList = (k, list) => { try { localStorage.setItem(k, JSON.stringify(list)); return true; } catch (e) { return false; } };
+const esc = t => String(t).replace(/[<&]/g, '');
+if (typeof state.presetName !== 'string') state.presetName = '';
+if (!state.sideNames || typeof state.sideNames !== 'object') state.sideNames = { A: '', B: '' };
+let lastPreset = -1;
+/* ---------- a name, asked in the app's own sheet ---------- */
+function askName(title, def, ok) {
+  $('nameTitle').textContent = title; $('nameIn').value = def || ''; $('nameOk').textContent = 'Save';
+  $('nameSheet').hidden = false; setTimeout(() => { $('nameIn').focus(); $('nameIn').select(); }, 30);
+  const done = v => { $('nameSheet').hidden = true; $('nameOk').onclick = $('nameCancel').onclick = $('nameIn').onkeydown = null; if (v !== null) ok(v); };
+  $('nameOk').onclick = () => done(($('nameIn').value || '').trim() || def || 'Untitled');
+  $('nameCancel').onclick = () => done(null);
+  $('nameIn').onkeydown = e => { if (e.key === 'Enter') $('nameOk').click(); else if (e.key === 'Escape') done(null); };
+}
+/* ---------- global ---------- */
 function patchNow() {
   return { ver: STORE_VER, ids: DEFS.map(d => d.id), A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: savedMorph(),
     locks: { ...state.locks }, secLocks: { ...state.secLocks }, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
     oscOn: state.oscOn.slice(), fxOn: state.fxOn.slice(), smp: JSON.parse(JSON.stringify(state.smp)), seq: JSON.parse(JSON.stringify(state.seq)),
-    bpm: state.bpm, walk: state.walk,
+    bpm: state.bpm, walk: state.walk, sideNames: { ...state.sideNames },
     tables: tables.map(t => ({ A: { name: t.A.name, frames: t.A.frames.map(enc) }, B: { name: t.B.name, frames: t.B.frames.map(enc) } })) };
 }
-let lastPreset = -1;
 function loadPreset(k) {
-  const list = readPresets(), p = list[k]; if (!p) return;
+  const p = readList(PRE_KEY)[k]; if (!p) return;
   bulk(() => {
     p.ids.forEach((id, j) => { const i = IX[id]; if (i === undefined) return; state.A[i] = clamp(+p.A[j]); state.B[i] = clamp(+p.B[j]); state.C[i] = clampC(+p.C[j] || 0); });
     for (const key of ['locks', 'secLocks', 'links', 'linkMem']) if (p[key]) state[key] = JSON.parse(JSON.stringify(p[key]));
@@ -4528,41 +4669,78 @@ function loadPreset(k) {
     if (typeof p.walk === 'boolean') state.walk = p.walk;
     (p.tables || []).slice(0, WT_SLOTS.length).forEach((t, s) => ['A', 'B'].forEach(side => { const d = t && decTable(t[side]); if (d) tables[s][side] = d; }));
     if (focus === 'M') state.morph = clamp(+p.morph || 0); else focusMem = clamp(+p.morph || 0);
+    state.presetName = p.name; state.sideNames = p.sideNames ? { ...p.sideNames } : { A: '', B: '' };
   });
   if (p.bpm) setBpm(p.bpm);
   updateWalkUI(); if (ready) send({ type:'walk', v: state.walk });
-  lastPreset = k; $('preNote').textContent = `Loaded ${p.name}.`; renderPresets();
+  lastPreset = k; presetLabels();
 }
-function renderPresets() {
-  const list = readPresets();
-  $('preList').innerHTML = list.length ? list.map((p, k) => `<div class="preitem${k === lastPreset ? ' cur' : ''}" role="listitem"><button type="button" class="key preload" data-pre="${k}">${p.name.replace(/[<&]/g, '')}</button><button type="button" class="key icon predel" data-predel="${k}" aria-label="Delete ${p.name.replace(/["<&]/g, '')}">&times;</button></div>`).join('')
-    : '<p class="ednote">No presets yet. Name the sound you hear and save it; the die loads one at random.</p>';
-  $('preRandom').disabled = list.length < 1;
-}
-$('preSave').addEventListener('click', () => {
-  const name = ($('preName').value || '').trim() || `Sound ${readPresets().length + 1}`, list = readPresets();
-  const k = list.findIndex(p => p.name === name), p = { name, ...patchNow() };
+function saveGlobal(name) {
+  const list = readList(PRE_KEY), p = { name, ...patchNow() }, k = list.findIndex(x => x.name === name);
   if (k >= 0) list[k] = p; else list.push(p);
-  $('preNote').textContent = writePresets(list) ? `Saved ${name}.` : 'Could not save: this browser is out of room for presets.';
-  lastPreset = k >= 0 ? k : list.length - 1; $('preName').value = ''; renderPresets();
-});
-$('preList').addEventListener('click', e => {
-  const l = e.target.closest('[data-pre]'); if (l) { loadPreset(+l.dataset.pre); return; }
-  const d = e.target.closest('[data-predel]'); if (!d) return;
-  const list = readPresets(), k = +d.dataset.predel, gone = list.splice(k, 1)[0];
-  writePresets(list); if (lastPreset === k) lastPreset = -1; else if (lastPreset > k) lastPreset--;
-  $('preNote').textContent = gone ? `Deleted ${gone.name}.` : ''; renderPresets();
-});
-$('preRandom').addEventListener('click', () => {
-  const n = readPresets().length; if (!n) return;
+  if (writeList(PRE_KEY, list)) { state.presetName = name; lastPreset = k >= 0 ? k : list.length - 1; save(); presetLabels(); }
+}
+function randomPreset() {
+  const n = readList(PRE_KEY).length; if (!n) return;
   let k = Math.floor(Math.random() * n); if (n > 1 && k === lastPreset) k = (k + 1 + Math.floor(Math.random() * (n - 1))) % n;
   loadPreset(k);
+}
+$('gPre').addEventListener('click', () => {
+  const b = $('gPre'); if (menuOpen && menuOpen.anchor === b) { closeMenu(); return; }
+  const list = readList(PRE_KEY), cur = state.presetName;
+  const items = [{ label: '⚄  Random preset', act: 'rand', cls: 'act' + (list.length ? '' : ' off') }, { sep: true }];
+  if (list.length) items.push(...list.map((p, k) => ({ label: p.name, k, on: p.name === cur }))); else items.push({ head: 'No presets yet' });
+  items.push({ sep: true });
+  if (cur) items.push({ label: `Save "${cur}"`, act: 'save', cls: 'act' });
+  items.push({ label: 'Save as…', act: 'saveas', cls: 'act' });
+  if (cur && list.some(p => p.name === cur)) items.push({ label: `Delete "${cur}"`, act: 'del', cls: 'act' });
+  openMenu(b, items, it => {
+    if (it.act === 'rand') randomPreset();
+    else if (it.act === 'save') saveGlobal(cur);
+    else if (it.act === 'saveas') askName('Save preset', cur || `Sound ${list.length + 1}`, saveGlobal);
+    else if (it.act === 'del') { writeList(PRE_KEY, list.filter(p => p.name !== cur)); state.presetName = ''; lastPreset = -1; save(); presetLabels(); }
+    else if (it.k !== undefined) loadPreset(it.k);
+  }, { label: 'Presets' });
 });
-$('presetBtn').addEventListener('click', () => { renderPresets(); $('presets').hidden = false; $('preDone').focus({ preventScroll: true }); });
-const closePresets = () => { $('presets').hidden = true; $('presetBtn').focus({ preventScroll: true }); };
-$('preDone').addEventListener('click', closePresets);
-$('presets').addEventListener('click', e => { if (e.target === $('presets')) closePresets(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('presets').hidden) closePresets(); });
+/* ---------- side presets (one pool for A and B) ---------- */
+const sideKeys = () => DEFS.map((d, i) => i).filter(i => { const d = DEFS[i]; return !d.single && !d.seq && !d.pair && d.group !== 'Sequencer' && !isLinked(i); });
+function sideNow(k) {
+  const vals = {}; sideKeys().forEach(i => { vals[DEFS[i].id] = state[k][i]; });
+  return { vals, pos: state[k][IX.wpos], table: { name: tables[0][k].name, frames: tables[0][k].frames.map(enc) }, smp: state.smp[k] ? { ...state.smp[k] } : null };
+}
+function loadSide(k, j) {
+  const p = readList(SIDE_KEY)[j]; if (!p) return;
+  bulk(() => {
+    for (const [id, v] of Object.entries(p.vals || {})) { const i = IX[id]; if (i === undefined || DEFS[i].single || isLinked(i)) continue; state[k][i] = clamp(+v); }
+    if (typeof p.pos === 'number') { const x = clamp(p.pos), q = oi(0, k === 'A' ? 'posA' : 'posB'); state.A[q] = state.B[q] = x; }
+    const t = decTable(p.table); if (t) tables[0][k] = t;
+    if (p.smp && okRef(p.smp)) state.smp[k] = { ...p.smp };
+    state.sideNames[k] = p.name;
+  });
+  presetLabels();
+}
+function saveSide(k, name) {
+  const list = readList(SIDE_KEY), p = { name, ...sideNow(k) }, j = list.findIndex(x => x.name === name);
+  if (j >= 0) list[j] = p; else list.push(p);
+  if (writeList(SIDE_KEY, list)) { state.sideNames[k] = name; save(); presetLabels(); }
+}
+document.querySelectorAll('[data-spre]').forEach(b => b.addEventListener('click', () => {
+  if (menuOpen && menuOpen.anchor === b) { closeMenu(); return; }
+  const k = b.dataset.spre, list = readList(SIDE_KEY), cur = state.sideNames[k];
+  const items = list.length ? list.map((p, j) => ({ label: p.name, j, on: p.name === cur })) : [{ head: 'No side presets yet' }];
+  items.push({ sep: true }, { label: `Save side ${k} as…`, act: 'saveas', cls: 'act' });
+  if (cur && list.some(p => p.name === cur)) items.push({ label: `Delete "${cur}"`, act: 'del', cls: 'act' });
+  openMenu(b, items, it => {
+    if (it.act === 'saveas') askName(`Save side ${k}`, cur || `Side ${list.length + 1}`, n => saveSide(k, n));
+    else if (it.act === 'del') { writeList(SIDE_KEY, list.filter(p => p.name !== cur)); ['A', 'B'].forEach(s => { if (state.sideNames[s] === cur) state.sideNames[s] = ''; }); save(); presetLabels(); }
+    else if (it.j !== undefined) loadSide(k, it.j);
+  }, { label: `Side ${k} presets` });
+}));
+function presetLabels() {
+  $('gPre').innerHTML = `<span class="ddv">${esc(state.presetName || 'Untitled')}</span>${CHEV}`;
+  document.querySelectorAll('[data-spre]').forEach(b => { const k = b.dataset.spre; b.innerHTML = `<b>${k}</b><span class="ddv">${esc(state.sideNames[k] || 'Untitled')}</span>${CHEV}`; });
+}
+presetLabels();
 /* =====================================================================
    BASIC VIEW AND SECTION OVERLAYS
    Basic view: every section shows its key controls (BASIC in knobs.js) in a
@@ -4624,7 +4802,7 @@ function setView(full) {
   try { localStorage.setItem('diptych-view', full ? 'full' : 'basic'); } catch (e) {}
   if (typeof applyLayout === 'function') applyLayout();
 }
-$('viewPill').addEventListener('click', () => setView(!fullView));
+onPill($('viewPill'), k => setView(k === 1));
 document.body.classList.toggle('full', fullView && devView);
 setPill($('viewPill'), fullView ? 1 : 0);
 /* =====================================================================
@@ -4667,14 +4845,19 @@ try { const m = localStorage.getItem('diptych-kb'); if (['piano', 'grid', 'hex']
 const base = () => 48 + 12 * octShift;
 const WHITE7 = [0, 2, 4, 5, 7, 9, 11], BLACK5 = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
 const keyRoot = () => (state.seq ? state.seq.A.root : 0), keyScale = () => (state.seq ? SCALES[state.seq.A.scale] : [0, 2, 4, 5, 7, 9, 11]);
-const ROW_STEPS = [2, 3, 4], ROW_SEMIS = [4, 5, 7];   // a third, a fourth, a fifth: in scale steps (in key) or semitones (chromatic)
+const ROW_STEPS = [2, 3, 4], ROW_SEMIS = [4, 5, 7];
+/* Chromatic hexagons: a whole tone to the right with rows a fifth apart is the Wicki-Hayden layout, but it only shows every
+   note when at least 7 hexagons fit across (rows jump a fifth while a row spans only its width in whole tones): on a phone
+   some semitones never appeared. So the whole-tone step is used when rows are fifths apart and 7 columns fit (the cells
+   shrink to make room, down to 40 px); otherwise a step right is a semitone, and every note is there. */
+let hexStep = 1;   // a third, a fourth, a fifth: in scale steps (in key) or semitones (chromatic)
 /* the note (offset from the bottom octave) at grid position (step right, row up), in key or chromatic, and whether the
    note is in the key and a root; for hexagons, right is one scale step (in key) or a whole tone (chromatic, as on a
    Wicki-Hayden layout) and up-right is the row interval */
 function gridNote(right, up, hex) {
   const root = keyRoot(), sc = keyScale(), n = sc.length, pcs = new Set(sc.map(x => (x + root) % 12));
   if (!kbChrom) { const d = right + up * ROW_STEPS[kbRow]; return { off: root + sc[((d % n) + n) % n] + 12 * Math.floor(d / n), inKey: true, isRoot: ((d % n) + n) % n === 0 }; }
-  const semis = right * (hex ? 2 : 1) + up * ROW_SEMIS[kbRow], off = root + semis, pc = ((off % 12) + 12) % 12;
+  const semis = right * (hex ? hexStep : 1) + up * ROW_SEMIS[kbRow], off = root + semis, pc = ((off % 12) + 12) % 12;
   return { off, inKey: pcs.has(pc), isRoot: pc === root };
 }
 function buildKeys() {
@@ -4701,7 +4884,10 @@ function buildKeys() {
       keysEl.appendChild(k);
     }
   } else {   // hexagons, pointed at the top, each row shifted half a cell from the one below
-    const w = cell * 1.05, h = w * 1.1547, dy = h * 0.75, cols = Math.max(4, Math.floor((W - w / 2) / w)), rows = Math.max(3, Math.floor((H - h) / dy) + 1);
+    let w = cell * 1.05;
+    hexStep = 1;
+    if (kbChrom && kbRow === 2) { const fit = (W - 4) / 7.5; if (fit >= 40) { w = Math.min(w, fit); hexStep = 2; } }
+    const h = w * 1.1547, dy = h * 0.75, cols = Math.max(4, Math.floor((W - w / 2) / w)), rows = Math.max(3, Math.floor((H - h) / dy) + 1);
     const ox = (W - (cols * w + w / 2)) / 2, oy = (H - ((rows - 1) * dy + h)) / 2;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       const q = c - Math.floor(r / 2), g = gridNote(q, r, true), k = document.createElement('div');   // axial: right +1, up-right +1 row
@@ -4711,11 +4897,11 @@ function buildKeys() {
       keysEl.appendChild(k);
     }
   }
-  document.querySelectorAll('[data-kb]').forEach(b => b.setAttribute('aria-pressed', b.dataset.kb === kbMode));
+  setPill($('kbPill'), ['piano', 'grid', 'hex'].indexOf(kbMode));
   labelOct(); markKeys();
 }
 function labelOct() { $('octLabel').textContent = 'C' + (Math.floor(base() / 12) - 1); }
-document.querySelectorAll('[data-kb]').forEach(b => b.addEventListener('click', () => { kbMode = b.dataset.kb; try { localStorage.setItem('diptych-kb', kbMode); } catch (e) {} buildKeys(); }));
+onPill($('kbPill'), k => { kbMode = ['piano', 'grid', 'hex'][k]; try { localStorage.setItem('diptych-kb', kbMode); } catch (e) {} buildKeys(); });
 new ResizeObserver(() => { if (kbMode !== 'piano' && keysEl.offsetParent) buildKeys(); }).observe(keysEl);
 const sounding = new Map();
 function markKeys() { keysEl.querySelectorAll('[data-off]').forEach(el => el.classList.toggle('on', sounding.has(base() + +el.dataset.off))); }
@@ -5010,7 +5196,7 @@ function onReport(d) {
 // mono / poly for playing the keys (the sequencer is always one note at a time), in Settings since 2026-11-10
 function updateMonoUI() { setPill($('monoPill'), state.mono ? 1 : 0); }
 const setMono = m => { state.mono = m; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); };
-$('monoPill').addEventListener('click', () => setMono(!state.mono));
+onPill($('monoPill'), k => setMono(k === 1));
 updateMonoUI();
 
 /* ---------- mini lanes: A, what plays now, B ---------- */
@@ -5044,7 +5230,7 @@ function drawLanes() {
 
 /* ---------- Pitch mode (Walk / Swap): one pill ---------- */
 function updateWalkUI() { setPill($('walkPill'), state.walk ? 0 : 1); }
-$('walkPill').addEventListener('click', () => { state.walk = !state.walk; updateWalkUI(); if (ready) send({ type:'walk', v: state.walk }); drawLanes(); save(); });
+onPill($('walkPill'), k => { state.walk = k === 0; updateWalkUI(); if (ready) send({ type:'walk', v: state.walk }); drawLanes(); save(); });
 
 /* ---------- piano roll editor ---------- */
 const sq = $('sq'), roll = $('roll'), velCv = $('velCv');
@@ -5063,7 +5249,7 @@ function closeSeq() { sq.classList.remove('open'); $('seqEdit').focus({ preventS
 $('seqEdit').addEventListener('click', () => openSeq());
 $('sqDone').addEventListener('click', closeSeq);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && sq.classList.contains('open')) closeSeq(); });
-$('sqSide').addEventListener('click', () => openSeq(sqSide === 'A' ? 'B' : 'A'));
+onPill($('sqSide'), k => openSeq(k ? 'B' : 'A'));
 function syncSeqControls() {
   const s = cur(); fixSeq(s);
   const dn = Math.round(seqDensity(s) * 100); $('sqDens').value = dn; $('sqDensVal').textContent = dn + '%';
@@ -5106,7 +5292,7 @@ function setGen(t) {
   setPill($('genPill'), t === 'Arp' ? 0 : 1);
   $('arpRow').hidden = t !== 'Arp'; $('riffRow').hidden = t !== 'Riff';
 }
-$('genPill').addEventListener('click', () => setGen(genType === 'Arp' ? 'Riff' : 'Arp'));
+onPill($('genPill'), k => setGen(k ? 'Riff' : 'Arp'));
 setGen('Arp');
 $('sqGen').addEventListener('click', () => editSeq(s => genFromControls(s)));
 $('sqClear').addEventListener('click', () => editSeq(s => s.steps.forEach(st => { st.on = false; })));
@@ -5366,6 +5552,7 @@ $('bpmVal').textContent = state.bpm;
 ['play', 'hplay'].forEach(id => { $(id).innerHTML = ICON_PLAY; $(id).setAttribute('aria-label', 'Play'); });
 updateWalkUI();
 
+enhanceAll();   // the app's own dropdown menus (ui/menus.js)
 
 buildKeys();
 updateIcons();

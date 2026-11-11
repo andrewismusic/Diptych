@@ -36,7 +36,7 @@ function onReport(d) {
 // mono / poly for playing the keys (the sequencer is always one note at a time), in Settings since 2026-11-10
 function updateMonoUI() { setPill($('monoPill'), state.mono ? 1 : 0); }
 const setMono = m => { state.mono = m; updateMonoUI(); post({ type:'mono', v: state.mono }); save(); };
-$('monoPill').addEventListener('click', () => setMono(!state.mono));
+onPill($('monoPill'), k => setMono(k === 1));
 updateMonoUI();
 
 /* ---------- mini lanes: A, what plays now, B ---------- */
@@ -70,5 +70,5 @@ function drawLanes() {
 
 /* ---------- Pitch mode (Walk / Swap): one pill ---------- */
 function updateWalkUI() { setPill($('walkPill'), state.walk ? 0 : 1); }
-$('walkPill').addEventListener('click', () => { state.walk = !state.walk; updateWalkUI(); if (ready) send({ type:'walk', v: state.walk }); drawLanes(); save(); });
+onPill($('walkPill'), k => { state.walk = k === 0; updateWalkUI(); if (ready) send({ type:'walk', v: state.walk }); drawLanes(); save(); });
 

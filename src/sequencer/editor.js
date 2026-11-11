@@ -15,7 +15,7 @@ function closeSeq() { sq.classList.remove('open'); $('seqEdit').focus({ preventS
 $('seqEdit').addEventListener('click', () => openSeq());
 $('sqDone').addEventListener('click', closeSeq);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && sq.classList.contains('open')) closeSeq(); });
-$('sqSide').addEventListener('click', () => openSeq(sqSide === 'A' ? 'B' : 'A'));
+onPill($('sqSide'), k => openSeq(k ? 'B' : 'A'));
 function syncSeqControls() {
   const s = cur(); fixSeq(s);
   const dn = Math.round(seqDensity(s) * 100); $('sqDens').value = dn; $('sqDensVal').textContent = dn + '%';
@@ -58,7 +58,7 @@ function setGen(t) {
   setPill($('genPill'), t === 'Arp' ? 0 : 1);
   $('arpRow').hidden = t !== 'Arp'; $('riffRow').hidden = t !== 'Riff';
 }
-$('genPill').addEventListener('click', () => setGen(genType === 'Arp' ? 'Riff' : 'Arp'));
+onPill($('genPill'), k => setGen(k ? 'Riff' : 'Arp'));
 setGen('Arp');
 $('sqGen').addEventListener('click', () => editSeq(s => genFromControls(s)));
 $('sqClear').addEventListener('click', () => editSeq(s => s.steps.forEach(st => { st.on = false; })));

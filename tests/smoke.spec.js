@@ -248,11 +248,11 @@ test('the Full view shows every control, and the choice is remembered', async ({
   await openSynth(page);
   const hidden = () => page.evaluate(() => [...document.querySelectorAll('main .group')].filter(g => g.offsetParent).flatMap(g => [...g.querySelectorAll('.kn')]).filter(k => !k.offsetParent).length);
   expect(await hidden()).toBeGreaterThan(20);
-  await page.click('#viewPill');
+  await page.click('#viewPill > span:nth-child(2)');   // a pill selects the option you touch
   expect(await hidden()).toBe(0);
   await page.reload();
   expect(await page.evaluate(() => document.body.classList.contains('full'))).toBe(true);
-  await page.click('#viewPill');
+  await page.click('#viewPill > span:nth-child(1)');
 });
 
 test('oscillator On/Off is a bypass: it dims the section and is never randomized', async ({ page }) => {

@@ -26,6 +26,7 @@
   <div class="wrap">
     <div class="titlebar">
       <h1 class="wordmark">Diptych</h1>
+      <button type="button" class="key dd gpre" id="gPre" aria-haspopup="listbox" aria-expanded="false" aria-label="Preset"></button>
       <span class="hctl">
         <button type="button" id="hplay" class="key icon" aria-label="Play"></button>
         <span class="key bpm" id="bpmBox" role="slider" tabindex="0" aria-label="Tempo, drag up or down, or use arrow keys" aria-valuemin="50" aria-valuemax="200" aria-valuenow="120"><b id="bpmVal">120</b><small>BPM</small></span>
@@ -37,7 +38,6 @@
     </div>
     <div class="hrow2"><div class="alldie"><div class="dicetrack horiz" data-what="all" data-side="M" data-face="5" tabindex="0" role="slider" aria-label="Randomize everything, both sides: slide further right for more change" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="fill"></div><div class="die" aria-hidden="true"><div class="face"><i></i><i></i><i></i><i></i><i></i></div></div></div></div>
       <span class="hkey" id="hKey"></span>
-      <button type="button" id="presetBtn" class="key icon" aria-label="Presets"></button>
     </div>
   </div>
 </header>
@@ -76,7 +76,7 @@
     <div class="knobs" id="pk_seq"></div><div class="pfoot"><span class="spacer"></span><button type="button" class="key" id="seqEdit" aria-label="Edit sequences">Edit</button></div>
   </section>
   <section class="panel" data-panel="play" role="tabpanel" aria-label="Play">
-    <div class="ptop"><div class="pctl"><h2 class="ph">Play</h2><div class="pctl2"><span class="kbmodes" role="group" aria-label="Keyboard layout"><button type="button" class="key icon" data-kb="piano" aria-pressed="true" aria-label="Piano keys"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M15 4v16"/><path d="M7.5 4h3v9h-3zM13.5 4h3v9h-3z" fill="currentColor"/></svg></button><button type="button" class="key icon" data-kb="grid" aria-pressed="false" aria-label="Grid"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg></button><button type="button" class="key icon" data-kb="hex" aria-pressed="false" aria-label="Hexagons"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l7.4 4.25v8.5L12 20.5l-7.4-4.25v-8.5z"/></svg></button></span><span class="octbox"><button type="button" class="key" id="octDown" aria-label="Octave down">−</button><span class="oct" id="octLabel">C3</span><button type="button" class="key" id="octUp" aria-label="Octave up">+</button></span><button type="button" class="key" id="latch" aria-pressed="false">Latch</button></div></div></div>
+    <div class="ptop"><div class="pctl"><h2 class="ph">Play</h2><div class="pctl2"><button type="button" class="pill kbpill" id="kbPill" aria-label="Keyboard layout: piano, grid or hexagons"><span data-kb="piano" aria-label="Piano keys"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M15 4v16"/><path d="M7.5 4h3v9h-3zM13.5 4h3v9h-3z" fill="currentColor"/></svg></span><span data-kb="grid" aria-label="Grid"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg></span><span data-kb="hex" aria-label="Hexagons"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.5l7.4 4.25v8.5L12 20.5l-7.4-4.25v-8.5z"/></svg></span></button><span class="octbox"><button type="button" class="key" id="octDown" aria-label="Octave down">−</button><span class="oct" id="octLabel">C3</span><button type="button" class="key" id="octUp" aria-label="Octave up">+</button></span><button type="button" class="key" id="latch" aria-pressed="false">Latch</button></div></div></div>
     <div class="pviz"><div class="keys" id="keys"></div></div>
     
   </section>
@@ -92,6 +92,10 @@
 
 <div class="kb" id="kb">
   <div class="wrap">
+    <div class="siderow">
+      <button type="button" class="key dd spre a" data-spre="A" aria-haspopup="listbox" aria-expanded="false" aria-label="Side A preset"></button>
+      <button type="button" class="key dd spre b" data-spre="B" aria-haspopup="listbox" aria-expanded="false" aria-label="Side B preset"></button>
+    </div>
     <div class="morphrow">
       <button type="button" class="key letter a" data-focus="A" aria-pressed="false" aria-label="Edit side A only (tap again to morph)">A</button>
       <div class="morph-slider" id="morph" role="slider" tabindex="0" aria-label="Morph between A and B" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0">
@@ -118,12 +122,11 @@
   </div>
 </div>
 
-<div class="sheet" id="presets" role="dialog" aria-modal="true" aria-labelledby="preTitle" hidden>
+<div class="sheet" id="nameSheet" role="dialog" aria-modal="true" aria-labelledby="nameTitle" hidden>
   <div class="sheetcard">
-    <div class="edhead"><h2 id="preTitle">Presets</h2><button type="button" class="key" id="preDone">Done</button></div>
-    <div class="presave"><input type="text" id="preName" maxlength="40" placeholder="Name this sound" aria-label="Preset name"><button type="button" class="key" id="preSave">Save</button><button type="button" class="key icon" id="preRandom" aria-label="Load a random preset"></button></div>
-    <div class="prelist" id="preList" role="list"></div>
-    <p class="ednote" id="preNote"></p>
+    <div class="edhead"><h2 id="nameTitle">Save preset</h2></div>
+    <input type="text" id="nameIn" class="namein" maxlength="40" aria-label="Name">
+    <div class="edrow"><span class="spacer"></span><button type="button" class="key" id="nameCancel">Cancel</button><button type="button" class="key" id="nameOk">Save</button></div>
   </div>
 </div>
 
@@ -226,6 +229,7 @@
 // @include state.js
 // @include audio.js
 // @include ui/knobs.js
+// @include ui/menus.js
 // @include ui/displays.js
 // @include ui/morph.js
 // @include history.js

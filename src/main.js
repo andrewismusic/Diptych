@@ -1,3 +1,4 @@
+enhanceAll();   // the app's own dropdown menus (ui/menus.js)
 
 buildKeys();
 updateIcons();

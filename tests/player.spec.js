@@ -180,24 +180,33 @@ test('hold a die and tap a knob: only that knob rolls', async ({ page }) => {
   expect(changed).toEqual(['A:reso']);
 });
 
-test('presets: save, load and a random one; the Play panel\'s hexagons, in key or chromatic', async ({ page }) => {
+test('global presets from the menu at the top; side presets share one pool and leave the sequences alone; hexagons', async ({ page }) => {
   await openSynth(page, { dev: false, storage: {} });
-  await page.click('#presetBtn');
-  await page.fill('#preName', 'First'); await page.click('#preSave');
+  const pick = async (anchor, text) => { await page.click(anchor); await page.locator('.menu .mitem', { hasText: text }).first().click(); };
+  const nameIt = async n => { await page.fill('#nameIn', n); await page.click('#nameOk'); };
+  await pick('#gPre', 'Save as'); await nameIt('First');
   const first = await page.evaluate(() => state.A[IX.cutoff]);
+  expect(await page.locator('#gPre').textContent()).toContain('First');
   await page.evaluate(() => bulk(() => randomizeAll()));
-  await page.fill('#preName', 'Second'); await page.click('#preSave');
-  await page.click('[data-pre="0"]');
-  expect(await page.evaluate(() => state.A[IX.cutoff])).toBe(first);
-  await page.click('#preRandom');
-  expect(await page.evaluate(() => lastPreset)).toBe(1);   // never the one just loaded, when there is a choice
-  await page.click('#preDone');
-  await page.click('[data-kb="hex"]');
+  await pick('#gPre', 'Save as'); await nameIt('Second');
+  await pick('#gPre', 'First');
+  expect(await page.evaluate(() => [state.A[IX.cutoff], state.presetName])).toEqual([first, 'First']);
+  await pick('#gPre', 'Random preset');
+  expect(await page.evaluate(() => state.presetName)).toBe('Second');   // never the one just loaded, when there is a choice
+  // side presets: save A, load it into B; B takes A's sound, A and the sequences stay
+  await pick('[data-spre="A"]', 'Save side A'); await nameIt('Bright');
+  const r = await page.evaluate(() => ({ a: state.A.slice(), seq: JSON.stringify(state.seq), cut: state.A[IX.cutoff], tabA: tables[0].A.name }));
+  await pick('[data-spre="B"]', 'Bright');
+  const after = await page.evaluate(r => ({ a: state.A.every((x, i) => DEFS[i].single || x === r.a[i]), seq: JSON.stringify(state.seq) === r.seq, cutB: state.B[IX.cutoff] === r.cut, tab: tables[0].B.name === r.tabA, name: state.sideNames.B }), r);
+  expect(after).toEqual({ a: true, seq: true, cutB: true, tab: true, name: 'Bright' });
+  // hexagons, in key or chromatic (every note present in chromatic)
+  await page.click('#kbPill > span:nth-child(3)');
   const inKey = await page.evaluate(() => [...document.querySelectorAll('.hexcell')].every(c => !c.classList.contains('out')));
   await page.evaluate(() => { kbChrom = true; buildKeys(); });
-  const chrom = await page.evaluate(() => { const pcs = new Set(SCALES[state.seq.A.scale].map(x => (x + state.seq.A.root) % 12));
-    return [...document.querySelectorAll('.hexcell')].every(c => c.classList.contains('out') === !pcs.has(((base() + +c.dataset.off) % 12 + 12) % 12)); });
-  expect([inKey, chrom]).toEqual([true, true]);
+  const chrom = await page.evaluate(() => { const pcs = new Set(SCALES[state.seq.A.scale].map(x => (x + state.seq.A.root) % 12)), cells = [...document.querySelectorAll('.hexcell')];
+    const seen = new Set(cells.map(c => ((base() + +c.dataset.off) % 12 + 12) % 12));
+    return { marks: cells.every(c => c.classList.contains('out') === !pcs.has(((base() + +c.dataset.off) % 12 + 12) % 12)), all12: seen.size === 12 }; });
+  expect([inKey, chrom]).toEqual([true, { marks: true, all12: true }]);
 });
 
 test('the lanes keep their size on a 3x screen', async ({ browser }) => {

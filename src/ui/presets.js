@@ -1,27 +1,42 @@
 /* =====================================================================
-   PRESETS (2026-11-11; DESIGN.md section 15, "global presets")
-   A preset holds everything: both sides, curves, locks and links, the
-   wavetables, the samples' references, both sequences, the tempo and Walk /
-   Swap. Saved in this browser (localStorage, 'diptych-presets'). Loading one
-   is one undo step. The die loads a random preset (never the one just loaded,
-   when there is a choice).
+   PRESETS (2026-11-11; DESIGN.md section 15, items 1 and 2)
+   Global presets, as in most plugins: a menu at the top showing the current
+   preset's name. A global preset holds everything: both sides, curves, locks
+   and links, the wavetables, the samples' references, both sequences, tempo
+   and Walk / Swap. The menu also has a die (a random preset, never the one
+   just loaded when there is a choice), Save, Save as and Delete.
+   Side presets: a menu above each of A and B. One pool for both sides, so any
+   sound can morph into any other: a side preset holds one side's sound (every
+   morphing value of that side, its table position, its wavetable and sample),
+   never sequences, curves, locks or links. Loading one into B changes only B.
+   Both pools live in this browser (localStorage); loading is one undo step.
    ===================================================================== */
-const PRE_KEY = 'diptych-presets';
-const BOOK = '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="4.5" y="6.5" width="13" height="14" rx="2"/><path d="M7.5 3.5h10a2 2 0 0 1 2 2v12"/><path d="M8 11h6M8 14.5h6"/></svg>';
-const DIE5 = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8.3" cy="8.3" r="1.6" fill="currentColor"/><circle cx="15.7" cy="8.3" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="8.3" cy="15.7" r="1.6" fill="currentColor"/><circle cx="15.7" cy="15.7" r="1.6" fill="currentColor"/></svg>';
-$('presetBtn').innerHTML = BOOK; $('preRandom').innerHTML = DIE5;
-const readPresets = () => { try { const v = JSON.parse(localStorage.getItem(PRE_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
-const writePresets = list => { try { localStorage.setItem(PRE_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } };
+const PRE_KEY = 'diptych-presets', SIDE_KEY = 'diptych-sides';
+const readList = k => { try { const v = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+const writeList = (k, list) => { try { localStorage.setItem(k, JSON.stringify(list)); return true; } catch (e) { return false; } };
+const esc = t => String(t).replace(/[<&]/g, '');
+if (typeof state.presetName !== 'string') state.presetName = '';
+if (!state.sideNames || typeof state.sideNames !== 'object') state.sideNames = { A: '', B: '' };
+let lastPreset = -1;
+/* ---------- a name, asked in the app's own sheet ---------- */
+function askName(title, def, ok) {
+  $('nameTitle').textContent = title; $('nameIn').value = def || ''; $('nameOk').textContent = 'Save';
+  $('nameSheet').hidden = false; setTimeout(() => { $('nameIn').focus(); $('nameIn').select(); }, 30);
+  const done = v => { $('nameSheet').hidden = true; $('nameOk').onclick = $('nameCancel').onclick = $('nameIn').onkeydown = null; if (v !== null) ok(v); };
+  $('nameOk').onclick = () => done(($('nameIn').value || '').trim() || def || 'Untitled');
+  $('nameCancel').onclick = () => done(null);
+  $('nameIn').onkeydown = e => { if (e.key === 'Enter') $('nameOk').click(); else if (e.key === 'Escape') done(null); };
+}
+/* ---------- global ---------- */
 function patchNow() {
   return { ver: STORE_VER, ids: DEFS.map(d => d.id), A: state.A.slice(), B: state.B.slice(), C: state.C.slice(), morph: savedMorph(),
     locks: { ...state.locks }, secLocks: { ...state.secLocks }, links: { ...state.links }, linkMem: JSON.parse(JSON.stringify(state.linkMem)),
     oscOn: state.oscOn.slice(), fxOn: state.fxOn.slice(), smp: JSON.parse(JSON.stringify(state.smp)), seq: JSON.parse(JSON.stringify(state.seq)),
-    bpm: state.bpm, walk: state.walk,
+    bpm: state.bpm, walk: state.walk, sideNames: { ...state.sideNames },
     tables: tables.map(t => ({ A: { name: t.A.name, frames: t.A.frames.map(enc) }, B: { name: t.B.name, frames: t.B.frames.map(enc) } })) };
 }
-let lastPreset = -1;
 function loadPreset(k) {
-  const list = readPresets(), p = list[k]; if (!p) return;
+  const p = readList(PRE_KEY)[k]; if (!p) return;
   bulk(() => {
     p.ids.forEach((id, j) => { const i = IX[id]; if (i === undefined) return; state.A[i] = clamp(+p.A[j]); state.B[i] = clamp(+p.B[j]); state.C[i] = clampC(+p.C[j] || 0); });
     for (const key of ['locks', 'secLocks', 'links', 'linkMem']) if (p[key]) state[key] = JSON.parse(JSON.stringify(p[key]));
@@ -32,38 +47,75 @@ function loadPreset(k) {
     if (typeof p.walk === 'boolean') state.walk = p.walk;
     (p.tables || []).slice(0, WT_SLOTS.length).forEach((t, s) => ['A', 'B'].forEach(side => { const d = t && decTable(t[side]); if (d) tables[s][side] = d; }));
     if (focus === 'M') state.morph = clamp(+p.morph || 0); else focusMem = clamp(+p.morph || 0);
+    state.presetName = p.name; state.sideNames = p.sideNames ? { ...p.sideNames } : { A: '', B: '' };
   });
   if (p.bpm) setBpm(p.bpm);
   updateWalkUI(); if (ready) send({ type:'walk', v: state.walk });
-  lastPreset = k; $('preNote').textContent = `Loaded ${p.name}.`; renderPresets();
+  lastPreset = k; presetLabels();
 }
-function renderPresets() {
-  const list = readPresets();
-  $('preList').innerHTML = list.length ? list.map((p, k) => `<div class="preitem${k === lastPreset ? ' cur' : ''}" role="listitem"><button type="button" class="key preload" data-pre="${k}">${p.name.replace(/[<&]/g, '')}</button><button type="button" class="key icon predel" data-predel="${k}" aria-label="Delete ${p.name.replace(/["<&]/g, '')}">&times;</button></div>`).join('')
-    : '<p class="ednote">No presets yet. Name the sound you hear and save it; the die loads one at random.</p>';
-  $('preRandom').disabled = list.length < 1;
-}
-$('preSave').addEventListener('click', () => {
-  const name = ($('preName').value || '').trim() || `Sound ${readPresets().length + 1}`, list = readPresets();
-  const k = list.findIndex(p => p.name === name), p = { name, ...patchNow() };
+function saveGlobal(name) {
+  const list = readList(PRE_KEY), p = { name, ...patchNow() }, k = list.findIndex(x => x.name === name);
   if (k >= 0) list[k] = p; else list.push(p);
-  $('preNote').textContent = writePresets(list) ? `Saved ${name}.` : 'Could not save: this browser is out of room for presets.';
-  lastPreset = k >= 0 ? k : list.length - 1; $('preName').value = ''; renderPresets();
-});
-$('preList').addEventListener('click', e => {
-  const l = e.target.closest('[data-pre]'); if (l) { loadPreset(+l.dataset.pre); return; }
-  const d = e.target.closest('[data-predel]'); if (!d) return;
-  const list = readPresets(), k = +d.dataset.predel, gone = list.splice(k, 1)[0];
-  writePresets(list); if (lastPreset === k) lastPreset = -1; else if (lastPreset > k) lastPreset--;
-  $('preNote').textContent = gone ? `Deleted ${gone.name}.` : ''; renderPresets();
-});
-$('preRandom').addEventListener('click', () => {
-  const n = readPresets().length; if (!n) return;
+  if (writeList(PRE_KEY, list)) { state.presetName = name; lastPreset = k >= 0 ? k : list.length - 1; save(); presetLabels(); }
+}
+function randomPreset() {
+  const n = readList(PRE_KEY).length; if (!n) return;
   let k = Math.floor(Math.random() * n); if (n > 1 && k === lastPreset) k = (k + 1 + Math.floor(Math.random() * (n - 1))) % n;
   loadPreset(k);
+}
+$('gPre').addEventListener('click', () => {
+  const b = $('gPre'); if (menuOpen && menuOpen.anchor === b) { closeMenu(); return; }
+  const list = readList(PRE_KEY), cur = state.presetName;
+  const items = [{ label: '⚄  Random preset', act: 'rand', cls: 'act' + (list.length ? '' : ' off') }, { sep: true }];
+  if (list.length) items.push(...list.map((p, k) => ({ label: p.name, k, on: p.name === cur }))); else items.push({ head: 'No presets yet' });
+  items.push({ sep: true });
+  if (cur) items.push({ label: `Save "${cur}"`, act: 'save', cls: 'act' });
+  items.push({ label: 'Save as…', act: 'saveas', cls: 'act' });
+  if (cur && list.some(p => p.name === cur)) items.push({ label: `Delete "${cur}"`, act: 'del', cls: 'act' });
+  openMenu(b, items, it => {
+    if (it.act === 'rand') randomPreset();
+    else if (it.act === 'save') saveGlobal(cur);
+    else if (it.act === 'saveas') askName('Save preset', cur || `Sound ${list.length + 1}`, saveGlobal);
+    else if (it.act === 'del') { writeList(PRE_KEY, list.filter(p => p.name !== cur)); state.presetName = ''; lastPreset = -1; save(); presetLabels(); }
+    else if (it.k !== undefined) loadPreset(it.k);
+  }, { label: 'Presets' });
 });
-$('presetBtn').addEventListener('click', () => { renderPresets(); $('presets').hidden = false; $('preDone').focus({ preventScroll: true }); });
-const closePresets = () => { $('presets').hidden = true; $('presetBtn').focus({ preventScroll: true }); };
-$('preDone').addEventListener('click', closePresets);
-$('presets').addEventListener('click', e => { if (e.target === $('presets')) closePresets(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('presets').hidden) closePresets(); });
+/* ---------- side presets (one pool for A and B) ---------- */
+const sideKeys = () => DEFS.map((d, i) => i).filter(i => { const d = DEFS[i]; return !d.single && !d.seq && !d.pair && d.group !== 'Sequencer' && !isLinked(i); });
+function sideNow(k) {
+  const vals = {}; sideKeys().forEach(i => { vals[DEFS[i].id] = state[k][i]; });
+  return { vals, pos: state[k][IX.wpos], table: { name: tables[0][k].name, frames: tables[0][k].frames.map(enc) }, smp: state.smp[k] ? { ...state.smp[k] } : null };
+}
+function loadSide(k, j) {
+  const p = readList(SIDE_KEY)[j]; if (!p) return;
+  bulk(() => {
+    for (const [id, v] of Object.entries(p.vals || {})) { const i = IX[id]; if (i === undefined || DEFS[i].single || isLinked(i)) continue; state[k][i] = clamp(+v); }
+    if (typeof p.pos === 'number') { const x = clamp(p.pos), q = oi(0, k === 'A' ? 'posA' : 'posB'); state.A[q] = state.B[q] = x; }
+    const t = decTable(p.table); if (t) tables[0][k] = t;
+    if (p.smp && okRef(p.smp)) state.smp[k] = { ...p.smp };
+    state.sideNames[k] = p.name;
+  });
+  presetLabels();
+}
+function saveSide(k, name) {
+  const list = readList(SIDE_KEY), p = { name, ...sideNow(k) }, j = list.findIndex(x => x.name === name);
+  if (j >= 0) list[j] = p; else list.push(p);
+  if (writeList(SIDE_KEY, list)) { state.sideNames[k] = name; save(); presetLabels(); }
+}
+document.querySelectorAll('[data-spre]').forEach(b => b.addEventListener('click', () => {
+  if (menuOpen && menuOpen.anchor === b) { closeMenu(); return; }
+  const k = b.dataset.spre, list = readList(SIDE_KEY), cur = state.sideNames[k];
+  const items = list.length ? list.map((p, j) => ({ label: p.name, j, on: p.name === cur })) : [{ head: 'No side presets yet' }];
+  items.push({ sep: true }, { label: `Save side ${k} as…`, act: 'saveas', cls: 'act' });
+  if (cur && list.some(p => p.name === cur)) items.push({ label: `Delete "${cur}"`, act: 'del', cls: 'act' });
+  openMenu(b, items, it => {
+    if (it.act === 'saveas') askName(`Save side ${k}`, cur || `Side ${list.length + 1}`, n => saveSide(k, n));
+    else if (it.act === 'del') { writeList(SIDE_KEY, list.filter(p => p.name !== cur)); ['A', 'B'].forEach(s => { if (state.sideNames[s] === cur) state.sideNames[s] = ''; }); save(); presetLabels(); }
+    else if (it.j !== undefined) loadSide(k, it.j);
+  }, { label: `Side ${k} presets` });
+}));
+function presetLabels() {
+  $('gPre').innerHTML = `<span class="ddv">${esc(state.presetName || 'Untitled')}</span>${CHEV}`;
+  document.querySelectorAll('[data-spre]').forEach(b => { const k = b.dataset.spre; b.innerHTML = `<b>${k}</b><span class="ddv">${esc(state.sideNames[k] || 'Untitled')}</span>${CHEV}`; });
+}
+presetLabels();

@@ -59,6 +59,6 @@ function setView(full) {
   try { localStorage.setItem('diptych-view', full ? 'full' : 'basic'); } catch (e) {}
   if (typeof applyLayout === 'function') applyLayout();
 }
-$('viewPill').addEventListener('click', () => setView(!fullView));
+onPill($('viewPill'), k => setView(k === 1));
 document.body.classList.toggle('full', fullView && devView);
 setPill($('viewPill'), fullView ? 1 : 0);

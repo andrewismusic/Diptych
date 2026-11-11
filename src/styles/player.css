@@ -193,7 +193,7 @@ select{font-size:.8rem}
 /* desktop: the header is one row (wordmark, Everything die, Key, presets, then the transport and settings) */
 .desk:not(.dev) .top .wrap{display:flex;align-items:center;gap:12px}
 .desk:not(.dev) .titlebar{display:contents}
-.desk:not(.dev) .wordmark{order:0} .desk:not(.dev) .hrow2{order:1;flex:1;padding:6px 0} .desk:not(.dev) .hctl{order:2}
+.desk:not(.dev) .wordmark{order:0} .desk:not(.dev) .gpre{order:1;margin-right:0} .desk:not(.dev) .hrow2{order:2;flex:1;padding:6px 0} .desk:not(.dev) .hctl{order:3}
 .desk:not(.dev) .hkey{flex:0 1 auto}
 .pfoot .spacer{flex:1}
 .desk:not(.dev) .panel[data-panel="seq"] .pviz{min-height:84px}
@@ -201,3 +201,56 @@ select{font-size:.8rem}
 .desk:not(.dev) .panel[data-panel="seq"] .knobs{padding-right:64px}
 .desk:not(.dev) .panel[data-panel="seq"] .pfoot{position:absolute;right:10px;bottom:10px}
 .vivid .letter.a:not([aria-pressed="true"]){color:var(--a)!important} .vivid .letter.b:not([aria-pressed="true"]){color:var(--b)!important}
+
+/* ===== sixth pass ===== */
+/* grid and hexagons: keys with colour, like the rest (in-key notes tinted with the colour heard now, roots strongly,
+   out-of-key notes (chromatic) a plain darker key) */
+.cell{background:color-mix(in srgb,var(--mc) 14%,var(--cap-hi));border:1.5px solid var(--k);box-shadow:2px 2px 0 var(--k)}
+.cell.root{background:color-mix(in srgb,var(--mc) 55%,var(--cap-hi));border-color:var(--k)}
+.cell.root span{color:#fff}
+.cell.out{opacity:1;background:color-mix(in srgb,var(--ink) 18%,var(--cap-hi))}
+.cell.out span{opacity:.6}
+.hexcell::before{background:color-mix(in srgb,var(--mc) 14%,var(--cap-hi))}
+.hexcell.root::before{background:color-mix(in srgb,var(--mc) 55%,var(--cap-hi))}
+.hexcell.root span{color:#fff}
+.hexcell.out{opacity:1} .hexcell.out::before{background:color-mix(in srgb,var(--ink) 18%,var(--cap-hi))} .hexcell.out span{opacity:.6}
+.hexcell{background:var(--k)}
+.cell.on,.hexcell.on::before{background:var(--hold)!important}
+/* the Play layout pill: icons */
+.kbpill span{padding:4px 10px}
+.kbpill svg{display:block}
+/* colour schemes: two dots, A and B */
+.scheme .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1.5px var(--cap-hi),0 0 0 2.5px var(--k)}
+.scheme .dot + .dot{margin-left:-2px}
+/* the status-bar strip is part of the app (it took the colour on its own schedule when it belonged to the page) */
+:root{padding-top:0!important}
+.top{padding-top:env(safe-area-inset-top,0px)}
+
+/* the app's menus */
+.selhide{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden}
+.key.dd{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;text-transform:none;letter-spacing:0;font-size:.8rem;min-width:0}
+.key.dd .ddv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.menu{position:fixed;z-index:60;background:var(--surface);border:1.5px solid var(--k);border-radius:12px;box-shadow:4px 4px 0 var(--k),0 18px 40px -12px rgba(0,0,0,.45);padding:4px;overflow-y:auto;display:flex;flex-direction:column}
+.mitem{all:unset;box-sizing:border-box;display:block;padding:9px 12px;border-radius:8px;font-family:var(--font-ui);font-size:.85rem;font-weight:500;color:var(--ink);cursor:pointer;white-space:nowrap}
+.mitem:hover,.mitem:focus-visible{background:var(--well)}
+.mitem.on{background:var(--hold);color:var(--on-ink)}
+.mitem.act{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.msep{height:1.5px;background:var(--line);margin:4px 6px}
+.mhead{padding:6px 12px 2px;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+/* the Key: one pill, its title and two menus divided by lines */
+.qscale{display:inline-flex;align-items:stretch;gap:0;min-height:36px;border:1.5px solid var(--k);border-radius:10px;background:var(--cap-hi);box-shadow:4px 4px 0 var(--k);margin:0 4px 4px 0;overflow:hidden}
+.qscale .lbl{display:flex;align-items:center;padding:0 10px;border-right:1.5px solid var(--k);color:var(--muted)}
+.qscale .key.dd{border:0;border-radius:0;box-shadow:none;margin:0;min-height:0;background:transparent;padding:0 10px}
+.qscale .key.dd ~ .key.dd{border-left:1.5px solid var(--k)}
+.qscale .key.dd:last-child{flex:1}
+
+/* presets: the global menu at the top (on a phone it takes the wordmark's place), the side menus above A and B */
+.gpre{flex:0 1 220px;min-width:0;margin-right:auto;font-size:.8rem}
+@media (max-width:640px){ .wordmark{display:none} .gpre{flex:1 1 auto;max-width:none} }
+.desk .gpre{order:1}
+.siderow{display:flex;justify-content:space-between;gap:10px;padding:8px 0 0}
+.spre{max-width:46%;font-size:.78rem}
+.spre b{font-family:var(--font-head);font-size:.85rem;margin-right:2px}
+.spre.a b{color:var(--a)} .spre.b b{color:var(--b)}
+.mitem.off{opacity:.4;pointer-events:none}
+.namein{font:inherit;font-size:1rem;min-height:40px;padding:4px 12px;border:1.5px solid var(--k);border-radius:10px;background:var(--well);color:var(--ink)}

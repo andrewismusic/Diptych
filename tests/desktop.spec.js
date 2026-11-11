@@ -28,7 +28,7 @@ for (const [w, h] of [[1280, 720], [1440, 900], [1920, 1080], [2560, 1200]]) {
     await openSynth(page);
     for (const t of ['Basic', 'Basic, everything off', 'Full', 'Full, everything back on']) {   // switching off dims but must not move anything
       if (t.includes('off') || t.includes('back on')) await page.evaluate(() => document.querySelectorAll('[data-fx], [data-osc]').forEach(b => b.click()));
-      if (t === 'Full') await page.click('#viewPill');
+      if (t === 'Full') await page.click('#viewPill > span:nth-child(2)');
       const m = await measure(page);
       expect(m.desk).toBe(true);
       expect(m.docScroll, t).toBeLessThanOrEqual(0); expect(m.docSide, t).toBeLessThanOrEqual(0);
@@ -41,7 +41,7 @@ test('the Basic view comes out larger than the Full view', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openSynth(page);
   const size = () => page.evaluate(() => $('k' + IX.aatk).getBoundingClientRect().width);
-  const basic = await size(); await page.click('#viewPill'); const full = await size();
+  const basic = await size(); await page.click('#viewPill > span:nth-child(2)'); const full = await size();
   expect(basic).toBeGreaterThan(full * 1.15);
 });
 

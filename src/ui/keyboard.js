@@ -15,14 +15,19 @@ try { const m = localStorage.getItem('diptych-kb'); if (['piano', 'grid', 'hex']
 const base = () => 48 + 12 * octShift;
 const WHITE7 = [0, 2, 4, 5, 7, 9, 11], BLACK5 = [[1, 0], [3, 1], [6, 3], [8, 4], [10, 5]];
 const keyRoot = () => (state.seq ? state.seq.A.root : 0), keyScale = () => (state.seq ? SCALES[state.seq.A.scale] : [0, 2, 4, 5, 7, 9, 11]);
-const ROW_STEPS = [2, 3, 4], ROW_SEMIS = [4, 5, 7];   // a third, a fourth, a fifth: in scale steps (in key) or semitones (chromatic)
+const ROW_STEPS = [2, 3, 4], ROW_SEMIS = [4, 5, 7];
+/* Chromatic hexagons: a whole tone to the right with rows a fifth apart is the Wicki-Hayden layout, but it only shows every
+   note when at least 7 hexagons fit across (rows jump a fifth while a row spans only its width in whole tones): on a phone
+   some semitones never appeared. So the whole-tone step is used when rows are fifths apart and 7 columns fit (the cells
+   shrink to make room, down to 40 px); otherwise a step right is a semitone, and every note is there. */
+let hexStep = 1;   // a third, a fourth, a fifth: in scale steps (in key) or semitones (chromatic)
 /* the note (offset from the bottom octave) at grid position (step right, row up), in key or chromatic, and whether the
    note is in the key and a root; for hexagons, right is one scale step (in key) or a whole tone (chromatic, as on a
    Wicki-Hayden layout) and up-right is the row interval */
 function gridNote(right, up, hex) {
   const root = keyRoot(), sc = keyScale(), n = sc.length, pcs = new Set(sc.map(x => (x + root) % 12));
   if (!kbChrom) { const d = right + up * ROW_STEPS[kbRow]; return { off: root + sc[((d % n) + n) % n] + 12 * Math.floor(d / n), inKey: true, isRoot: ((d % n) + n) % n === 0 }; }
-  const semis = right * (hex ? 2 : 1) + up * ROW_SEMIS[kbRow], off = root + semis, pc = ((off % 12) + 12) % 12;
+  const semis = right * (hex ? hexStep : 1) + up * ROW_SEMIS[kbRow], off = root + semis, pc = ((off % 12) + 12) % 12;
   return { off, inKey: pcs.has(pc), isRoot: pc === root };
 }
 function buildKeys() {
@@ -49,7 +54,10 @@ function buildKeys() {
       keysEl.appendChild(k);
     }
   } else {   // hexagons, pointed at the top, each row shifted half a cell from the one below
-    const w = cell * 1.05, h = w * 1.1547, dy = h * 0.75, cols = Math.max(4, Math.floor((W - w / 2) / w)), rows = Math.max(3, Math.floor((H - h) / dy) + 1);
+    let w = cell * 1.05;
+    hexStep = 1;
+    if (kbChrom && kbRow === 2) { const fit = (W - 4) / 7.5; if (fit >= 40) { w = Math.min(w, fit); hexStep = 2; } }
+    const h = w * 1.1547, dy = h * 0.75, cols = Math.max(4, Math.floor((W - w / 2) / w)), rows = Math.max(3, Math.floor((H - h) / dy) + 1);
     const ox = (W - (cols * w + w / 2)) / 2, oy = (H - ((rows - 1) * dy + h)) / 2;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
       const q = c - Math.floor(r / 2), g = gridNote(q, r, true), k = document.createElement('div');   // axial: right +1, up-right +1 row
@@ -59,11 +67,11 @@ function buildKeys() {
       keysEl.appendChild(k);
     }
   }
-  document.querySelectorAll('[data-kb]').forEach(b => b.setAttribute('aria-pressed', b.dataset.kb === kbMode));
+  setPill($('kbPill'), ['piano', 'grid', 'hex'].indexOf(kbMode));
   labelOct(); markKeys();
 }
 function labelOct() { $('octLabel').textContent = 'C' + (Math.floor(base() / 12) - 1); }
-document.querySelectorAll('[data-kb]').forEach(b => b.addEventListener('click', () => { kbMode = b.dataset.kb; try { localStorage.setItem('diptych-kb', kbMode); } catch (e) {} buildKeys(); }));
+onPill($('kbPill'), k => { kbMode = ['piano', 'grid', 'hex'][k]; try { localStorage.setItem('diptych-kb', kbMode); } catch (e) {} buildKeys(); });
 new ResizeObserver(() => { if (kbMode !== 'piano' && keysEl.offsetParent) buildKeys(); }).observe(keysEl);
 const sounding = new Map();
 function markKeys() { keysEl.querySelectorAll('[data-off]').forEach(el => el.classList.toggle('on', sounding.has(base() + +el.dataset.off))); }

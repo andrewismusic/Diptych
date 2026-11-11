@@ -66,6 +66,8 @@ try {
     }
     if (saved.bpm) state.bpm = Math.max(40, Math.min(240, +saved.bpm || 120));
     state.walk = saved.walk !== false;
+    if (typeof saved.presetName === 'string') state.presetName = saved.presetName;   // the current presets' names (2026-11-11)
+    if (saved.sideNames && typeof saved.sideNames === 'object') state.sideNames = { A: String(saved.sideNames.A || ''), B: String(saved.sideNames.B || '') };
     if (Array.isArray(saved.tables)) saved.tables.slice(0, WT_SLOTS.length).forEach((t, s) => {
       ['A', 'B'].forEach(side => { const d = t && decTable(t[side]); if (d) tables[s][side] = d; });
     });
