@@ -104,10 +104,11 @@ test('the MORPH cap brings back the morph view; Settings change the colours and 
   expect(await page.evaluate(() => [focus, state.morph])).toEqual(['B', 1]);
   await page.click('#mcap');
   expect(await page.evaluate(() => [focus, state.morph])).toEqual(['M', 0.3]);
+  expect(await page.evaluate(() => parseFloat($('mcap').style.left))).toBeGreaterThan(5);   // and the cap is drawn there, not at A's end
   await page.click('#setBtn');
   await expect(page.locator('#settings')).toBeVisible();
   await page.click('[data-scheme="1"]');
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#0092B5');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--a').trim().toUpperCase())).toBe('#0047AB');
   await page.click('#monoPill');
   expect(await page.evaluate(() => state.mono)).toBe(true);
   await page.click('#setDone');

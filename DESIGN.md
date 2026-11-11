@@ -552,3 +552,10 @@ Owner: any combination of sections might be wanted at once; too much scrolling; 
 - **Grid and hexagons in colour:** keys tinted with the colour heard now, roots strongly, out-of-key notes (chromatic) a darker plain key.
 - **The status-bar strip** is part of the app now (`.top` takes the safe-area padding): it had followed the colour on its own schedule.
 - **Colourways:** Twin Flame (a true blue, magenta pink), Ultra (cyan, ruby), Iris, Seaglass (seafoam, coral pink), Aurora (night-sky blue, aurora green), Volcano (ember black, vivid lava red). The buttons show A's and B's colours as two dots.
+
+### Seventh pass (2026-11-11)
+- Colourways: Twin Flame takes Ultra's old cyan-blue; Ultra is cobalt and ruby; Iris and Aurora swap sides (Iris: leaf green A, violet B; Aurora: a warmer, darker aurora green A, a deeper night sky B); Volcano's grey is a cool ember black.
+- Header keys are 36 px like every other key. The play key keeps its 3D side while playing (only its brightness breathes).
+- Side preset menus sit below the A and B keys and open upward.
+- Leaving a side, the MORPH cap was drawn at A's end (it measured its own width while still shrinking from the full slot); it now uses its resting width, so it returns to where the morph is.
+- A constant `theme-color` (the base background) for the browser's top strip; the strip above the page belongs to the browser or the app around the page, which samples the page's colour on its own schedule.

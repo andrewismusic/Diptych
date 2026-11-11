@@ -254,3 +254,15 @@ select{font-size:.8rem}
 .spre.a b{color:var(--a)} .spre.b b{color:var(--b)}
 .mitem.off{opacity:.4;pointer-events:none}
 .namein{font:inherit;font-size:1rem;min-height:40px;padding:4px 12px;border:1.5px solid var(--k);border-radius:10px;background:var(--well);color:var(--ink)}
+
+/* ===== seventh pass ===== */
+/* the header's keys match every other key: 36 px */
+.key.icon{height:36px;width:38px;min-width:38px}
+.bpm{height:36px}
+/* the play key keeps its 3D side while it breathes (only its brightness pulses) */
+.playbtn.playing,#hplay.playing{background:var(--mc);border-color:var(--k);color:#fff;animation:breathe2 1.6s ease-in-out infinite;box-shadow:1px 1px 0 var(--k),2px 2px 0 var(--k),3px 3px 0 var(--k),4px 4px 0 var(--k)}
+@keyframes breathe2{0%,100%{filter:brightness(.8) saturate(.95)}50%{filter:brightness(1.3) saturate(1.15)}}
+@media (prefers-reduced-motion:reduce){ #hplay.playing{animation:none} }
+/* side presets below the A and B keys; their menus open upward */
+.siderow{padding:2px 0 4px}
+.desk:not(.dev) .panel[data-panel="seq"] .pviz{min-height:72px}

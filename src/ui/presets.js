@@ -112,7 +112,7 @@ document.querySelectorAll('[data-spre]').forEach(b => b.addEventListener('click'
     if (it.act === 'saveas') askName(`Save side ${k}`, cur || `Side ${list.length + 1}`, n => saveSide(k, n));
     else if (it.act === 'del') { writeList(SIDE_KEY, list.filter(p => p.name !== cur)); ['A', 'B'].forEach(s => { if (state.sideNames[s] === cur) state.sideNames[s] = ''; }); save(); presetLabels(); }
     else if (it.j !== undefined) loadSide(k, it.j);
-  }, { label: `Side ${k} presets` });
+  }, { label: `Side ${k} presets`, up: true });
 }));
 function presetLabels() {
   $('gPre').innerHTML = `<span class="ddv">${esc(state.presetName || 'Untitled')}</span>${CHEV}`;

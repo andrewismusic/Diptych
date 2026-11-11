@@ -228,7 +228,8 @@ for (const [name, size] of [['desktop', { width: 1440, height: 900 }], ['phone',
     expect(await shown('Delay')).toBe(5);
     await expect(page.locator('section[data-group="Delay"] [data-dice="Delay"][data-side="A"]')).toBeVisible();
     await expect(page.locator('section[data-group="Delay"] .swrow')).toBeVisible();
-    expect(await rects()).toEqual(before);   // the section keeps its place underneath
+    const near = (a, b) => a.length === b.length && a.every((r, k) => r.split(',').every((v, j) => Math.abs(v - b[k].split(',')[j]) <= 1));   // within a pixel (the scaled layout rounds)
+    expect(near(await rects(), before)).toBe(true);   // the section keeps its place underneath
     const m = await page.evaluate(() => { const c = sections.Delay.querySelector('.gcard').getBoundingClientRect(), kb = $('kb').getBoundingClientRect();
       return { right: c.right <= innerWidth + 1, left: c.left >= -1, aboveKb: c.bottom <= kb.top + 1, kbOnScreen: kb.bottom <= innerHeight + 1 }; });
     expect(m).toEqual({ right: true, left: true, aboveKb: true, kbOnScreen: true });
@@ -240,7 +241,7 @@ for (const [name, size] of [['desktop', { width: 1440, height: 900 }], ['phone',
     await page.locator('section[data-group="Filter"] .gname').click();
     await page.locator('section[data-group="Filter"] .gdone').click();
     expect(await page.locator('.group.open').count()).toBe(0);
-    expect(await rects()).toEqual(before);
+    expect(near(await rects(), before)).toBe(true);
   });
 }
 

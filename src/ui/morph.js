@@ -4,7 +4,9 @@
    the morph view. The track is the colour you hear now (the same colour as the wave), with light glimmering across it
    and glints rising off it (drawGlim, below); the page background takes the same colour. */
 const morphEl = $('morph'), mcap = $('mcap');
-const capFrac = m => { const W = morphEl.clientWidth, cw = mcap.offsetWidth; return W > cw ? m * (W - cw) / W * 100 : 0; };
+// the cap's resting width (84 px), not its width right now: leaving a side, the cap is still shrinking from the full slot,
+// and measuring it then put the cap at A's end whatever the morph (2026-11-11)
+const CAPW = 84, capFrac = m => { const W = morphEl.clientWidth; return W > CAPW ? m * (W - CAPW) / W * 100 : 0; };
 function updateMorphUI() {
   const m = state.morph;
   morphEl.value = Math.round(m * 1000);

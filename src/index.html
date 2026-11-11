@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Diptych</title>
+<meta name="theme-color" content="#E6EAF0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#05070C" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -92,10 +94,6 @@
 
 <div class="kb" id="kb">
   <div class="wrap">
-    <div class="siderow">
-      <button type="button" class="key dd spre a" data-spre="A" aria-haspopup="listbox" aria-expanded="false" aria-label="Side A preset"></button>
-      <button type="button" class="key dd spre b" data-spre="B" aria-haspopup="listbox" aria-expanded="false" aria-label="Side B preset"></button>
-    </div>
     <div class="morphrow">
       <button type="button" class="key letter a" data-focus="A" aria-pressed="false" aria-label="Edit side A only (tap again to morph)">A</button>
       <div class="morph-slider" id="morph" role="slider" tabindex="0" aria-label="Morph between A and B" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0">
@@ -103,6 +101,10 @@
         <button type="button" class="mcap" id="mcap" tabindex="-1" aria-label="Morph view">Morph</button>
       </div>
       <button type="button" class="key letter b" data-focus="B" aria-pressed="false" aria-label="Edit side B only (tap again to morph)">B</button>
+    </div>
+    <div class="siderow">
+      <button type="button" class="key dd spre a" data-spre="A" aria-haspopup="listbox" aria-expanded="false" aria-label="Side A preset"></button>
+      <button type="button" class="key dd spre b" data-spre="B" aria-haspopup="listbox" aria-expanded="false" aria-label="Side B preset"></button>
     </div>
   </div>
 </div>

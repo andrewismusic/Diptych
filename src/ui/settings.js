@@ -5,12 +5,12 @@
    conveniences, kept in localStorage, not part of the patch.
    ===================================================================== */
 const SCHEMES = [   // [name, A light, B light, A dark, B dark] (2026-11-11, sixth pass)
-  ['Twin Flame', '#1F5FFF', '#E62E9C', '#5B8CFF', '#FF5CC2'],   // a true blue (not violet), and a magenta pink
-  ['Ultra', '#0092B5', '#B0102E', '#3FD7F2', '#F23B57'],        // cyan, and ruby
-  ['Iris', '#5A3FC4', '#108A55', '#9A86FF', '#3FD68F'],         // iris violet, and leaf green
+  ['Twin Flame', '#0092B5', '#E62E9C', '#3FD7F2', '#FF5CC2'],   // Ultra's old cyan-blue, and a magenta pink
+  ['Ultra', '#0047AB', '#B0102E', '#4C7DFF', '#F23B57'],        // cobalt, and ruby
+  ['Iris', '#108A55', '#5A3FC4', '#3FD68F', '#9A86FF'],         // leaf green, and iris violet (sides swapped)
   ['Seaglass', '#2DB58C', '#E8787A', '#7FF0C4', '#FF9E9B'],     // seafoam, and a coral-tinted pink
-  ['Aurora', '#152A6E', '#14B86A', '#3B5BC8', '#4DFFA6'],       // a night-sky blue, and aurora green
-  ['Volcano', '#2E2624', '#F01E10', '#7A6964', '#FF3B2B'],      // ember black, and a vivid lava red
+  ['Aurora', '#3E8F12', '#0B1745', '#7CC43A', '#2A3F94'],       // a warmer, darker aurora green, and a deeper night sky (sides swapped)
+  ['Volcano', '#1B1C1F', '#F01E10', '#4A4C52', '#FF3B2B'],      // ember black (cooler, darker), and a vivid lava red
 ];
 /* the cog, drawn evenly: eight identical teeth around a ring, and the hole in the middle */
 const COG = (() => {

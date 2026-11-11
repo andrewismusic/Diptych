@@ -25,7 +25,7 @@ function openMenu(anchor, items, onPick, opts = {}) {
   m.style.minWidth = Math.max(r.width, 140) + 'px';
   m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
   m.style.maxHeight = mh + 'px';
-  m.style.top = (below >= mh || below > r.top ? r.bottom + 6 : Math.max(8, r.top - mh - 6)) + 'px';
+  m.style.top = (!opts.up && (below >= mh || below > r.top) ? r.bottom + 6 : Math.max(8, r.top - mh - 6)) + 'px';   // opts.up: open upward
   const cur = m.querySelector('.mitem.on'); if (cur) cur.scrollIntoView({ block: 'nearest' });
   menuOpen = { m, anchor }; anchor.setAttribute('aria-expanded', 'true');
   (cur || m.querySelector('.mitem'))?.focus({ preventScroll: true });
